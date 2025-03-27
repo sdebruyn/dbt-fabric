@@ -4,19 +4,17 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - v*
+      - forked-version
   pull_request:
     branches:
-      - main
-      - v*
+      - forked-version
 
 jobs:
   unit-tests:
     name: Unit tests
     strategy:
       matrix:
-        python_version: ["3.10", "3.11", "3.12", "3.13"]
+        python_version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
     runs-on: ubuntu-latest
     permissions:
       contents: read

@@ -7,8 +7,7 @@ on:
       - '.github/CI.Dockerfile'
       - '.github/workflows/publish-docker.yml'
     branches:
-      - main
-      - v*
+      - forked-version
 
 jobs:
   publish-docker-client:
