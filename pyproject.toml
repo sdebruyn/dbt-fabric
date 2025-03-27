@@ -1,5 +1,5 @@
 [project]
-name = "dbt-fabric"
+name = "dbt-fabric-samdebruyn"
 dynamic = ["version"]
 description = "A Microsoft Fabric Synapse Data Warehouse adapter plugin for dbt"
 readme = "README.md"
