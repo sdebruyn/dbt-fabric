@@ -58,4 +58,5 @@ jobs:
           FABRIC_TEST_ENDPOINT: ${{ secrets.FABRIC_TEST_ENDPOINT }}
           FABRIC_TEST_DWH_NAME: ${{ secrets.FABRIC_TEST_DWH_NAME }}
           FABRIC_TEST_DRIVER: "ODBC Driver ${{ matrix.msodbc_version }} for SQL Server"
+          DBT_TEST_USER_1: ${{ secrets.DBT_TEST_USER_1 }}
         run: uv run pytest -ra -v tests/functional
