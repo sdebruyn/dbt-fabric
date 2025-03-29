@@ -14,7 +14,6 @@ class TestCachingLowerCaseModel(BaseCachingLowercaseModel):
     pass
 
 
-@pytest.mark.skip("Not fully implemented yet")
 class TestCachingUppercaseModel(BaseCachingUppercaseModel):
     @pytest.fixture(scope="class")
     def dbt_profile_target_update(self):
