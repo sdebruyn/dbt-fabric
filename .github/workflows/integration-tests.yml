@@ -25,6 +25,7 @@ jobs:
         msodbc_version: ["17", "18"]
 
     runs-on: ubuntu-latest
+    environment: azure
     container: 
       image: ghcr.io/${{ github.repository }}:CI-${{ matrix.python_version }}-msodbc${{ matrix.msodbc_version }}
     steps:
