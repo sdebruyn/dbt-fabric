@@ -47,14 +47,6 @@ class FabricRelationConfigBase(RelationConfigBase):
             "`parse_relation_results()` needs to be implemented on this RelationConfigBase instance"
         )
 
-    # @classmethod
-    # def _render_part(cls, component: ComponentName, value: Optional[str]) -> Optional[str]:
-    #     if cls.include_policy().get_part(component) and value:
-    #         if cls.quote_policy().get_part(component):
-    #             return f"[{value}]"
-    #         return value.lower()
-    #     return None
-
     @classmethod
     def _get_first_row(cls, results: agate.Table) -> agate.Row:
         try:
