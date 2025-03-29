@@ -30,8 +30,8 @@ class TestSingularTestsEphemeralFabric(BaseSingularTestsEphemeral):
         return {
             "name": "singular_tests_ephemeral",
             "models": {
-                "+materialized": "table" # no support for nested CTEs in Views yet
-            }
+                "+materialized": "table"  # no support for nested CTEs in Views yet
+            },
         }
 
 

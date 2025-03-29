@@ -17,8 +17,10 @@ class TestFabricUnitTestingTypes(BaseUnitTestingTypes):
             ["CAST('1' AS INT)", "1"],
         ]
 
+
 class TestFabricUnitTestCaseInsensivity(BaseUnitTestCaseInsensivity):
     pass
+
 
 class TestFabricUnitTestInvalidInput(BaseUnitTestInvalidInput):
     pass
