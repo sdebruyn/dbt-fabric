@@ -30,25 +30,23 @@ sudo apt-get install -y unixodbc-dev
 </p>
 </details>
 
-Latest version: ![PyPI](https://img.shields.io/pypi/v/dbt-fabric?label=latest&logo=pypi)
+Latest version: ![PyPI](https://img.shields.io/pypi/v/dbt-fabric-samdebruyn?label=latest&logo=pypi)
 
 ```shell
-pip install -U dbt-fabric
+pip install -U --pre dbt-fabric-samdebruyn
 ```
 
 ## Contributing
 
-[![Unit tests](https://github.com/microsoft/dbt-fabric/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/microsoft/dbt-fabric/actions/workflows/unit-tests.yml)
-[![Integration tests on Azure](https://github.com/microsoft/dbt-fabric/actions/workflows/integration-tests-azure.yml/badge.svg)](https://github.com/microsoft/dbt-fabric/actions/workflows/integration-tests-azure.yml)
-[![Publish Docker images for CI/CD](https://github.com/microsoft/dbt-fabric/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/microsoft/dbt-fabric/actions/workflows/publish-docker.yml)
+[![Unit tests](https://github.com/sdebruyn/dbt-fabric/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/sdebruyn/dbt-fabric/actions/workflows/unit-tests.yml)
+[![Integration tests on Fabric DW](https://github.com/sdebruyn/dbt-fabric/actions/workflows/integration-tests.yml/badge.svg)](https://github.com/sdebruyn/dbt-fabric/actions/workflows/integration-tests.yml)
+[![Publish Docker images for CI/CD](https://github.com/sdebruyn/dbt-fabric/actions/workflows/publish-docker.yml/badge.svg)](https://github.com/sdebruyn/dbt-fabric/actions/workflows/publish-docker.yml)
 
-This adapter is Microsoft-maintained.
-You are welcome to contribute by creating issues, opening or reviewing pull requests.
-If you're unsure how to get started, check out our [contributing guide](CONTRIBUTING.md).
+This is a fork of the [Microsoft version](https://github.com/microsoft/dbt-fabric) in which new features are being developed.
 
 ## License
 
-[![PyPI - License](https://img.shields.io/pypi/l/dbt-fabric)](https://github.com/microsoft/dbt-fabric/blob/main/LICENSE)
+[![PyPI - License](https://img.shields.io/pypi/l/dbt-fabric-samdebruyn)](https://github.com/sdebruyn/dbt-fabric/blob/main/LICENSE)
 
 ## Code of Conduct
 
