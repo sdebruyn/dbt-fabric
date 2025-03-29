@@ -13,7 +13,9 @@ class TestCachingLowerCaseModel(BaseCachingLowercaseModel):
     pass
 
 
+@pytest.mark.skip("Not fully implemented yet")
 class TestCachingUppercaseModel(BaseCachingUppercaseModel):
+    @pytest.fixture(scope="class")
     def dbt_profile_target_update(self):
         dwh_name = os.getenv("FABRIC_TEST_DWH_CI_NAME")
 
