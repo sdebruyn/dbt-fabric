@@ -18,7 +18,7 @@ select 1 as id
     @staticmethod
     @pytest.fixture(scope="class")
     def dbt_profile_target_update():
-        return {"schema_authorization": "{{ env_var('DBT_TEST_USER_1') }}"}
+        return {"schema_authorization": "{{ env_var('DBT_TEST_USER_1', 'dbo') }}"}
 
     @staticmethod
     def _verify_schema_owner(schema_name, owner, project):
@@ -32,5 +32,5 @@ select SCHEMA_OWNER from INFORMATION_SCHEMA.SCHEMATA where SCHEMA_NAME = '{schem
         res = run_dbt(["run"])
         assert len(res) == 1
 
-        self._verify_schema_owner(unique_schema, os.getenv("DBT_TEST_USER_1"), project)
-        self._verify_schema_owner("with_custom_auth", os.getenv("DBT_TEST_USER_1"), project)
+        self._verify_schema_owner(unique_schema, os.getenv("DBT_TEST_USER_1", "dbo"), project)
+        self._verify_schema_owner("with_custom_auth", os.getenv("DBT_TEST_USER_1", "dbo"), project)
