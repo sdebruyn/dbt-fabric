@@ -1,5 +1,6 @@
-import pytest
 import os
+
+import pytest
 
 from dbt.tests.adapter.caching.test_caching import (
     BaseCachingLowercaseModel,
