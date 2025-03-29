@@ -72,6 +72,7 @@ line-length = 99
 [tool.ruff.lint]
 select = [
     "I",   # isort
+    "ERA", # no commented code
 ]
 
 [tool.ruff.lint.isort]
