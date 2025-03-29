@@ -25,6 +25,7 @@ jobs:
       matrix:
         python_version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
         msodbc_version: ["17", "18"]
+      max-parallel: 1
 
     runs-on: ubuntu-latest
     environment: azure
@@ -55,4 +56,4 @@ jobs:
           FABRIC_TEST_DWH_CI_NAME: ${{ secrets.FABRIC_TEST_DWH_CI_NAME }}
           FABRIC_TEST_DRIVER: "ODBC Driver ${{ matrix.msodbc_version }} for SQL Server"
           DBT_TEST_USER_1: ${{ secrets.DBT_TEST_USER_1 }}
-        run: uv run pytest -n auto -ra -v tests/functional
+        run: uv run pytest -ra -v tests/functional
