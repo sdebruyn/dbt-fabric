@@ -24,7 +24,6 @@ class TestSingularTestsFabric(BaseSingularTests):
     pass
 
 
-@pytest.mark.skip(reason="Nested CTE is not supported")
 class TestSingularTestsEphemeralFabric(BaseSingularTestsEphemeral):
     pass
 
