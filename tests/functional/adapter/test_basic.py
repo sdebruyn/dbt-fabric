@@ -25,7 +25,14 @@ class TestSingularTestsFabric(BaseSingularTests):
 
 
 class TestSingularTestsEphemeralFabric(BaseSingularTestsEphemeral):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {
+            "name": "singular_tests_ephemeral",
+            "models": {
+                "+materialized": "table" # no support for nested CTEs in Views yet
+            }
+        }
 
 
 class TestEmptyFabric(BaseEmpty):
