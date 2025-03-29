@@ -31,15 +31,10 @@ logger = AdapterLogger("fabric")
 
 # https://github.com/mkleehammer/pyodbc/wiki/Data-Types
 datatypes = {
-    # "str": "char",
     "str": "varchar",
     "uuid.UUID": "uniqueidentifier",
     "uuid": "uniqueidentifier",
-    # "float": "real",
-    # "float": "float",
     "float": "bigint",
-    # "int": "smallint",
-    # "int": "tinyint",
     "int": "int",
     "bytes": "varbinary",
     "bytearray": "varbinary",
@@ -48,7 +43,6 @@ datatypes = {
     "datetime.datetime": "datetime2(6)",
     "datetime.time": "time",
     "decimal.Decimal": "decimal",
-    # "decimal.Decimal": "numeric",
 }
 
 
@@ -453,14 +447,12 @@ class FabricConnectionManager(SQLConnectionManager):
         )
 
     def cancel(self, connection: Connection):
-        logger.debug("Cancel query")
+        pass
 
     def add_begin_query(self):
-        # return self.add_query('BEGIN TRANSACTION', auto_begin=False)
         pass
 
     def add_commit_query(self):
-        # return self.add_query('COMMIT TRANSACTION', auto_begin=False)
         pass
 
     def add_query(
@@ -528,21 +520,11 @@ class FabricConnectionManager(SQLConnectionManager):
         return credentials
 
     @classmethod
-    def get_response(cls, cursor: Any) -> AdapterResponse:
-        # message = str(cursor.statusmessage)
-        message = "OK"
-        rows = cursor.rowcount
-        # status_message_parts = message.split() if message is not None else []
-        # status_messsage_strings = [
-        #    part
-        #    for part in status_message_parts
-        #    if not part.isdigit()
-        # ]
-        # code = ' '.join(status_messsage_strings)
+    def get_response(cls, cursor: pyodbc.Cursor) -> AdapterResponse:
+        message = "\n".join(msg[1] for msg in cursor.messages) if cursor.messages else ""
         return AdapterResponse(
             _message=message,
-            # code=code,
-            rows_affected=rows,
+            rows_affected=cursor.rowcount,
         )
 
     @classmethod
