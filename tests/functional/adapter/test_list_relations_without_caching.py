@@ -105,7 +105,6 @@ class TestListRelationsWithoutCachingSingle:
         """
         run_dbt(["run", "-s", "my_model_base"])
 
-        # database = project.database
         schemas = project.created_schemas
 
         for schema in schemas:
@@ -113,7 +112,6 @@ class TestListRelationsWithoutCachingSingle:
             _, log_output = run_dbt_and_capture(
                 [
                     "--debug",
-                    # "--log-format=json",
                     "run-operation",
                     "validate_list_relations_without_caching",
                     "--args",
@@ -142,16 +140,13 @@ class TestListRelationsWithoutCachingFull:
         # purpose of the first run is to create the replicated views in the target schema
         run_dbt(["run"])
 
-        # database = project.database
         schemas = project.created_schemas
 
         for schema in schemas:
-            # schema_relation = f"{database}.{schema}"
             kwargs = {"schema_relation": schema}
             _, log_output = run_dbt_and_capture(
                 [
                     "--debug",
-                    # "--log-format=json",
                     "run-operation",
                     "validate_list_relations_without_caching",
                     "--args",
