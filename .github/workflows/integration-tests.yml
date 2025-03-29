@@ -9,6 +9,11 @@ on:
     branches:
       - forked-version
 
+permissions:
+  contents: read
+  packages: read
+  id-token: write
+
 jobs:
   integration-tests-fabric-dw:
     name: Regular
@@ -20,10 +25,8 @@ jobs:
         msodbc_version: ["17", "18"]
 
     runs-on: ubuntu-latest
-    permissions:
-      contents: read   # Required to access repository files
-      packages: read   # Grant explicit read access to packages
-      id-token: write  # Needed if using OIDC authentication
+    container: 
+      image: ghcr.io/${{ github.repository }}:CI-${{ matrix.python_version }}-msodbc${{ matrix.msodbc_version }}
     steps:
       - uses: actions/checkout@v4
 
