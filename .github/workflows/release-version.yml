@@ -6,6 +6,10 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   release-version:
     name: Release new version
