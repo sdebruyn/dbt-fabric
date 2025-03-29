@@ -51,7 +51,7 @@ jobs:
 
       - name: Run functional tests
         env:
-          FABRIC_TEST_ENDPOINT: ${{ secrets.DBT_AZURESQL_SERVER }}
-          FABRIC_TEST_DWH_NAME: ${{ secrets.DBT_AZURESQL_DB }}
+          FABRIC_TEST_ENDPOINT: ${{ secrets.FABRIC_TEST_ENDPOINT }}
+          FABRIC_TEST_DWH_NAME: ${{ secrets.FABRIC_TEST_DWH_NAME }}
           FABRIC_TEST_DRIVER: "ODBC Driver ${{ matrix.msodbc_version }} for SQL Server"
         run: uv run pytest -ra -v tests/functional
