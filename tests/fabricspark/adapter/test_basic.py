@@ -122,11 +122,23 @@ class TestEmptySpark(BaseEmpty):
 
 
 class TestEphemeralSpark(BaseEphemeral):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "ephemeral.sql": files.base_ephemeral_sql,
+            "view_model.sql": """
+  {{ config(materialized="materialized_view") }}
+"""
+            + files.model_ephemeral,
+            "table_model.sql": files.ephemeral_table_sql,
+            "schema.yml": files.schema_base_yml,
+        }
 
 
 class TestIncrementalSpark(BaseIncremental):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {"name": "incremental", "models": {"+materialized": "table"}}
 
 
 class TestIncrementalNotSchemaChangeFabric(BaseIncrementalNotSchemaChange):
@@ -134,15 +146,30 @@ class TestIncrementalNotSchemaChangeFabric(BaseIncrementalNotSchemaChange):
 
 
 class TestGenericTestsSpark(BaseGenericTests):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "view_model.sql": """
+  {{ config(materialized="materialized_view") }}
+"""
+            + files.model_base,
+            "table_model.sql": files.base_table_sql,
+            "schema.yml": files.schema_base_yml,
+            "schema_view.yml": files.generic_test_view_yml,
+            "schema_table.yml": files.generic_test_table_yml,
+        }
 
 
 class TestSnapshotCheckColsSpark(BaseSnapshotCheckCols):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {"name": "snapshot_strategy_check_cols", "models": {"+materialized": "table"}}
 
 
 class TestSnapshotTimestampSpark(BaseSnapshotTimestamp):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {"name": "snapshot_strategy_timestamp", "models": {"+materialized": "table"}}
 
 
 class TestBaseCachingSpark(BaseAdapterMethod):
