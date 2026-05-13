@@ -13,6 +13,17 @@
 {% endmacro %}
 
 
+{% macro fabric__build_cluster_by_clause() %}
+    {%- set cluster_by = config.get('cluster_by') -%}
+    {%- if cluster_by is not none -%}
+        {%- if cluster_by is string -%}
+            {%- set cluster_by = [cluster_by] -%}
+        {%- endif -%}
+        WITH (CLUSTER BY ({{ cluster_by | join(', ') }}))
+    {%- endif -%}
+{% endmacro %}
+
+
 {% macro fabric__create_table_as(temporary, relation, compiled_code, language='sql') -%}
     {%- if language == 'sql' -%}
         {% set query_label = apply_label() %}
@@ -31,6 +42,7 @@
             CREATE TABLE {{relation}}
             {{ build_columns_constraints(relation) }}
             {{ get_assert_columns_equivalent(compiled_code)  }}
+            {{ fabric__build_cluster_by_clause() }}
 
             {% set listColumns %}
                 {% for column in model['columns'] %}
@@ -47,7 +59,9 @@
 
         {%- else %}
 
-            CREATE TABLE {{relation}} AS {{compiled_code}} {{ query_label }}
+            CREATE TABLE {{relation}}
+            {{ fabric__build_cluster_by_clause() }}
+            AS {{compiled_code}} {{ query_label }}
 
         {% endif %}
     {%- elif language == "python" -%}
