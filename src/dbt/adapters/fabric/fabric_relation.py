@@ -12,6 +12,9 @@ class FabricRelation(BaseRelation):
     quote_policy: FabricQuotePolicy = field(default_factory=lambda: FabricQuotePolicy())
     require_alias: bool = True
 
+    def quoted(self, identifier):
+        return "[{}]".format(identifier)
+
     @classproperty
     def get_relation_type(cls) -> Type[FabricRelationType]:
         return FabricRelationType

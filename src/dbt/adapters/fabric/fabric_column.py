@@ -39,6 +39,10 @@ class FabricColumn(Column):
         return self.dtype.lower() in ["numeric", "decimal", "money", "smallmoney"]
 
     @property
+    def quoted(self) -> str:
+        return "[{}]".format(self.column)
+
+    @property
     def data_type(self) -> str:
         if self.dtype == "datetime2":
             return f"datetime2({self.numeric_scale})"
