@@ -9,7 +9,8 @@ from dbt.tests.adapter.aliases.test_aliases import (
 )
 
 # Spark SQL does not support PostgreSQL-style '...'::text casts.
-# Override the default__string_literal macro to simply return a string literal.
+# The test fixture dispatches with macro_namespace='test', so the adapter-level
+# fabricspark__string_literal is not found. Override the macro here instead.
 MACROS__CAST_SQL_SPARK = """
 {% macro string_literal(s) -%}
   {{ adapter.dispatch('string_literal', macro_namespace='test')(s) }}
