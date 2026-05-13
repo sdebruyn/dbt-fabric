@@ -177,6 +177,16 @@ def fabric_api_client(
     return FabricApiClient.create(credentials, fabric_token_provider)
 
 
+def _deep_merge(base: dict, override: dict) -> dict:
+    """Deep merge override into base. Returns the merged dict (mutates base)."""
+    for key, value in override.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = value
+    return base
+
+
 @pytest.fixture(scope="class")
 def dbt_project_yml(project_root, project_config_update, adapter_type: str):
     project_config = {
@@ -190,9 +200,9 @@ def dbt_project_yml(project_root, project_config_update, adapter_type: str):
 
     if project_config_update:
         if isinstance(project_config_update, dict):
-            project_config.update(project_config_update)
+            _deep_merge(project_config, project_config_update)
         elif isinstance(project_config_update, str):
             updates = yaml.safe_load(project_config_update)
-            project_config.update(updates)
+            _deep_merge(project_config, updates)
     write_file(yaml.safe_dump(project_config), project_root, "dbt_project.yml")
     return project_config
