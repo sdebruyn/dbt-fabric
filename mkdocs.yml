@@ -93,5 +93,6 @@ nav:
     - Configuration: configuration.md
 - Feature guides:
     - Authentication: authentication.md
+    - External tables: external-tables.md
     - Python models: python-models.md
     - Warehouse snapshots: warehouse-snapshots.md
