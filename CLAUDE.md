@@ -14,6 +14,8 @@ uv sync                              # Set up venv + install all deps (editable 
 uv run pytest                        # Run all integration tests (needs test.env + Fabric)
 uv run pytest --dw                   # Run only Fabric (T-SQL) tests
 uv run pytest --de                   # Run only FabricSpark tests
+uv run pytest --dw --isolated        # Fabric tests with isolated DW (for multi-agent)
+uv run pytest --de --isolated        # FabricSpark tests with isolated Lakehouse
 uv run pytest --with-grants          # Include GRANT/authorization tests
 uv run pytest -k "TestClassName"     # Run a specific test class
 uv run ruff format --check .         # Check formatting
@@ -146,6 +148,7 @@ src/
           get_custom_name/             # Database name generation
 tests/
   conftest.py                         # Shared fixtures, adapter type detection, CLI flags
+  isolated_items.py                   # FabricTestItemManager for --isolated mode
   unit/                               # Unit tests (no Fabric connection needed)
   fabric/                             # Fabric (T-SQL) integration tests
     adapter/                          # ~20 test modules
@@ -216,7 +219,9 @@ During the TDD loop, pay attention to recurring failure patterns. When the same 
 
 Update this section by adding entries as patterns emerge. Format: short description of the pattern, what causes it, and the standard fix.
 
-- **FabricSpark: `'view' is not a valid FabricSparkRelationType`** — dbt's default materialization is `view`, but Fabric Lakehouse with schemas doesn't support Spark SQL views. This will come up in almost every FabricSpark test class. Fix: override the test's `models` or `project_config_update` fixture to replace `view` with `materialized_view` or `table` depending on what the test is validating. Use `materialized_view` when the test is about read-only derived data (closest equivalent to a view), and `table` when the test needs DML or other table-specific behavior. The `conftest.py` sets `+materialized: materialized_view` as default, but this gets overwritten when a test provides its own `models` key in `project_config_update` (shallow dict merge).
+- **FabricSpark: `'view' is not a valid FabricSparkRelationType`** — dbt's default materialization is `view`, but Fabric Lakehouse with schemas doesn't support Spark SQL views. This comes up in two ways: (1) a test's `project_config_update` provides a `models` key that used to overwrite the `+materialized: materialized_view` default via shallow dict merge — now fixed with deep merge in `conftest.py`; (2) base test classes from dbt-tests-adapter have explicit `config(materialized="view")` in their model SQL fixtures, which bypasses the project-level default entirely. Fix for (2): override the test's `models` fixture to replace `view` with `materialized_view`. Use `materialized_view` when the test is about read-only derived data (closest equivalent to a view), and `table` when the test needs DML or other table-specific behavior.
+
+- **FabricSpark: `PARSE_SYNTAX_ERROR` with `'...'::text` cast** — dbt-tests-adapter's alias test fixtures use PostgreSQL-style `'{{ s }}'::text` cast syntax in their `string_literal` macro, which Spark SQL does not support. Fix: override the `macros` fixture to provide a Spark-compatible `string_literal` macro that uses plain `'{{ s }}'` without the `::text` cast. See `tests/fabricspark/adapter/test_aliases.py` for the pattern.
 
 ## Multi-agent development
 
@@ -273,7 +278,8 @@ Instructions:
 1. Read CLAUDE.md to understand the project and workflow.
 2. Read the failing test classes and their base classes to understand what they expect.
 3. Implement the fix in the target files.
-4. Run ONLY the specific failing test: uv run pytest -k "TestClassName" --dw -v (or --de)
+4. Run ONLY the specific failing test: uv run pytest -k "TestClassName" --dw --isolated -v (or --de --isolated)
+   The --isolated flag creates a temporary DW/Lakehouse for your run so you don't conflict with other agents.
 5. If you discover a recurring pattern, add it to the "Lessons learned" section of CLAUDE.md.
 6. Report back: what you changed, which tests pass/fail, any lessons learned.
 ```
@@ -306,7 +312,8 @@ After workers complete:
 - **Read CLAUDE.md first** — it contains everything you need about the project, architecture, and patterns.
 - **Read the base test class** — understand what the test expects before fixing. The fix often becomes obvious from reading the base class SQL.
 - **Minimal fixes only** — fix the root cause, don't refactor. If a macro works, don't also clean up unrelated macros.
-- **Only run your own specific tests** — never run the full test suite. Fabric infrastructure is slow (Livy sessions, rate-limited APIs). Run only the test class you are fixing: `uv run pytest -k "TestClassName" --dw -v` (or `--de`). The coordinator handles regression checks after merging.
+- **Always use `--isolated`** — every worker must pass `--isolated` when running tests. This creates a temporary DW/Lakehouse for your run so you don't conflict with other agents or the coordinator. Items are automatically cleaned up when your test session ends.
+- **Only run your own specific tests** — never run the full test suite. Fabric infrastructure is slow (Livy sessions, rate-limited APIs). Run only the test class you are fixing: `uv run pytest -k "TestClassName" --dw --isolated -v` (or `--de --isolated`). The coordinator handles regression checks after merging.
 - **Validate and commit before finishing** — after your fix works, run `uv run ruff format .` and `uv run ruff check --fix .`, then commit only your own changes (not unrelated changes in the repo). Use a descriptive commit message.
 - **Report clearly** — list: files changed, tests that now pass, tests that still fail (if any), and any lessons learned.
 - **Update CLAUDE.md** — if you find a pattern that will help future work, add it to "Lessons learned". This is part of your job, not optional.
@@ -350,6 +357,26 @@ Common fixture overrides:
 - `tests/fabricspark/**` → adapter type `fabricspark`
 
 This controls which connection profile and dbt_project.yml defaults are used.
+
+### Isolated test infrastructure (`--isolated`)
+
+When multiple agents run tests in parallel, they must not share the same Data Warehouse or Lakehouse — otherwise schema operations, catalog queries, and DDL can collide. The `--isolated` flag solves this by creating temporary Fabric items for each test session.
+
+**How it works:**
+
+1. At session start, `conftest.py` creates a uniquely-named DW (`dbt-test-dw-<uuid>`) and/or Lakehouse (`dbt-test-lh-<uuid>`) via the Fabric REST API using Azure CLI credentials.
+2. It waits for provisioning to complete (can take 1-3 minutes).
+3. It overrides `FABRIC_TEST_DWH_NAME` and/or `FABRIC_TEST_LAKEHOUSE_NAME` env vars so all tests in the session use the isolated items.
+4. At session end (even on failure), it deletes the temporary items.
+
+**Which items are created:**
+- `--dw --isolated` → creates only a Data Warehouse
+- `--de --isolated` → creates only a Lakehouse (with schemas enabled)
+- `--isolated` (no filter) → creates both
+
+**Orphaned items:** if the process is killed with SIGKILL, cleanup won't run. Orphaned items can be identified by the `dbt-test-` name prefix and deleted manually from the Fabric workspace.
+
+**Requirements:** Azure CLI must be logged in (`az login`). The logged-in identity needs permission to create and delete warehouses/lakehouses in the workspace specified by `FABRIC_TEST_WORKSPACE_NAME`.
 
 ### Integration tests require real infrastructure
 
