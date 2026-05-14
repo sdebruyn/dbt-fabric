@@ -112,14 +112,13 @@ When you run `dbt docs generate`, this adapter includes **approximate row counts
 
 The quality of this adapter is guaranteed by an extensive test suite of integration tests, which run on every change. Through this process, quite a few bugs have been found and fixed.
 
-## More on the roadmap
+## More on the [roadmap](roadmap.md)
 
-Ideas for future improvements include:
+See the [roadmap](roadmap.md) for ideas on future improvements, including:
 
-- Synchronization of documentation between Microsoft Purview and dbt docs
-- Merging support for Spark SQL models into this adapter and allowing users to choose between Fabric SQL and Spark SQL models in the same project
-- Integration with external Iceberg/Delta Lake tables
-- Integration with external Iceberg/Delta Lake catalogs
+- Spark SQL and T-SQL models in the same project
+- External Iceberg and Delta Lake tables via OneLake shortcuts
+- External catalog integration (Unity Catalog, Dremio, Iceberg REST Catalog)
 - [Create an issue with your idea](https://github.com/sdebruyn/dbt-fabric/issues)
 
 ## Paid support
