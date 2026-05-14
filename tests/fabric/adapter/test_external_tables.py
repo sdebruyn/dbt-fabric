@@ -6,7 +6,7 @@ macro_build_openrowset_parquet = """
 {% macro test_build_openrowset_parquet() %}
     {% set location = 'https://storage.blob.core.windows.net/container/data.parquet' %}
     {% set result = fabric__build_openrowset(location, 'PARQUET', {}, []) %}
-    {{ log("OPENROWSET_RESULT: " ~ result, info=True) }}
+    {{ log("OPENROWSET_RESULT: " ~ result | replace("\\n", " "), info=True) }}
 {% endmacro %}
 """
 
@@ -15,7 +15,7 @@ macro_build_openrowset_csv_with_options = """
     {% set location = 'https://storage.blob.core.windows.net/container/data.csv' %}
     {% set options = {'header_row': 'true', 'fieldterminator': ','} %}
     {% set result = fabric__build_openrowset(location, 'CSV', options, []) %}
-    {{ log("OPENROWSET_CSV_RESULT: " ~ result, info=True) }}
+    {{ log("OPENROWSET_CSV_RESULT: " ~ result | replace("\\n", " "), info=True) }}
 {% endmacro %}
 """
 
@@ -23,7 +23,7 @@ macro_build_openrowset_jsonl = """
 {% macro test_build_openrowset_jsonl() %}
     {% set location = 'https://storage.blob.core.windows.net/container/data.jsonl' %}
     {% set result = fabric__build_openrowset(location, 'JSONL', {}, []) %}
-    {{ log("OPENROWSET_JSONL_RESULT: " ~ result, info=True) }}
+    {{ log("OPENROWSET_JSONL_RESULT: " ~ result | replace("\\n", " "), info=True) }}
 {% endmacro %}
 """
 
@@ -71,7 +71,7 @@ macro_build_openrowset_csv_all_options = """
         'data_source': 'my_source'
     } %}
     {% set result = fabric__build_openrowset(location, 'CSV', options, []) %}
-    {{ log("OPENROWSET_CSV_ALL: " ~ result, info=True) }}
+    {{ log("OPENROWSET_CSV_ALL: " ~ result | replace("\\n", " "), info=True) }}
 {% endmacro %}
 """
 
@@ -80,7 +80,7 @@ macro_build_openrowset_escaping = """
     {% set location = "https://storage.blob.core.windows.net/container/it's data.parquet" %}
     {% set options = {'fieldterminator': "it's a delimiter"} %}
     {% set result = fabric__build_openrowset(location, 'CSV', options, []) %}
-    {{ log("OPENROWSET_ESCAPE: " ~ result, info=True) }}
+    {{ log("OPENROWSET_ESCAPE: " ~ result | replace("\\n", " "), info=True) }}
 {% endmacro %}
 """
 
