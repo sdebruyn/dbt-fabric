@@ -8,6 +8,8 @@ from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_livy_helper import FabricLivyHelper
 from dbt.adapters.fabric.fabric_relation import FabricRelation
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
+from dbt.adapters.fabric.purview_client import PurviewClient
+from dbt.adapters.fabric.purview_sync import PurviewSync
 from dbt.include import fabric
 
 Plugin = AdapterPlugin(
@@ -27,4 +29,6 @@ __all__ = [
     "FabricRelation",
     "FabricTokenProvider",
     "Plugin",
+    "PurviewClient",
+    "PurviewSync",
 ]

@@ -23,6 +23,7 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
     fabric_base_api_uri: str = "https://api.fabric.microsoft.com/v1"
     powerbi_base_api_uri: str = "https://api.powerbi.com/v1.0"
     livy_session_name: str = "dbt-fabric-samdebruyn"
+    purview_endpoint: str | None = None
 
     _ALIASES = {
         "trusted_connection": "windows_login",
@@ -30,6 +31,7 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
         "app_id": "client_id",
         "app_secret": "client_secret",
         "workspace": "workspace_name",
+        "purview": "purview_endpoint",
     }
 
     def __post_serialize__(self, dct: dict, context: dict | None = None) -> dict[Any, Any]:
@@ -61,6 +63,7 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
             "fabric_base_api_uri",
             "powerbi_base_api_uri",
             "livy_session_name",
+            "purview_endpoint",
         )
 
     @property
