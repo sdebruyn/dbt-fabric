@@ -61,7 +61,7 @@ features = [
 ]
 
 [project.theme.icon]
-logo = "lucide/receipt"
+logo = "material/receipt"
 repo = "fontawesome/brands/github"
 
 [[project.theme.palette]]

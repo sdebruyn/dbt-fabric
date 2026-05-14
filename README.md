@@ -1,12 +1,12 @@
 # dbt-fabric-samdebruyn
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/forked-version/assets/dbt-signature_tm_light.png">
-  <img alt="dbt logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/forked-version/assets/dbt-signature_tm.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/dbt-signature_tm_light.png">
+  <img alt="dbt logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/dbt-signature_tm.png">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/forked-version/assets/fabric.png">
-  <img alt="Fabric logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/forked-version/assets/fabric.png">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png">
+  <img alt="Fabric logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png">
 </picture>
 
 This is a maintained and extended fork of the [dbt-fabric](https://github.com/microsoft/dbt-fabric) adapter. This fork has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to the original adapter.
