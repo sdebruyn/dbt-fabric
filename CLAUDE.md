@@ -241,6 +241,12 @@ Update this section by adding entries as patterns emerge. Format: short descript
 
 - **FabricSpark: `store_failures_as="view"` is invalid** — dbt's `store_test_failures_tests` base classes use `store_failures_as="view"` in test SQL configs and `schema.yml` fixtures, then verify stored results are views via `check_relation_types`. Since `FabricSparkRelationType` has no `View` type, this causes `invalid value 'view'` errors at runtime. Fix: override `tests`, `models` (for `schema.yml`), `project_config_update`, and test methods to replace all `store_failures_as="view"` with `store_failures_as="table"` and update expected `TestResult` types from `"view"` to `"table"`. See `tests/fabricspark/adapter/test_store_test_failures.py`.
 
+- **FabricSpark: base test SQL string comparisons fail** — Some base test classes (e.g., `BaseEphemeralMulti`, `BaseEphemeralNested`) compare exact compiled SQL strings, expecting `create view` with double-quoted identifiers. FabricSpark generates `create or replace materialized lake view` with backtick-quoted identifiers instead. Fix: override the test method to keep only the functional assertions (seed, run, check_relations_equal) and drop the SQL string comparison. The string comparison tests dbt core CTE inlining, not adapter behavior. See `tests/fabricspark/adapter/test_ephemeral.py`.
+
+- **FabricSpark: `project.get_tables_in_schema()` uses T-SQL** — The conftest `project` fixture's `get_tables_in_schema` method queries `sys.tables`/`sys.views` which doesn't exist in Spark SQL. Fix: override the test method and use `SHOW TABLES IN \`schema_name\`` instead. The result rows have table name at index 1. See `tests/fabricspark/adapter/test_simple_copy.py`.
+
+- **FabricSpark: tests with raw DDL SQL fail** — Base tests that create objects via `project.run_sql()` with T-SQL DDL (e.g., `create materialized view`, `create view`) will fail on Spark. Fix: skip these tests with a descriptive reason.
+
 ## Multi-agent development
 
 When implementing multiple test classes or fixing many failures at once, use parallel agents to speed up the work. The main conversation acts as coordinator.
