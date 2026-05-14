@@ -1,3 +1,6 @@
+import pytest
+
+from dbt.adapters.exceptions.compilation import ApproximateMatchError
 from dbt.adapters.fabricspark.fabricspark_relation import (
     FabricSparkIncludePolicy,
     FabricSparkQuotePolicy,
@@ -102,11 +105,11 @@ class TestFabricSparkRelationCasePreservation:
             identifier="my_model",
         )
 
-    def test_no_approximate_match_error_on_mixed_case(self):
-        """When quote_policy.database/schema=True, matches() does exact
-        case-sensitive comparison. This prevents ApproximateMatchError
-        that would occur if the search terms were lowercased by
-        _make_match_kwargs but the stored values kept original case."""
+    def test_lowered_search_raises_approximate_match_error(self):
+        """With quote_policy.database/schema=True, matches() uses exact
+        case-sensitive comparison. Lowercased search terms will not
+        exact-match mixed-case stored values but will approximate-match,
+        raising ApproximateMatchError instead of silently returning True."""
         r = FabricSparkRelation.create(
             database="DBTTest",
             schema="TestSchema",
@@ -114,8 +117,9 @@ class TestFabricSparkRelationCasePreservation:
             type=FabricSparkRelationType.Table,
             dbt_created=True,
         )
-        assert r.matches(
-            database="DBTTest",
-            schema="TestSchema",
-            identifier="my_model",
-        )
+        with pytest.raises(ApproximateMatchError):
+            r.matches(
+                database="dbttest",
+                schema="testschema",
+                identifier="my_model",
+            )

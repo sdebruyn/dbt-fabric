@@ -37,14 +37,13 @@ class LivySessionResult:
 
 class LivySession:
     _POLLING_INTERVAL = 3  # seconds
+    _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
 
     def __init__(self, fabric_api_client: FabricApiClient) -> None:
         self._fabric_api_client = fabric_api_client
 
     def get_logs_url(self) -> str:
         return f"https://app.fabric.microsoft.com/workloads/de-ds/sparkmonitor/{self._fabric_api_client.get_lakehouse_id()}/{self._fabric_api_client.get_livy_session_id()}"
-
-    _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
 
     def wait_for_session_ready(self) -> None:
         start_time = time.time()
@@ -57,8 +56,8 @@ class LivySession:
             except (
                 requests.exceptions.ConnectionError,
                 requests.exceptions.Timeout,
+                requests.exceptions.ChunkedEncodingError,
                 json.JSONDecodeError,
-                requests.exceptions.RequestException,
             ) as e:
                 consecutive_errors += 1
                 if consecutive_errors >= self._MAX_CONSECUTIVE_TRANSIENT_ERRORS:

@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Any, Union
+from typing import Any
 
 from dbt.adapters.contracts.connection import AdapterResponse, Connection, ConnectionState
 from dbt.adapters.events.logging import AdapterLogger
@@ -37,7 +37,7 @@ class FabricSparkConnectionManager(BaseFabricConnectionManager):
         )
 
     @classmethod
-    def data_type_code_to_name(cls, type_code: Union[type, str]) -> str:
+    def data_type_code_to_name(cls, type_code: type | str) -> str:
         if isinstance(type_code, str):
             return type_code
         return type_code.__name__.upper()

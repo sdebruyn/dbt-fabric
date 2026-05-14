@@ -15,6 +15,14 @@ logger = logging.getLogger(__name__)
 _livy_session_thread_lock = threading.Lock()
 
 
+class FabricApiError(dbt_common.exceptions.DbtRuntimeError):
+    def __init__(self, method: str, url: str, status_code: int, response_text: str) -> None:
+        self.status_code = status_code
+        super().__init__(
+            f"{method} request to {url} failed with status code {status_code}: {response_text}"
+        )
+
+
 class FabricApiClient:
     _LIVY_API_VERSION = "2023-12-01"
     _WAREHOUSE_SNAPSHOT_TIMEOUT_SECONDS = 60 * 30  # 30 minutes
@@ -60,9 +68,7 @@ class FabricApiClient:
             return self._api_request(url, method, body)
 
         if not (200 <= response.status_code < 300):
-            raise dbt_common.exceptions.DbtRuntimeError(
-                f"{method} request to {url} failed with status code {response.status_code}: {response.text}"
-            )
+            raise FabricApiError(method, url, response.status_code, response.text)
         return response
 
     def _api_get(self, url: str) -> requests.Response:
@@ -331,12 +337,10 @@ class FabricApiClient:
                 response = self._api_post(url, body)
                 time.sleep(10)
                 return response.json()["id"]
-            except dbt_common.exceptions.DbtRuntimeError as e:
-                error_msg = str(e)
-                is_404 = "status code 404" in error_msg
-                is_5xx = any(f"status code {c}" in error_msg for c in range(500, 600))
+            except FabricApiError as e:
+                is_transient = e.status_code == 404 or 500 <= e.status_code < 600
 
-                if not (is_404 or is_5xx) or attempt == max_attempts:
+                if not is_transient or attempt == max_attempts:
                     raise
 
                 last_exception = e
