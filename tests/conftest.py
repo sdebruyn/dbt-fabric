@@ -253,6 +253,8 @@ def dbt_project_yml(project_root, project_config_update, adapter_type: str):
         project_config["models"] = {"+materialized": "materialized_view"}
 
     if project_config_update:
+        if isinstance(project_config_update, str):
+            project_config_update = yaml.safe_load(project_config_update)
         if isinstance(project_config_update, dict):
             _deep_merge(project_config, project_config_update)
         elif isinstance(project_config_update, str):

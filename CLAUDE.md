@@ -227,6 +227,12 @@ Update this section by adding entries as patterns emerge. Format: short descript
 
 - **Fabric DW: transient snapshot isolation errors in concurrent test runs** — When the full DW test suite runs in parallel, concurrent DDL from other test classes can cause snapshot isolation failures in `sys.tables`/`sys.views` metadata queries. This is not a code bug — it's infrastructure contention. Fix: retry `check_relation_types` calls with a short delay. See `tests/fabric/adapter/test_store_test_failures.py`.
 
+- **FabricSpark: hooks tests need setUp/check_hooks overrides** — dbt-tests-adapter's hook base classes (`BaseTestPrePost`, `BasePrePostRunHooks`) expect `seed_model.sql`/`seed_run.sql` data files and validate postgres-specific values. FabricSpark needs: (1) mixin classes (`SparkRunModelFile`, `SparkHooksChecks`) that override `setUp` to create hook tables inline with `STRING` type (not `TEXT`) and override `check_hooks` to validate `target_type == "fabricspark"`; (2) `SparkPrePostHooksFixtures` that replaces `VACUUM` statements and removes `"transaction": False` flags (Spark doesn't support `COMMIT`/`BEGIN`); (3) `get_ctx_vars` override to use backtick-quoted column names (Spark SQL treats double-quoted identifiers as string literals). See `tests/fabricspark/adapter/test_hooks.py` for the full pattern.
+
+- **FabricSpark: catalog relation types use lowercase** — FabricSpark's catalog returns relation types as lowercase enum values (`"table"`, `"materialized_view"`) rather than the uppercase SQL-standard names (`"BASE TABLE"`, `"MATERIALIZED VIEW"`) that other adapters use. When overriding `CatalogRelationTypes` for FabricSpark, use lowercase expected values.
+
+- **FabricSpark: base class `dbt_profile_target` override** — Some base test classes (e.g., `BaseSimpleCopyUppercase`) override `dbt_profile_target` with postgres-specific credentials. FabricSpark tests inheriting from these classes must re-override `dbt_profile_target` to pass through the conftest fixture: `@pytest.fixture(scope="class") def dbt_profile_target(self, dbt_profile_target): return dbt_profile_target`.
+
 ## Multi-agent development
 
 When implementing multiple test classes or fixing many failures at once, use parallel agents to speed up the work. The main conversation acts as coordinator.
