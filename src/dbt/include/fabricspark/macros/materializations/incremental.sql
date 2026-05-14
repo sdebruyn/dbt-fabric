@@ -1,13 +1,13 @@
 {% materialization incremental, adapter='fabricspark', supported_languages=['sql', 'python'] -%}
 
   {%- set raw_file_format = config.get('file_format', default='delta') -%}
-  {%- set raw_strategy = config.get('incremental_strategy') or 'append' -%}
+  {%- set unique_key = config.get('unique_key', none) -%}
+  {%- set raw_strategy = config.get('incremental_strategy') or ('merge' if unique_key else 'append') -%}
   {%- set grant_config = config.get('grants') -%}
 
   {%- set file_format = dbt_spark_validate_get_file_format(raw_file_format) -%}
   {%- set strategy = dbt_spark_validate_get_incremental_strategy(raw_strategy, file_format) -%}
 
-  {%- set unique_key = config.get('unique_key', none) -%}
   {%- set partition_by = config.get('partition_by', none) -%}
   {%- set language = model['language'] -%}
   {%- set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') -%}
@@ -65,3 +65,24 @@
   {{ return({'relations': [target_relation]}) }}
 
 {%- endmaterialization %}
+
+
+{% macro fabricspark__get_insert_into_sql(source_relation, target_relation) %}
+
+    {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
+    {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
+    insert into {{ target_relation.include(database=false) }}
+    select {{ dest_cols_csv }} from {{ source_relation }}
+
+{% endmacro %}
+
+
+{% macro fabricspark__get_insert_overwrite_sql(source_relation, target_relation, existing_relation) %}
+
+    {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
+    {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
+    insert overwrite table {{ target_relation.include(database=false) }}
+    {{ partition_cols(label="partition") }}
+    select {{ dest_cols_csv }} from {{ source_relation }}
+
+{% endmacro %}
