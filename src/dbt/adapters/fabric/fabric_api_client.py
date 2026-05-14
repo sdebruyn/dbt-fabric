@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import urllib.parse
@@ -8,6 +9,8 @@ import requests
 
 from dbt.adapters.fabric.base_credentials import BaseFabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
+
+logger = logging.getLogger(__name__)
 
 _livy_session_thread_lock = threading.Lock()
 
@@ -317,9 +320,35 @@ class FabricApiClient:
 
     def initialize_livy_session(self) -> str:
         url = self.get_livy_base_api_uri() + "/sessions"
-        response = self._api_post(url, {"name": self._credentials.livy_session_name, "ttl": "30s"})
-        time.sleep(10)  # give it a moment to initialize before we try to use it
-        return response.json()["id"]
+        body = {"name": self._credentials.livy_session_name, "ttl": "30s"}
+
+        max_attempts = 3
+        backoff_seconds = 5
+        last_exception: Exception | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = self._api_post(url, body)
+                time.sleep(10)
+                return response.json()["id"]
+            except dbt_common.exceptions.DbtRuntimeError as e:
+                error_msg = str(e)
+                is_404 = "status code 404" in error_msg
+                is_5xx = any(f"status code {c}" in error_msg for c in range(500, 600))
+
+                if not (is_404 or is_5xx) or attempt == max_attempts:
+                    raise
+
+                last_exception = e
+                wait_time = backoff_seconds * (2 ** (attempt - 1))
+                logger.warning(
+                    f"Livy session creation returned a transient error (attempt {attempt}/{max_attempts}), "
+                    f"retrying in {wait_time}s: {e}"
+                )
+                time.sleep(wait_time)
+
+        assert last_exception is not None
+        raise last_exception
 
     def get_livy_session_id(self) -> str:
         if self._livy_session_id is None:
