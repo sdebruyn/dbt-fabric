@@ -1,4 +1,5 @@
 from dbt.adapters.fabricspark.fabricspark_relation import (
+    FabricSparkIncludePolicy,
     FabricSparkQuotePolicy,
     FabricSparkRelation,
     FabricSparkRelationType,
@@ -23,8 +24,35 @@ class TestFabricSparkQuotePolicy:
         assert r.quote_policy.schema is True
 
 
+class TestFabricSparkIncludePolicy:
+    def test_database_included(self):
+        policy = FabricSparkIncludePolicy()
+        assert policy.database is True
+        assert policy.schema is True
+        assert policy.identifier is True
+
+    def test_relation_default_include_policy(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+        )
+        assert r.include_policy.database is True
+
+
 class TestFabricSparkRelationRendering:
-    def test_mixed_case_schema_backtick_quoted(self):
+    def test_renders_three_part_name(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+        )
+        rendered = str(r)
+        assert rendered == "`my_lakehouse`.`dbo`.my_model"
+
+    def test_mixed_case_preserved_in_rendering(self):
         r = FabricSparkRelation.create(
             database="DBTTest",
             schema="TestSchema",
@@ -32,6 +60,7 @@ class TestFabricSparkRelationRendering:
             type=FabricSparkRelationType.Table,
         )
         rendered = str(r)
+        assert "`DBTTest`" in rendered
         assert "`TestSchema`" in rendered
 
     def test_identifier_not_quoted_by_default(self):
@@ -44,6 +73,19 @@ class TestFabricSparkRelationRendering:
         rendered = str(r)
         assert "my_model" in rendered
         assert "`my_model`" not in rendered
+
+    def test_without_identifier_renders_database_and_schema(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+        )
+        without_id = r.without_identifier()
+        rendered = str(without_id)
+        assert "`my_lakehouse`" in rendered
+        assert "`dbo`" in rendered
+        assert "my_model" not in rendered
 
 
 class TestFabricSparkRelationCasePreservation:
