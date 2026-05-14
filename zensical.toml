@@ -18,6 +18,7 @@ nav = [
   { "Home" = [
     { "Overview" = "index.md" },
     { "Comparison with dbt-fabric" = "feature-comparison.md" },
+    { "Roadmap" = "roadmap.md" },
     { "Contributing" = "contributing.md" },
     { "License" = "license.md" },
   ] },
