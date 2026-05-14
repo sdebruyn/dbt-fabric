@@ -1,11 +1,16 @@
 import abc
-from typing import Type
+from typing import Any, Type
 
+from dbt.adapters.base import available
 from dbt.adapters.base.impl import PythonJobHelper
 from dbt.adapters.contracts.connection import AdapterResponse
+from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_livy_helper import FabricLivyHelper
 from dbt.adapters.fabric.fabric_livy_session import LivySubmissionResult
+from dbt.adapters.fabric.purview_sync import PurviewSync, extract_syncable_models
 from dbt.adapters.sql.impl import SQLAdapter
+
+logger = AdapterLogger("fabric")
 
 
 class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
@@ -30,3 +35,45 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
                 _message=submission_result.error_message, query_id=submission_result.run_id
             )
         return AdapterResponse(_message="OK", query_id=submission_result.run_id)
+
+    @available
+    def purview_sync(
+        self,
+        graph: Any,
+        results: Any = None,
+        sync_descriptions: bool = True,
+        sync_lineage: bool = True,
+        sync_metadata: bool = True,
+    ) -> str:
+        credentials = self.config.credentials
+        if not credentials.purview_endpoint:
+            logger.warning("Purview sync skipped: purview_endpoint not configured in profiles.yml")
+            return ""
+
+        client = self.connections.get_purview_client(credentials)
+        sync = PurviewSync(client)
+
+        if sync_metadata or sync_lineage:
+            client.ensure_type_definitions()
+
+        models = extract_syncable_models(graph, results)
+        if not models:
+            logger.info("Purview sync: no syncable models found")
+            return ""
+
+        logger.info(f"Purview sync: syncing {len(models)} models")
+        resolved = sync.resolve_entities(models)
+
+        if not resolved:
+            logger.warning("Purview sync: no models could be matched to Purview entities")
+            return ""
+
+        if sync_descriptions:
+            sync.push_descriptions(models, resolved)
+        if sync_metadata:
+            sync.push_business_metadata(models, resolved, results)
+        if sync_lineage:
+            sync.push_lineage(models, resolved)
+
+        logger.info("Purview sync completed")
+        return ""
