@@ -96,8 +96,18 @@ class PurviewClient:
 
         if response.status_code == 429:
             retry_after = int(response.headers.get("Retry-After", 5))
-            time.sleep(retry_after)
-            return self._api_request(url, method, body)
+            for attempt in range(10):
+                time.sleep(retry_after)
+                response = requests.request(
+                    method, url, json=body, headers=self._get_auth_headers()
+                )
+                if response.status_code != 429:
+                    break
+                retry_after = int(response.headers.get("Retry-After", 5))
+            else:
+                raise dbt_common.exceptions.DbtRuntimeError(
+                    f"Purview {method.upper()} {url} rate limited after 10 retries"
+                )
 
         if not (200 <= response.status_code < 300):
             raise dbt_common.exceptions.DbtRuntimeError(
@@ -143,6 +153,12 @@ class PurviewClient:
 
         if schema:
             results = self._run_search(url, base_filters, None)
+            if database:
+                filtered = [
+                    r for r in results if database.lower() in r.get("qualifiedName", "").lower()
+                ]
+                if filtered:
+                    return filtered
 
         return results
 
@@ -209,25 +225,31 @@ class PurviewClient:
 
         url = f"{self._endpoint}{_TYPEDEF_API}"
 
+        bm_ok = False
         try:
             self._api_post(url, _DBT_BUSINESS_METADATA_DEF)
+            bm_ok = True
         except dbt_common.exceptions.DbtRuntimeError:
             logger.debug("dbt_metadata business metadata type already exists or update failed")
             try:
                 self._api_put(url, _DBT_BUSINESS_METADATA_DEF)
+                bm_ok = True
             except dbt_common.exceptions.DbtRuntimeError:
                 logger.debug("dbt_metadata business metadata type update also failed, continuing")
 
+        entity_ok = False
         try:
             self._api_post(url, _DBT_TRANSFORMATION_TYPE_DEF)
+            entity_ok = True
         except dbt_common.exceptions.DbtRuntimeError:
             logger.debug("dbt_transformation entity type already exists or update failed")
             try:
                 self._api_put(url, _DBT_TRANSFORMATION_TYPE_DEF)
+                entity_ok = True
             except dbt_common.exceptions.DbtRuntimeError:
                 logger.debug("dbt_transformation entity type update also failed, continuing")
 
-        self._types_ensured = True
+        self._types_ensured = bm_ok and entity_ok
 
     def update_entity_description(
         self, guid: str, type_name: str, qualified_name: str, name: str, description: str
