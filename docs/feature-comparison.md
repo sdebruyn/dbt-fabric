@@ -91,6 +91,10 @@ Both adapters support Fabric [warehouse snapshots](https://learn.microsoft.com/f
 
 This adapter provides [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) compatibility macros that use Fabric's `OPENROWSET(BULK ...)` function to query Parquet, CSV, and JSONL files stored in Azure Blob Storage, ADLS, or OneLake. External sources are created as views wrapping OPENROWSET queries, so data is always fresh. See the [external tables guide](external-tables.md) for details.
 
+## [Catalog statistics](catalog-stats.md)
+
+When you run `dbt docs generate`, this adapter includes **approximate row counts** for every table in the catalog output. Microsoft's upstream adapter does not include any statistics — the dbt docs site shows no table size information. With this adapter, table sizes are visible out of the box, with no extra configuration.
+
 ## Better support for popular packages
 
 [dbt-utils](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) is already fully supported and more packages are being tested and added.
