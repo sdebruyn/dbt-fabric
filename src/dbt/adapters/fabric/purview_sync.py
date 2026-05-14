@@ -85,6 +85,7 @@ class PurviewSync:
 
             cache_key = _make_cache_key(database, schema, name)
             if cache_key in cache:
+                cache[unique_id] = cache[cache_key]
                 continue
 
             results = self._client.search_entities(name=name, schema=schema, database=database)
@@ -99,7 +100,9 @@ class PurviewSync:
                 entity = results[0]
                 for r in results:
                     qn = r.get("qualifiedName", "").lower()
-                    if schema.lower() in qn and database.lower() in qn:
+                    schema_match = not schema or schema.lower() in qn
+                    db_match = not database or database.lower() in qn
+                    if schema_match and db_match and (schema or database):
                         entity = r
                         break
                 logger.info(
@@ -237,7 +240,9 @@ class PurviewSync:
             for dep_id in dep_nodes:
                 dep_entity = resolved.get(dep_id)
                 if dep_entity is None:
-                    dep_entity = resolved.get(dep_id)
+                    parts = dep_id.split(".")
+                    if len(parts) >= 3:
+                        dep_entity = resolved.get(_make_cache_key(parts[-3], parts[-2], parts[-1]))
                 if dep_entity is not None:
                     upstream_guids.append(dep_entity["id"])
 
