@@ -138,6 +138,19 @@ class TestViewConstraintsColumnsEqualFabricSpark(
             "constraints_schema.yml": spark_model_schema_yml,
         }
 
+    @pytest.mark.skip("TODO: Delta Lake does not support NOT NULL constraints in CTAS")
+    def test__constraints_wrong_column_order(self, project):
+        pass
+
+    @pytest.mark.skip(
+        "TODO: Delta Lake does not support NOT NULL constraints in CTAS,"
+        " preventing data type mismatch detection"
+    )
+    def test__constraints_wrong_column_data_types(
+        self, project, string_type, int_type, schema_string_type, schema_int_type, data_types
+    ):
+        pass
+
 
 class TestIncrementalConstraintsColumnsEqualFabricSpark(
     FabricSparkConstraintsTypesMixin, BaseIncrementalConstraintsColumnsEqual
@@ -150,6 +163,19 @@ class TestIncrementalConstraintsColumnsEqualFabricSpark(
             "constraints_schema.yml": spark_model_schema_yml,
         }
 
+    @pytest.mark.skip("TODO: Delta Lake does not support NOT NULL constraints in CTAS")
+    def test__constraints_wrong_column_order(self, project):
+        pass
+
+    @pytest.mark.skip(
+        "TODO: Delta Lake does not support NOT NULL constraints in CTAS,"
+        " preventing data type mismatch detection"
+    )
+    def test__constraints_wrong_column_data_types(
+        self, project, string_type, int_type, schema_string_type, schema_int_type, data_types
+    ):
+        pass
+
 
 class TestTableConstraintsColumnsEqualFabricSpark(
     FabricSparkConstraintsTypesMixin, BaseTableConstraintsColumnsEqual
@@ -161,6 +187,19 @@ class TestTableConstraintsColumnsEqualFabricSpark(
             "my_model_wrong_name.sql": my_model_wrong_name_sql,
             "constraints_schema.yml": spark_model_schema_yml,
         }
+
+    @pytest.mark.skip("TODO: Delta Lake does not support NOT NULL constraints in CTAS")
+    def test__constraints_wrong_column_order(self, project):
+        pass
+
+    @pytest.mark.skip(
+        "TODO: Delta Lake does not support NOT NULL constraints in CTAS,"
+        " preventing data type mismatch detection"
+    )
+    def test__constraints_wrong_column_data_types(
+        self, project, string_type, int_type, schema_string_type, schema_int_type, data_types
+    ):
+        pass
 
 
 @pytest.mark.skip(
