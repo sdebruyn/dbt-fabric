@@ -239,6 +239,8 @@ Update this section by adding entries as patterns emerge. Format: short descript
 
 - **FabricSpark: `BaseSimpleSeedEnabledViaConfig` tests conflict in same class** — The three test methods (`test_simple_seed_with_disabled`, `test_simple_seed_selection`, `test_simple_seed_exclude`) assume a clean schema between each test (via `clear_test_schema` which drops and recreates the schema). FabricSpark can't drop schemas this way, and the `clear_test_schema` fixture is overridden to no-op. Fix: split into three test classes with one non-skipped test each, same pattern as the Fabric T-SQL adapter.
 
+- **FabricSpark: `store_failures_as="view"` is invalid** — dbt's `store_test_failures_tests` base classes use `store_failures_as="view"` in test SQL configs and `schema.yml` fixtures, then verify stored results are views via `check_relation_types`. Since `FabricSparkRelationType` has no `View` type, this causes `invalid value 'view'` errors at runtime. Fix: override `tests`, `models` (for `schema.yml`), `project_config_update`, and test methods to replace all `store_failures_as="view"` with `store_failures_as="table"` and update expected `TestResult` types from `"view"` to `"table"`. See `tests/fabricspark/adapter/test_store_test_failures.py`.
+
 ## Multi-agent development
 
 When implementing multiple test classes or fixing many failures at once, use parallel agents to speed up the work. The main conversation acts as coordinator.
