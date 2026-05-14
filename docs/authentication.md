@@ -2,6 +2,10 @@
 
 The dbt-fabric-samdebruyn adapter supports a variety of authentication methods so you can connect to Microsoft Fabric from any environment. This guide walks through each method, explains when to use it, and provides ready-to-use `profiles.yml` examples.
 
+!!! info "Works with both adapter types"
+
+    All authentication methods on this page work with both `type: fabric` (Data Warehouse) and `type: fabricspark` (Lakehouse). The examples below use `type: fabric` -- substitute `type: fabricspark` when using the [Lakehouse adapter](lakehouse.md). Note that the FabricSpark adapter does not use the `host` option; it resolves the Livy endpoint from `workspace` or `workspace_id` automatically.
+
 !!! tip "Quick recommendation"
 
     | Scenario | Recommended method |

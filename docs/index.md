@@ -4,5 +4,5 @@
 ![dbt logo for dark mode](https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/dbt-signature_tm_light.png#gh-dark-mode-only)
 ![fabric logo](https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png)
 
---8<-- "README.md:10:18"
---8<-- "README.md:22"
+--8<-- "README.md:11:19"
+--8<-- "README.md:44"

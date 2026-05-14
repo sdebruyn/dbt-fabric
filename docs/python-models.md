@@ -1,8 +1,17 @@
 # Python models
 
-The dbt-fabric-samdebruyn adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models), allowing you to use PySpark DataFrames to transform data in your Fabric Data Warehouse. This is a feature exclusive to this adapter — Microsoft's upstream dbt-fabric does not support it.
+The dbt-fabric-samdebruyn adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models), allowing you to use PySpark DataFrames to transform data in Microsoft Fabric. This is a feature exclusive to this adapter -- Microsoft's upstream dbt-fabric does not support it.
 
 Python models are useful when you need transformations that are difficult or impossible to express in SQL, such as machine learning inference, complex string parsing, or calling external APIs.
+
+!!! info "Data Warehouse vs Lakehouse"
+
+    Python models work on both adapter types, but the execution model differs:
+
+    - **`type: fabric` (Data Warehouse):** Python models use Livy to execute PySpark code that reads from and writes to the Data Warehouse via the [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector?WT.mc_id=MVP_310840). You need both a [`lakehouse`](configuration.md#lakehouse) (for the Livy session) and a [`database`](configuration.md#database) (the DW target).
+    - **`type: fabricspark` (Lakehouse):** Python models run on the same Livy session that handles all SQL models. The [`database`](configuration.md#database) field IS the lakehouse. No separate `lakehouse` config is needed.
+
+    The rest of this page describes the Data Warehouse workflow. For Lakehouse-specific details, see the [Lakehouse guide](lakehouse.md).
 
 ---
 

@@ -3,6 +3,12 @@
 This adapter has all the features of [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric), plus some additional features.
 The following features are exclusive to dbt-fabric-samdebruyn:
 
+## Fabric Lakehouse (Spark SQL) support
+
+This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft's dbt-fabric only supports Data Warehouse.
+
+The Lakehouse adapter (`type: fabricspark`) uses Spark SQL via Livy sessions and supports tables, materialized lake views, and Python models natively. See the [Lakehouse guide](lakehouse.md) for details.
+
 ## dbt Core 1.11 support
 
 This adapter is compatible with dbt Core 1.11, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.

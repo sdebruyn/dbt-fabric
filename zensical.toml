@@ -30,6 +30,7 @@ nav = [
   ] },
   { "Feature guides" = [
     { "Authentication" = "authentication.md" },
+    { "Lakehouse (Spark SQL)" = "lakehouse.md" },
     { "CLUSTER BY" = "cluster-by.md" },
     { "Python models" = "python-models.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
