@@ -1,5 +1,11 @@
 import pytest
 
+from dbt.tests.adapter.constraints.fixtures import (
+    my_model_incremental_wrong_name_sql,
+    my_model_incremental_wrong_order_sql,
+    my_model_wrong_name_sql,
+    my_model_wrong_order_sql,
+)
 from dbt.tests.adapter.constraints.test_constraints import (
     BaseConstraintsColumnsEqual,
     BaseConstraintsRollback,
@@ -9,30 +15,87 @@ from dbt.tests.adapter.constraints.test_constraints import (
     BaseTableConstraintsColumnsEqual,
 )
 
-my_model_table_wrong_order_sql = """
-{{
-  config(
-    materialized = "table"
-  )
-}}
-
-select
-  'blue' as color,
-  1 as id,
-  '2019-01-01' as date_day
-"""
-
-my_model_table_wrong_name_sql = """
-{{
-  config(
-    materialized = "table"
-  )
-}}
-
-select
-  'blue' as color,
-  1 as error,
-  '2019-01-01' as date_day
+spark_model_schema_yml = """
+version: 2
+models:
+  - name: my_model
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        data_type: int
+        description: hello
+        constraints:
+          - type: not_null
+          - type: primary_key
+          - type: check
+            expression: (id > 0)
+          - type: check
+            expression: id >= 1
+        data_tests:
+          - unique
+      - name: color
+        data_type: string
+      - name: date_day
+        data_type: string
+  - name: my_model_error
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        data_type: int
+        description: hello
+        constraints:
+          - type: not_null
+          - type: primary_key
+          - type: check
+            expression: (id > 0)
+        data_tests:
+          - unique
+      - name: color
+        data_type: string
+      - name: date_day
+        data_type: string
+  - name: my_model_wrong_order
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        data_type: int
+        description: hello
+        constraints:
+          - type: not_null
+          - type: primary_key
+          - type: check
+            expression: (id > 0)
+        data_tests:
+          - unique
+      - name: color
+        data_type: string
+      - name: date_day
+        data_type: string
+  - name: my_model_wrong_name
+    config:
+      contract:
+        enforced: true
+    columns:
+      - name: id
+        data_type: int
+        description: hello
+        constraints:
+          - type: not_null
+          - type: primary_key
+          - type: check
+            expression: (id > 0)
+        data_tests:
+          - unique
+      - name: color
+        data_type: string
+      - name: date_day
+        data_type: string
 """
 
 
@@ -69,25 +132,35 @@ class TestViewConstraintsColumnsEqualFabricSpark(
 ):
     @pytest.fixture(scope="class")
     def models(self):
-        from dbt.tests.adapter.constraints.fixtures import model_schema_yml
-
         return {
-            "my_model_wrong_order.sql": my_model_table_wrong_order_sql,
-            "my_model_wrong_name.sql": my_model_table_wrong_name_sql,
-            "constraints_schema.yml": model_schema_yml,
+            "my_model_wrong_order.sql": my_model_wrong_order_sql,
+            "my_model_wrong_name.sql": my_model_wrong_name_sql,
+            "constraints_schema.yml": spark_model_schema_yml,
         }
 
 
 class TestIncrementalConstraintsColumnsEqualFabricSpark(
     FabricSparkConstraintsTypesMixin, BaseIncrementalConstraintsColumnsEqual
 ):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model_wrong_order.sql": my_model_incremental_wrong_order_sql,
+            "my_model_wrong_name.sql": my_model_incremental_wrong_name_sql,
+            "constraints_schema.yml": spark_model_schema_yml,
+        }
 
 
 class TestTableConstraintsColumnsEqualFabricSpark(
     FabricSparkConstraintsTypesMixin, BaseTableConstraintsColumnsEqual
 ):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model_wrong_order.sql": my_model_wrong_order_sql,
+            "my_model_wrong_name.sql": my_model_wrong_name_sql,
+            "constraints_schema.yml": spark_model_schema_yml,
+        }
 
 
 @pytest.mark.skip(
