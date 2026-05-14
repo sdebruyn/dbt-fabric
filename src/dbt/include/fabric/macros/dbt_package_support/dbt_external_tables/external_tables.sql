@@ -1,0 +1,216 @@
+{#
+    Fabric-specific macros for dbt-external-tables compatibility.
+
+    Unlike Synapse, Fabric Data Warehouse does not support CREATE EXTERNAL TABLE.
+    Instead, external data access uses OPENROWSET(BULK ...). These macros create
+    views wrapping OPENROWSET queries, so external sources are queryable as
+    regular relations. OPENROWSET reads live data on each query, so no refresh
+    is needed.
+
+    Supported formats: PARQUET, CSV, JSONL.
+
+    Users must add dbt_fabric to their dispatch search order:
+
+        dispatch:
+          - macro_namespace: dbt_external_tables
+            search_order: ['my_project', 'dbt_fabric', 'dbt_external_tables']
+
+    Source configuration example:
+
+        sources:
+          - name: my_external
+            schema: dbo
+            tables:
+              - name: sales_parquet
+                external:
+                  location: "https://onelake.dfs.fabric.microsoft.com/.../sales.parquet"
+                  file_format: parquet
+                columns:
+                  - name: id
+                    data_type: int
+                  - name: amount
+                    data_type: "decimal(10,2)"
+
+    CSV-specific options go in external.options:
+
+        external:
+          location: "https://.../data.csv"
+          file_format: csv
+          options:
+            header_row: "true"
+            fieldterminator: ","
+            parser_version: "2.0"
+
+#}
+
+
+{% macro fabric__create_external_table(source_node) %}
+
+    {%- set columns = source_node.columns.values() -%}
+    {%- set external = source_node.external -%}
+    {%- set location = external.location -%}
+
+    {%- if not location -%}
+        {{ exceptions.raise_compiler_error(
+            "External source " ~ source_node.name ~ " is missing required 'location' property"
+        ) }}
+    {%- endif -%}
+
+    {%- set file_format = fabric__resolve_file_format(external) -%}
+    {%- set options = external.get('options', {}) -%}
+
+    {%- set openrowset_sql = fabric__build_openrowset(location, file_format, options, columns) -%}
+
+    {%- set ddl %}
+{{ get_use_database_sql(source_node.database) }}
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '{{ source_node.schema }}')
+BEGIN
+EXEC('CREATE SCHEMA [{{ source_node.schema }}]')
+END;
+
+EXEC('
+CREATE VIEW {{ source(source_node.source_name, source_node.name) | replace("'", "''") }} AS
+SELECT *
+FROM {{ openrowset_sql | replace("'", "''") }}
+');
+    {% endset -%}
+
+    {{ return(ddl) }}
+
+{% endmacro %}
+
+
+{% macro fabric__resolve_file_format(external) %}
+    {%- set file_format = external.get('file_format', '') | lower -%}
+
+    {%- if file_format -%}
+        {%- if file_format in ['parquet', 'csv', 'jsonl'] -%}
+            {{ return(file_format | upper) }}
+        {%- else -%}
+            {{ exceptions.raise_compiler_error(
+                "Unsupported file_format '" ~ file_format ~ "'. "
+                "Fabric Data Warehouse supports: parquet, csv, jsonl"
+            ) }}
+        {%- endif -%}
+    {%- endif -%}
+
+    {%- set location = external.location | lower -%}
+    {%- if location.endswith('.parquet') -%}
+        {{ return('PARQUET') }}
+    {%- elif location.endswith('.csv') or location.endswith('.tsv') -%}
+        {{ return('CSV') }}
+    {%- elif location.endswith('.jsonl') or location.endswith('.ldjson') or location.endswith('.ndjson') -%}
+        {{ return('JSONL') }}
+    {%- else -%}
+        {{ return('') }}
+    {%- endif -%}
+{% endmacro %}
+
+
+{% macro fabric__build_openrowset(location, file_format, options, columns) %}
+    {%- set parts = [] -%}
+
+    {%- do parts.append("OPENROWSET(") -%}
+    {%- do parts.append("    BULK '" ~ location ~ "'") -%}
+
+    {%- if file_format -%}
+        {%- do parts.append("    , FORMAT = '" ~ file_format ~ "'") -%}
+    {%- endif -%}
+
+    {#- CSV-specific and other OPENROWSET options -#}
+    {%- set valid_options = [
+        'header_row', 'fieldterminator', 'rowterminator', 'fieldquote',
+        'escapechar', 'parser_version', 'firstrow', 'codepage',
+        'data_source', 'rows_per_batch', 'maxerrors', 'datafiletype'
+    ] -%}
+
+    {%- for key, value in options.items() if value is not none -%}
+        {%- set opt_key = key | lower -%}
+        {%- if opt_key in valid_options -%}
+            {%- if opt_key in ['header_row'] and value | lower in ['true', 'false'] -%}
+                {%- do parts.append("    , " ~ opt_key | upper ~ " = " ~ value) -%}
+            {%- elif opt_key in ['firstrow', 'rows_per_batch', 'maxerrors'] -%}
+                {%- do parts.append("    , " ~ opt_key | upper ~ " = " ~ value) -%}
+            {%- elif opt_key == 'data_source' -%}
+                {%- do parts.append("    , DATA_SOURCE = " ~ value) -%}
+            {%- else -%}
+                {%- do parts.append("    , " ~ opt_key | upper ~ " = '" ~ value ~ "'") -%}
+            {%- endif -%}
+        {%- endif -%}
+    {%- endfor -%}
+
+    {%- do parts.append(")") -%}
+
+    {#- WITH clause for explicit column schema -#}
+    {%- if columns | length > 0 -%}
+        {%- set col_defs = [] -%}
+        {%- for column in columns if column.data_type -%}
+            {%- do col_defs.append("    " ~ adapter.quote(column.name) ~ " " ~ column.data_type) -%}
+        {%- endfor -%}
+
+        {%- if col_defs | length > 0 -%}
+            {%- do parts.append("WITH (") -%}
+            {%- do parts.append(col_defs | join(",\n")) -%}
+            {%- do parts.append(")") -%}
+        {%- endif -%}
+    {%- endif -%}
+
+    {{ return(parts | join("\n")) }}
+{% endmacro %}
+
+
+{% macro fabric__dropif(node) %}
+
+    {%- set ddl %}
+{{ get_use_database_sql(source(node.source_name, node.name).database) }}
+EXEC('DROP VIEW IF EXISTS {{ source(node.source_name, node.name) | replace("'", "''") }};');
+    {% endset -%}
+
+    {{ return(ddl) }}
+
+{% endmacro %}
+
+
+{% macro fabric__get_external_build_plan(source_node) %}
+
+    {% set build_plan = [] %}
+
+    {% set old_relation = adapter.get_relation(
+        database = source_node.database,
+        schema = source_node.schema,
+        identifier = source_node.identifier
+    ) %}
+
+    {% set create_or_replace = (old_relation is none or var('ext_full_refresh', false)) %}
+
+    {% if create_or_replace %}
+        {% set build_plan = build_plan + [
+            dbt_external_tables.dropif(source_node),
+            dbt_external_tables.create_external_table(source_node)
+        ] %}
+    {% else %}
+        {% set build_plan = build_plan + dbt_external_tables.refresh_external_table(source_node) %}
+    {% endif %}
+
+    {% do return(build_plan) %}
+
+{% endmacro %}
+
+
+{% macro fabric__create_external_schema(source_node) %}
+    {%- set ddl %}
+{{ get_use_database_sql(source_node.database) }}
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '{{ source_node.schema }}')
+BEGIN
+EXEC('CREATE SCHEMA [{{ source_node.schema }}]')
+END
+    {% endset -%}
+
+    {{ return(ddl) }}
+{% endmacro %}
+
+
+{% macro fabric__refresh_external_table(source_node) %}
+    {# OPENROWSET reads live data, no refresh needed #}
+    {% do return([]) %}
+{% endmacro %}
