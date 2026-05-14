@@ -60,6 +60,7 @@
     {%- set options = external.get('options', {}) -%}
 
     {%- set openrowset_sql = fabric__build_openrowset(location, file_format, options, columns) -%}
+    {%- set view_relation = source(source_node.source_name, source_node.name).include(database=False) -%}
 
     {%- set ddl %}
 {{ get_use_database_sql(source_node.database) }}
@@ -69,7 +70,7 @@ EXEC('CREATE SCHEMA [{{ source_node.schema }}]')
 END;
 
 EXEC('
-CREATE VIEW {{ source(source_node.source_name, source_node.name) | replace("'", "''") }} AS
+CREATE VIEW {{ view_relation | replace("'", "''") }} AS
 SELECT *
 FROM {{ openrowset_sql | replace("'", "''") }}
 ');
@@ -109,9 +110,10 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 
 {% macro fabric__build_openrowset(location, file_format, options, columns) %}
     {%- set parts = [] -%}
+    {%- set escaped_location = location | replace("'", "''") -%}
 
     {%- do parts.append("OPENROWSET(") -%}
-    {%- do parts.append("    BULK '" ~ location ~ "'") -%}
+    {%- do parts.append("    BULK '" ~ escaped_location ~ "'") -%}
 
     {%- if file_format -%}
         {%- do parts.append("    , FORMAT = '" ~ file_format ~ "'") -%}
@@ -126,15 +128,16 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 
     {%- for key, value in options.items() if value is not none -%}
         {%- set opt_key = key | lower -%}
+        {%- set escaped_value = (value | string).replace("'", "''") -%}
         {%- if opt_key in valid_options -%}
             {%- if opt_key in ['header_row'] and value | lower in ['true', 'false'] -%}
                 {%- do parts.append("    , " ~ opt_key | upper ~ " = " ~ value) -%}
             {%- elif opt_key in ['firstrow', 'rows_per_batch', 'maxerrors'] -%}
                 {%- do parts.append("    , " ~ opt_key | upper ~ " = " ~ value) -%}
             {%- elif opt_key == 'data_source' -%}
-                {%- do parts.append("    , DATA_SOURCE = " ~ value) -%}
+                {%- do parts.append("    , DATA_SOURCE = '" ~ escaped_value ~ "'") -%}
             {%- else -%}
-                {%- do parts.append("    , " ~ opt_key | upper ~ " = '" ~ value ~ "'") -%}
+                {%- do parts.append("    , " ~ opt_key | upper ~ " = '" ~ escaped_value ~ "'") -%}
             {%- endif -%}
         {%- endif -%}
     {%- endfor -%}
@@ -161,9 +164,12 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 
 {% macro fabric__dropif(node) %}
 
+    {%- set source_relation = source(node.source_name, node.name) -%}
+    {%- set view_relation = source_relation.include(database=False) -%}
+
     {%- set ddl %}
-{{ get_use_database_sql(source(node.source_name, node.name).database) }}
-EXEC('DROP VIEW IF EXISTS {{ source(node.source_name, node.name) | replace("'", "''") }};');
+{{ get_use_database_sql(source_relation.database) }}
+EXEC('DROP VIEW IF EXISTS {{ view_relation | replace("'", "''") }};');
     {% endset -%}
 
     {{ return(ddl) }}

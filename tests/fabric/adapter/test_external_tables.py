@@ -67,12 +67,31 @@ macro_build_openrowset_csv_all_options = """
         'fieldterminator': ',',
         'rowterminator': '0x0a',
         'parser_version': '2.0',
-        'firstrow': '2'
+        'firstrow': '2',
+        'data_source': 'my_source'
     } %}
     {% set result = fabric__build_openrowset(location, 'CSV', options, []) %}
     {{ log("OPENROWSET_CSV_ALL: " ~ result, info=True) }}
 {% endmacro %}
 """
+
+macro_build_openrowset_escaping = """
+{% macro test_build_openrowset_escaping() %}
+    {% set location = "https://storage.blob.core.windows.net/container/it's data.parquet" %}
+    {% set options = {'fieldterminator': "it's a delimiter"} %}
+    {% set result = fabric__build_openrowset(location, 'CSV', options, []) %}
+    {{ log("OPENROWSET_ESCAPE: " ~ result, info=True) }}
+{% endmacro %}
+"""
+
+
+def _find_log_output(capsys, prefix):
+    """Find a log line in captured stdout by prefix and return the rest of the line."""
+    captured = capsys.readouterr()
+    for line in captured.out.splitlines():
+        if prefix in line:
+            return line[line.index(prefix) + len(prefix) :].strip()
+    return None
 
 
 class TestBuildOpenrowsetMacros:
@@ -87,19 +106,52 @@ class TestBuildOpenrowsetMacros:
             "test_build_openrowset_csv.sql": macro_build_openrowset_csv_with_options,
             "test_build_openrowset_jsonl.sql": macro_build_openrowset_jsonl,
             "test_build_openrowset_csv_all_options.sql": macro_build_openrowset_csv_all_options,
+            "test_build_openrowset_escaping.sql": macro_build_openrowset_escaping,
         }
 
-    def test_build_openrowset_parquet(self, project):
+    def test_build_openrowset_parquet(self, project, capsys):
         run_dbt(["run-operation", "test_build_openrowset_parquet"])
+        output = _find_log_output(capsys, "OPENROWSET_RESULT: ")
+        assert output is not None, "Expected OPENROWSET_RESULT in log output"
+        assert "OPENROWSET(" in output
+        assert "BULK 'https://storage.blob.core.windows.net/container/data.parquet'" in output
+        assert "FORMAT = 'PARQUET'" in output
 
-    def test_build_openrowset_csv(self, project):
+    def test_build_openrowset_csv(self, project, capsys):
         run_dbt(["run-operation", "test_build_openrowset_csv"])
+        output = _find_log_output(capsys, "OPENROWSET_CSV_RESULT: ")
+        assert output is not None, "Expected OPENROWSET_CSV_RESULT in log output"
+        assert "OPENROWSET(" in output
+        assert "FORMAT = 'CSV'" in output
+        assert "HEADER_ROW = true" in output
+        assert "FIELDTERMINATOR = ','" in output
 
-    def test_build_openrowset_jsonl(self, project):
+    def test_build_openrowset_jsonl(self, project, capsys):
         run_dbt(["run-operation", "test_build_openrowset_jsonl"])
+        output = _find_log_output(capsys, "OPENROWSET_JSONL_RESULT: ")
+        assert output is not None, "Expected OPENROWSET_JSONL_RESULT in log output"
+        assert "OPENROWSET(" in output
+        assert "FORMAT = 'JSONL'" in output
 
-    def test_build_openrowset_csv_all_options(self, project):
+    def test_build_openrowset_csv_all_options(self, project, capsys):
         run_dbt(["run-operation", "test_build_openrowset_csv_all_options"])
+        output = _find_log_output(capsys, "OPENROWSET_CSV_ALL: ")
+        assert output is not None, "Expected OPENROWSET_CSV_ALL in log output"
+        assert "OPENROWSET(" in output
+        assert "HEADER_ROW = true" in output
+        assert "FIELDTERMINATOR = ','" in output
+        assert "ROWTERMINATOR = '0x0a'" in output
+        assert "PARSER_VERSION = '2.0'" in output
+        assert "FIRSTROW = 2" in output
+        assert "DATA_SOURCE = 'my_source'" in output
+
+    def test_build_openrowset_escaping(self, project, capsys):
+        run_dbt(["run-operation", "test_build_openrowset_escaping"])
+        output = _find_log_output(capsys, "OPENROWSET_ESCAPE: ")
+        assert output is not None, "Expected OPENROWSET_ESCAPE in log output"
+        assert "OPENROWSET(" in output
+        assert "it''s data.parquet'" in output
+        assert "FIELDTERMINATOR = 'it''s a delimiter'" in output
 
 
 class TestResolveFileFormatMacro:
@@ -116,14 +168,26 @@ class TestResolveFileFormatMacro:
             "test_resolve_format_explicit.sql": macro_resolve_file_format_explicit,
         }
 
-    def test_resolve_format_parquet(self, project):
+    def test_resolve_format_parquet(self, project, capsys):
         run_dbt(["run-operation", "test_resolve_format_parquet"])
+        output = _find_log_output(capsys, "FORMAT_PARQUET: ")
+        assert output is not None, "Expected FORMAT_PARQUET in log output"
+        assert output.strip() == "PARQUET"
 
-    def test_resolve_format_csv(self, project):
+    def test_resolve_format_csv(self, project, capsys):
         run_dbt(["run-operation", "test_resolve_format_csv"])
+        output = _find_log_output(capsys, "FORMAT_CSV: ")
+        assert output is not None, "Expected FORMAT_CSV in log output"
+        assert output.strip() == "CSV"
 
-    def test_resolve_format_jsonl(self, project):
+    def test_resolve_format_jsonl(self, project, capsys):
         run_dbt(["run-operation", "test_resolve_format_jsonl"])
+        output = _find_log_output(capsys, "FORMAT_JSONL: ")
+        assert output is not None, "Expected FORMAT_JSONL in log output"
+        assert output.strip() == "JSONL"
 
-    def test_resolve_format_explicit(self, project):
+    def test_resolve_format_explicit(self, project, capsys):
         run_dbt(["run-operation", "test_resolve_format_explicit"])
+        output = _find_log_output(capsys, "FORMAT_EXPLICIT: ")
+        assert output is not None, "Expected FORMAT_EXPLICIT in log output"
+        assert output.strip() == "PARQUET"
