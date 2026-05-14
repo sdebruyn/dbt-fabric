@@ -54,7 +54,7 @@ my_project:
     fabricspark:
       type: fabricspark
       workspace_name: my_workspace
-      lakehouse: my_lakehouse
+      database: my_lakehouse
       schema: dbt
 ```
 
@@ -88,7 +88,7 @@ T-SQL models can reference Spark-materialized tables via cross-database queries.
 
 Split into two dbt projects (`project-spark` and `project-fabric`), each with its own adapter. Use [dbt-loom](https://github.com/nicholasyager/dbt-loom) (open source, requires dbt-core >= 1.6) for cross-project references:
 
-```python title="project-fabric/dbt_loom.config.yml"
+```yaml title="project-fabric/dbt_loom.config.yml"
 manifests:
   - name: project_spark
     type: file
@@ -268,7 +268,7 @@ Compatible external consumers: Snowflake, DuckDB, PyIceberg, Spark with Iceberg 
 
 ### Proposed approach
 
-There are two integration directions, each serving a different use case:
+There are three integration directions, each serving a different use case:
 
 #### Direction 1: Consume mirrored catalogs as dbt sources
 
@@ -334,6 +334,6 @@ The adapter would use the IRC endpoint to list available tables and resolve thei
 
 **Phase 3: Direct catalog API integration (future)**
 
-1. **IRC client** — Python client for the OneLake Iceberg REST Catalog API (follows the `PurviewClient` pattern)
+1. **IRC client** — Python client for the OneLake Iceberg REST Catalog API (follows the `fabric_api_client.py` pattern)
 2. **Source resolution** — Resolve source table metadata (schema, columns) from the IRC endpoint at compile time
 3. **Cross-workspace refs** — Enable `ref()` to resolve tables in other Fabric workspaces via the catalog API
