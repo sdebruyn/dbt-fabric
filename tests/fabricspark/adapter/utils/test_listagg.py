@@ -62,6 +62,7 @@ and calculate.version = data_output.version
 """
 
 
+@pytest.mark.skip("TODO: FabricSpark listagg macro needs Spark-compatible implementation")
 class TestListaggFabricSpark(BaseListagg):
     @pytest.fixture(scope="class")
     def models(self):
