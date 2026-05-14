@@ -18,6 +18,7 @@ nav = [
   { "Home" = [
     { "Overview" = "index.md" },
     { "Comparison with dbt-fabric" = "feature-comparison.md" },
+    { "Roadmap" = "roadmap.md" },
     { "Contributing" = "contributing.md" },
     { "License" = "license.md" },
   ] },
@@ -30,6 +31,7 @@ nav = [
     { "Authentication" = "authentication.md" },
     { "Catalog statistics" = "catalog-stats.md" },
     { "External tables" = "external-tables.md" },
+    { "Purview integration" = "purview-integration.md" },
     { "Python models" = "python-models.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
   ] },

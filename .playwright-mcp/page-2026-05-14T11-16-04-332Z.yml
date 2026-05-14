@@ -1,0 +1,535 @@
+- generic [active] [ref=e1]:
+  - generic "Navigation"
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: http://127.0.0.1:8000/feature-comparison/#comparison-between-dbt-fabric-and-dbt-fabric-samdebruyn
+  - banner [ref=e3]:
+    - navigation "Header" [ref=e4]:
+      - generic "Navigation" [ref=e5] [cursor=pointer]:
+        - img [ref=e6]
+      - generic [ref=e9]:
+        - generic [ref=e11]: dbt-fabric-samdebruyn
+        - generic:
+          - generic: Comparison between dbt-fabric and dbt-fabric-samdebruyn
+      - generic [ref=e12]:
+        - radio "Switch to dark mode"
+        - generic "Switch to dark mode" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - radio "Switch to light mode"
+      - dialog "Search" [ref=e17]:
+        - button "Search ⌘K" [ref=e18] [cursor=pointer]
+      - link "sdebruyn/dbt-fabric v1.11.2 9 2" [ref=e20] [cursor=pointer]:
+        - /url: https://github.com/sdebruyn/dbt-fabric
+        - img [ref=e22]
+        - generic [ref=e24]:
+          - text: sdebruyn/dbt-fabric
+          - list [ref=e25]:
+            - listitem [ref=e26]: v1.11.2
+            - listitem [ref=e27]: "9"
+            - listitem [ref=e28]: "2"
+  - generic [ref=e29]:
+    - main [ref=e30]:
+      - generic [ref=e31]:
+        - navigation "Navigation" [ref=e35]:
+          - generic [ref=e36]:
+            - link "dbt-fabric-samdebruyn" [ref=e37] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/
+              - img [ref=e38]
+            - text: dbt-fabric-samdebruyn
+          - link "sdebruyn/dbt-fabric v1.11.2 9 2" [ref=e42] [cursor=pointer]:
+            - /url: https://github.com/sdebruyn/dbt-fabric
+            - img [ref=e44]
+            - generic [ref=e46]:
+              - text: sdebruyn/dbt-fabric
+              - list [ref=e47]:
+                - listitem [ref=e48]: v1.11.2
+                - listitem [ref=e49]: "9"
+                - listitem [ref=e50]: "2"
+          - list [ref=e51]:
+            - listitem [ref=e52]:
+              - generic [ref=e54] [cursor=pointer]: Home
+              - navigation "Home" [ref=e56]:
+                - list [ref=e57]:
+                  - listitem [ref=e58]:
+                    - link "Overview" [ref=e59] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/
+                      - generic [ref=e60]: Overview
+                  - listitem [ref=e61]:
+                    - link "Comparison with dbt-fabric" [ref=e62] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/feature-comparison/
+                      - generic [ref=e63]: Comparison with dbt-fabric
+                  - listitem [ref=e64]:
+                    - link "Contributing" [ref=e65] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/contributing/
+                      - generic [ref=e66]: Contributing
+                  - listitem [ref=e67]:
+                    - link "License" [ref=e68] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/license/
+                      - generic [ref=e69]: License
+            - listitem [ref=e70]:
+              - generic [ref=e72] [cursor=pointer]: Installation & configuration
+            - listitem [ref=e74]:
+              - generic [ref=e76] [cursor=pointer]: Feature guides
+        - navigation "On this page" [ref=e81]:
+          - generic [ref=e82]: On this page
+          - list [ref=e83]:
+            - listitem [ref=e84]:
+              - link "dbt Core 1.11 support" [ref=e85] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#dbt-core-111-support
+                - generic [ref=e86]: dbt Core 1.11 support
+            - listitem [ref=e87]:
+              - link "Functions in dbt" [ref=e88] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#functions-in-dbt
+                - generic [ref=e89]: Functions in dbt
+            - listitem [ref=e90]:
+              - link "Support for Python models" [ref=e91] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#support-for-python-models
+                - generic [ref=e92]: Support for Python models
+            - listitem [ref=e93]:
+              - link "Automatically find the host name of your Fabric Workspace" [ref=e94] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#automatically-find-the-host-name-of-your-fabric-workspace
+                - generic [ref=e95]: Automatically find the host name of your Fabric Workspace
+            - listitem [ref=e96]:
+              - link "Extended support for authentication methods" [ref=e97] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#extended-support-for-authentication-methods
+                - generic [ref=e98]: Extended support for authentication methods
+            - listitem [ref=e99]:
+              - link "MERGE in incremental and microbatch models" [ref=e100] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#merge-in-incremental-and-microbatch-models
+                - generic [ref=e101]: MERGE in incremental and microbatch models
+            - listitem [ref=e102]:
+              - link "Better support for warehouse snapshots" [ref=e103] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#better-support-for-warehouse-snapshots
+                - generic [ref=e104]: Better support for warehouse snapshots
+            - listitem [ref=e105]:
+              - link "Support for dbt-external-tables" [ref=e106] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#support-for-dbt-external-tables
+                - generic [ref=e107]: Support for dbt-external-tables
+            - listitem [ref=e108]:
+              - link "Microsoft Purview integration" [ref=e109] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#microsoft-purview-integration
+                - generic [ref=e110]: Microsoft Purview integration
+            - listitem [ref=e111]:
+              - link "Catalog statistics" [ref=e112] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#catalog-statistics
+                - generic [ref=e113]: Catalog statistics
+            - listitem [ref=e114]:
+              - link "Better support for popular packages" [ref=e115] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#better-support-for-popular-packages
+                - generic [ref=e116]: Better support for popular packages
+            - listitem [ref=e117]:
+              - link "Plenty of bugfixes" [ref=e118] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#plenty-of-bugfixes
+                - generic [ref=e119]: Plenty of bugfixes
+            - listitem [ref=e120]:
+              - link "More on the roadmap" [ref=e121] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#more-on-the-roadmap
+                - generic [ref=e122]: More on the roadmap
+            - listitem [ref=e123]:
+              - link "Paid support" [ref=e124] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/feature-comparison/#paid-support
+                - generic [ref=e125]: Paid support
+        - article [ref=e127]:
+          - link "Edit this page" [ref=e128] [cursor=pointer]:
+            - /url: https://github.com/sdebruyn/dbt-fabric/edit/main/docs/feature-comparison.md
+            - img [ref=e129]
+          - heading "Comparison between dbt-fabric and dbt-fabric-samdebruyn ¶" [level=1] [ref=e132]:
+            - text: Comparison between dbt-fabric and dbt-fabric-samdebruyn
+            - link "¶" [ref=e133] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#comparison-between-dbt-fabric-and-dbt-fabric-samdebruyn
+          - paragraph [ref=e134]:
+            - text: This adapter has all the features of
+            - link "Microsoft's dbt-fabric adapter" [ref=e135] [cursor=pointer]:
+              - /url: https://github.com/microsoft/dbt-fabric
+            - text: ", plus some additional features. The following features are exclusive to dbt-fabric-samdebruyn:"
+          - heading "dbt Core 1.11 support ¶" [level=2] [ref=e136]:
+            - text: dbt Core 1.11 support
+            - link "¶" [ref=e137] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#dbt-core-111-support
+          - paragraph [ref=e138]: This adapter is compatible with dbt Core 1.11, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.
+          - heading "Functions in dbt ¶" [level=2] [ref=e139]:
+            - text: Functions in dbt
+            - link "¶" [ref=e140] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#functions-in-dbt
+          - paragraph [ref=e141]: This adapter supports creating scalar functions as introduced in dbt Core 1.11, while Microsoft's dbt-fabric does not.
+          - heading "Support for Python models ¶" [level=2] [ref=e142]:
+            - text: Support for Python models
+            - link "¶" [ref=e143] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#support-for-python-models
+          - paragraph [ref=e144]:
+            - text: This adapter supports
+            - link "Python models" [ref=e145] [cursor=pointer]:
+              - /url: https://docs.getdbt.com/docs/build/python-models
+            - text: . To use this, just add information about your
+            - link "Fabric Workspace" [ref=e146] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/configuration/#workspace_name
+            - text: and
+            - link "Lakehouse" [ref=e147] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/configuration/#lakehouse
+            - text: to the
+            - code [ref=e148]: profiles.yml
+            - text: file.
+          - heading "Automatically find the host name of your Fabric Workspace ¶" [level=2] [ref=e149]:
+            - text: Automatically find the host name of your Fabric Workspace
+            - link "¶" [ref=e150] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#automatically-find-the-host-name-of-your-fabric-workspace
+          - paragraph [ref=e151]: It can be tedious to find the correct host name for your Fabric Workspace, especially if you have separate Workspaces for development and production environments.
+          - paragraph [ref=e152]:
+            - text: This adapter will automatically retrieve the host name for your Fabric Workspace, based on the
+            - link "workspace_name" [ref=e153] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/configuration/#workspace_name
+              - code [ref=e154]: workspace_name
+            - text: or
+            - link "workspace_id" [ref=e155] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/configuration/#workspace_id
+              - code [ref=e156]: workspace_id
+            - text: provided in the configuration.
+          - paragraph [ref=e157]: "This allows you to write a configuration like this:"
+          - generic [ref=e159]:
+            - navigation [ref=e160]:
+              - button "Toggle line selection" [ref=e161] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e162] [cursor=pointer]
+            - code [ref=e163]:
+              - generic [ref=e164]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-1
+                - text: "default:"
+              - generic [ref=e165]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-2
+                - text: "target: dev"
+              - generic [ref=e166]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-3
+                - text: "outputs:"
+              - generic [ref=e167]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-4
+                - text: "dev:"
+              - generic [ref=e168]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-5
+                - text: "type: fabric"
+              - generic [ref=e169]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-6
+                - text: "workspace: \"gold_{{ env_var('FABRIC_ENV', 'dev') }}\""
+              - generic [ref=e170]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-7
+                - text: "database: dwh"
+              - generic [ref=e171]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-0-8
+                - text: "schema: dbt"
+          - paragraph [ref=e172]:
+            - text: Then, to run dbt against your production environment/Workspace, you can simply set the
+            - code [ref=e173]: FABRIC_ENV
+            - text: environment variable to
+            - code [ref=e174]: prod
+            - text: (if your Workspaces are named accordingly).
+          - heading "Extended support for authentication methods ¶" [level=2] [ref=e175]:
+            - text: Extended support for
+            - link "authentication methods" [ref=e176] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/configuration/#authentication
+            - link "¶" [ref=e177] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#extended-support-for-authentication-methods
+          - paragraph [ref=e178]: While most authentication methods have been contributed back to dbt-fabric, some newer options are only available in this adapter.
+          - heading "MERGE in incremental and microbatch models ¶" [level=2] [ref=e179]:
+            - text: MERGE in incremental and microbatch models
+            - link "¶" [ref=e180] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#merge-in-incremental-and-microbatch-models
+          - generic [ref=e181]:
+            - paragraph [ref=e182]: Info
+            - paragraph [ref=e183]: MERGE has recently been added in Microsoft's version as well.
+          - paragraph [ref=e184]:
+            - text: Incremental models in dbt-fabric support the
+            - code [ref=e185]: append
+            - text: ","
+            - code [ref=e186]: insert_overwrite
+            - text: ", and"
+            - code [ref=e187]: delete+insert
+            - text: strategies.
+          - paragraph [ref=e188]:
+            - text: This adapter adds support for
+            - link "MERGE" [ref=e189] [cursor=pointer]:
+              - /url: https://learn.microsoft.com/sql/t-sql/statements/merge-transact-sql?view=sql-server-ver17&WT.mc_id=MVP_310840
+            - text: .
+          - generic [ref=e191]:
+            - navigation [ref=e192]:
+              - button "Toggle line selection" [ref=e193] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e194] [cursor=pointer]
+            - code [ref=e195]:
+              - generic [ref=e196]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-1
+                - text: "{{ config("
+              - generic [ref=e197]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-2
+                - text: materialized='incremental',
+              - generic [ref=e198]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-3
+                - text: unique_key='id',
+              - generic [ref=e199]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-4
+                - text: incremental_strategy='merge'
+              - generic [ref=e200]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-5
+                - text: ") }}"
+              - generic [ref=e201]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-6
+              - generic [ref=e202]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-7
+                - text: select * from source('my_source', 'my_table')
+              - generic [ref=e203]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-8
+                - text: "{% if is_incremental() %}"
+              - generic [ref=e204]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-9
+                - text: "where updated_at > (select max(updated_at) from {{ this }})"
+              - generic [ref=e205]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-1-10
+                - text: "{% endif %}"
+          - paragraph [ref=e206]:
+            - text: When using the
+            - code [ref=e207]: merge
+            - text: strategy, dbt will generate a
+            - code [ref=e208]: MERGE
+            - text: statement that matches on the
+            - code [ref=e209]: unique_key
+            - text: and updates existing records or inserts new records as necessary. The
+            - code [ref=e210]: unique_key
+            - text: can be a single column or a list of columns.
+          - paragraph [ref=e211]:
+            - text: The adapter will use the
+            - code [ref=e212]: merge
+            - text: strategy by default if a
+            - code [ref=e213]: unique_key
+            - text: is provided and no
+            - code [ref=e214]: incremental_strategy
+            - text: is specified.
+          - paragraph [ref=e215]: "This also works for microbatch models:"
+          - generic [ref=e217]:
+            - navigation [ref=e218]:
+              - button "Toggle line selection" [ref=e219] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e220] [cursor=pointer]
+            - code [ref=e221]:
+              - generic [ref=e222]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-1
+                - text: "{{ config("
+              - generic [ref=e223]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-2
+                - text: materialized='incremental',
+              - generic [ref=e224]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-3
+                - text: unique_key='id',
+              - generic [ref=e225]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-4
+                - text: incremental_strategy='microbatch',
+              - generic [ref=e226]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-5
+                - text: batch_size='day',
+              - generic [ref=e227]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-6
+                - text: begin='2025-01-01',
+              - generic [ref=e228]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-7
+                - text: event_time='created_at'
+              - generic [ref=e229]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-8
+                - text: ") }}"
+              - generic [ref=e230]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-9
+              - generic [ref=e231]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-10
+                - text: select * from source('my_source', 'my_table')
+              - generic [ref=e232]:
+                - link:
+                  - /url: http://127.0.0.1:8000/feature-comparison/#__codelineno-2-11
+                - text: "{% endif %}"
+          - heading "Better support for warehouse snapshots ¶" [level=2] [ref=e233]:
+            - text: Better support for
+            - link "warehouse snapshots" [ref=e234] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/warehouse-snapshots/
+            - link "¶" [ref=e235] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#better-support-for-warehouse-snapshots
+          - paragraph [ref=e236]:
+            - text: Both adapters support Fabric
+            - link "warehouse snapshots" [ref=e237] [cursor=pointer]:
+              - /url: https://learn.microsoft.com/fabric/data-warehouse/warehouse-snapshot?WT.mc_id=MVP_310840
+            - text: ", but Microsoft's implementation hijacks Python runtime components and does not respect the proper dbt lifecycle. This adapter exposes a macro you can call from"
+            - code [ref=e238]: on-run-start
+            - text: ","
+            - code [ref=e239]: on-run-end
+            - text: ","
+            - code [ref=e240]: post-hook
+            - text: ", or any other Jinja context — giving you full control over when and how often snapshots are taken."
+          - heading "Support for dbt-external-tables ¶" [level=2] [ref=e241]:
+            - text: Support for dbt-external-tables
+            - link "¶" [ref=e242] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#support-for-dbt-external-tables
+          - paragraph [ref=e243]:
+            - text: This adapter provides
+            - link "dbt-external-tables" [ref=e244] [cursor=pointer]:
+              - /url: https://github.com/dbt-labs/dbt-external-tables
+            - text: compatibility macros that use Fabric's
+            - code [ref=e245]: OPENROWSET(BULK ...)
+            - text: function to query Parquet, CSV, and JSONL files stored in Azure Blob Storage, ADLS, or OneLake. External sources are created as views wrapping OPENROWSET queries, so data is always fresh. See the
+            - link "external tables guide" [ref=e246] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/external-tables/
+            - text: for details.
+          - heading "Microsoft Purview integration ¶" [level=2] [ref=e247]:
+            - link "Microsoft Purview integration" [ref=e248] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/
+            - link "¶" [ref=e249] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#microsoft-purview-integration
+          - paragraph [ref=e250]:
+            - text: This adapter can automatically sync dbt metadata to
+            - link "Microsoft Purview Data Catalog" [ref=e251] [cursor=pointer]:
+              - /url: https://learn.microsoft.com/en-us/purview/
+            - text: ". Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:"
+          - list [ref=e252]:
+            - listitem [ref=e253]:
+              - strong [ref=e254]: Descriptions
+              - text: ": model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run."
+            - listitem [ref=e255]:
+              - strong [ref=e256]: Business metadata
+              - text: ": dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom"
+              - code [ref=e257]: dbt_metadata
+              - text: business metadata type.
+            - listitem [ref=e258]:
+              - strong [ref=e259]: Table-level lineage
+              - text: ": a full lineage graph based on dbt's"
+              - code [ref=e260]: ref()
+              - text: and
+              - code [ref=e261]: source()
+              - text: dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and
+              - link "does not support sub-item lineage" [ref=e262] [cursor=pointer]:
+                - /url: https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric
+              - text: .
+          - paragraph [ref=e263]:
+            - text: The sync runs via
+            - code [ref=e264]: "{{ purview_sync() }}"
+            - text: as an
+            - code [ref=e265]: on-run-end
+            - text: hook or as a manual
+            - code [ref=e266]: dbt run-operation
+            - text: .
+          - heading "Catalog statistics ¶" [level=2] [ref=e267]:
+            - link "Catalog statistics" [ref=e268] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/catalog-stats/
+            - link "¶" [ref=e269] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#catalog-statistics
+          - paragraph [ref=e270]:
+            - text: When you run
+            - code [ref=e271]: dbt docs generate
+            - text: ", this adapter includes"
+            - strong [ref=e272]: approximate row counts
+            - text: for every table in the catalog output. Microsoft's upstream adapter does not include any statistics — the dbt docs site shows no table size information. With this adapter, table sizes are visible out of the box, with no extra configuration.
+          - heading "Better support for popular packages ¶" [level=2] [ref=e273]:
+            - text: Better support for popular packages
+            - link "¶" [ref=e274] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#better-support-for-popular-packages
+          - paragraph [ref=e275]:
+            - link "dbt-utils" [ref=e276] [cursor=pointer]:
+              - /url: https://hub.getdbt.com/dbt-labs/dbt_utils/latest/
+            - text: is already fully supported and more packages are being tested and added.
+          - heading "Plenty of bugfixes ¶" [level=2] [ref=e277]:
+            - text: Plenty of bugfixes
+            - link "¶" [ref=e278] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#plenty-of-bugfixes
+          - paragraph [ref=e279]: The quality of this adapter is guaranteed by an extensive test suite of integration tests, which run on every change. Through this process, quite a few bugs have been found and fixed.
+          - heading "More on the roadmap ¶" [level=2] [ref=e280]:
+            - text: More on the roadmap
+            - link "¶" [ref=e281] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#more-on-the-roadmap
+          - paragraph [ref=e282]: "Ideas for future improvements include:"
+          - list [ref=e283]:
+            - listitem [ref=e284]: Merging support for Spark SQL models into this adapter and allowing users to choose between Fabric SQL and Spark SQL models in the same project
+            - listitem [ref=e285]: Integration with external Iceberg/Delta Lake tables
+            - listitem [ref=e286]: Integration with external Iceberg/Delta Lake catalogs
+            - listitem [ref=e287]:
+              - link "Create an issue with your idea" [ref=e288] [cursor=pointer]:
+                - /url: https://github.com/sdebruyn/dbt-fabric/issues
+          - heading "Paid support ¶" [level=2] [ref=e289]:
+            - text: Paid support
+            - link "¶" [ref=e290] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/feature-comparison/#paid-support
+          - paragraph [ref=e291]:
+            - text: For companies that want to use this adapter in production,
+            - link "I offer paid support and consulting services" [ref=e292] [cursor=pointer]:
+              - /url: https://debruyn.dev/services/
+            - text: .
+      - button "Back to top":
+        - img
+        - text: Back to top
+    - contentinfo [ref=e293]:
+      - navigation "Footer" [ref=e294]:
+        - 'link "Previous: Overview" [ref=e295] [cursor=pointer]':
+          - /url: http://127.0.0.1:8000/
+          - img [ref=e297]
+          - generic [ref=e299]:
+            - text: Previous
+            - generic [ref=e300]: Overview
+        - 'link "Next: Contributing" [ref=e301] [cursor=pointer]':
+          - /url: http://127.0.0.1:8000/contributing/
+          - generic [ref=e302]:
+            - text: Next
+            - generic [ref=e303]: Contributing
+          - img [ref=e305]
+      - generic [ref=e308]:
+        - generic [ref=e309]:
+          - generic [ref=e310]: dbt and dbt Core are trademarks of dbt Labs, Inc. Microsoft and Microsoft Fabric are trademarks of the Microsoft Corporation. This website is not affiliated with dbt Labs or Microsoft.
+          - text: Made with
+          - link "Zensical" [ref=e311] [cursor=pointer]:
+            - /url: https://zensical.org/
+        - generic [ref=e312]:
+          - link "github.com" [ref=e313] [cursor=pointer]:
+            - /url: https://github.com/sdebruyn/dbt-fabric
+            - img [ref=e314]
+          - link "www.linkedin.com" [ref=e316] [cursor=pointer]:
+            - /url: https://www.linkedin.com/in/samueldebruyn/
+            - img [ref=e317]
+          - link "x.com" [ref=e319] [cursor=pointer]:
+            - /url: https://x.com/s_debruyn
+            - img [ref=e320]
+          - link "debruyn.dev" [ref=e322] [cursor=pointer]:
+            - /url: https://debruyn.dev
+            - img [ref=e323]
+  - progressbar
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button:
+              - img
+            - generic:
+              - combobox "Search"
+            - button:
+              - img
+          - generic:
+            - list
+        - generic:
+          - generic:
+            - heading "Filters" [level=3]
+            - heading "Tags" [level=4]
+            - list

@@ -310,3 +310,14 @@ The timeout for establishing a connection to the server. This can be useful if y
 Possible values: any integer (seconds) :timer:
 
 The timeout for executing a query. This can be useful if you are receiving the `Query timeout expired` error. The default is no timeout.
+
+### `purview_endpoint`
+
+Alias: `purview`<br>
+Example value: `https://your-account.purview.azure.com`
+
+The endpoint URL of your Microsoft Purview account. This is required to use the [Purview integration](purview-integration.md).
+
+You can find this in the Azure portal under your Purview account's Properties page (labeled "Atlas endpoint") or in the Purview governance portal settings.
+
+Your authentication identity must have **Data Curator** and **Data Reader** roles in the Purview account's root collection.

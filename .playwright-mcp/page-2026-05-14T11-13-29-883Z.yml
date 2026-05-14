@@ -1,0 +1,622 @@
+- generic [active] [ref=e1]:
+  - generic "Navigation"
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: http://127.0.0.1:8000/purview-integration/#microsoft-purview-integration
+  - banner [ref=e3]:
+    - navigation "Header" [ref=e4]:
+      - generic "Navigation" [ref=e5] [cursor=pointer]:
+        - img [ref=e6]
+      - generic [ref=e9]:
+        - generic [ref=e11]: dbt-fabric-samdebruyn
+        - generic:
+          - generic: Microsoft Purview integration
+      - generic [ref=e12]:
+        - radio "Switch to dark mode"
+        - generic "Switch to dark mode" [ref=e13] [cursor=pointer]:
+          - img [ref=e14]
+        - radio "Switch to light mode"
+      - dialog "Search" [ref=e17]:
+        - button "Search ⌘K" [ref=e18] [cursor=pointer]
+      - link "sdebruyn/dbt-fabric" [ref=e20] [cursor=pointer]:
+        - /url: https://github.com/sdebruyn/dbt-fabric
+        - img [ref=e22]
+        - generic [ref=e24]: sdebruyn/dbt-fabric
+  - generic [ref=e25]:
+    - main [ref=e26]:
+      - generic [ref=e27]:
+        - navigation "Navigation" [ref=e31]:
+          - generic [ref=e32]:
+            - link "dbt-fabric-samdebruyn" [ref=e33] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/
+              - img [ref=e34]
+            - text: dbt-fabric-samdebruyn
+          - link "sdebruyn/dbt-fabric" [ref=e38] [cursor=pointer]:
+            - /url: https://github.com/sdebruyn/dbt-fabric
+            - img [ref=e40]
+            - generic [ref=e42]: sdebruyn/dbt-fabric
+          - list [ref=e43]:
+            - listitem [ref=e44]:
+              - generic [ref=e46] [cursor=pointer]: Home
+            - listitem [ref=e48]:
+              - generic [ref=e50] [cursor=pointer]: Installation & configuration
+            - listitem [ref=e52]:
+              - generic [ref=e54] [cursor=pointer]: Feature guides
+              - navigation "Feature guides" [ref=e56]:
+                - list [ref=e57]:
+                  - listitem [ref=e58]:
+                    - link "Authentication" [ref=e59] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/authentication/
+                      - generic [ref=e60]: Authentication
+                  - listitem [ref=e61]:
+                    - link "Catalog statistics" [ref=e62] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/catalog-stats/
+                      - generic [ref=e63]: Catalog statistics
+                  - listitem [ref=e64]:
+                    - link "External tables" [ref=e65] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/external-tables/
+                      - generic [ref=e66]: External tables
+                  - listitem [ref=e67]:
+                    - link "Purview integration" [ref=e68] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/
+                      - generic [ref=e69]: Purview integration
+                  - listitem [ref=e70]:
+                    - link "Python models" [ref=e71] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/python-models/
+                      - generic [ref=e72]: Python models
+                  - listitem [ref=e73]:
+                    - link "Warehouse snapshots" [ref=e74] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/warehouse-snapshots/
+                      - generic [ref=e75]: Warehouse snapshots
+        - navigation "On this page" [ref=e79]:
+          - generic [ref=e80]: On this page
+          - list [ref=e81]:
+            - listitem [ref=e82]:
+              - link "Why this integration" [ref=e83] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#why-this-integration
+                - generic [ref=e84]: Why this integration
+            - listitem [ref=e85]:
+              - link "How it works" [ref=e86] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#how-it-works
+                - generic [ref=e87]: How it works
+            - listitem [ref=e88]:
+              - link "Configuration" [ref=e89] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#configuration
+                - generic [ref=e90]: Configuration
+              - navigation "Configuration" [ref=e91]:
+                - list [ref=e92]:
+                  - listitem [ref=e93]:
+                    - link "Authentication" [ref=e94] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#authentication
+                      - generic [ref=e95]: Authentication
+            - listitem [ref=e96]:
+              - link "Usage" [ref=e97] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#usage
+                - generic [ref=e98]: Usage
+              - navigation "Usage" [ref=e99]:
+                - list [ref=e100]:
+                  - listitem [ref=e101]:
+                    - link "Automatic sync after every run" [ref=e102] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#automatic-sync-after-every-run
+                      - generic [ref=e103]: Automatic sync after every run
+                  - listitem [ref=e104]:
+                    - link "Manual sync" [ref=e105] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#manual-sync
+                      - generic [ref=e106]: Manual sync
+                  - listitem [ref=e107]:
+                    - link "Options" [ref=e108] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#options
+                      - generic [ref=e109]: Options
+            - listitem [ref=e110]:
+              - link "What gets synced" [ref=e111] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#what-gets-synced
+                - generic [ref=e112]: What gets synced
+              - navigation "What gets synced" [ref=e113]:
+                - list [ref=e114]:
+                  - listitem [ref=e115]:
+                    - link "Descriptions" [ref=e116] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#descriptions
+                      - generic [ref=e117]: Descriptions
+                  - listitem [ref=e118]:
+                    - link "Business metadata" [ref=e119] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#business-metadata
+                      - generic [ref=e120]: Business metadata
+                  - listitem [ref=e121]:
+                    - link "Lineage" [ref=e122] [cursor=pointer]:
+                      - /url: http://127.0.0.1:8000/purview-integration/#lineage
+                      - generic [ref=e123]: Lineage
+            - listitem [ref=e124]:
+              - link "Entity matching" [ref=e125] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#entity-matching
+                - generic [ref=e126]: Entity matching
+            - listitem [ref=e127]:
+              - link "Supported adapters" [ref=e128] [cursor=pointer]:
+                - /url: http://127.0.0.1:8000/purview-integration/#supported-adapters
+                - generic [ref=e129]: Supported adapters
+        - article [ref=e131]:
+          - link "Edit this page" [ref=e132] [cursor=pointer]:
+            - /url: https://github.com/sdebruyn/dbt-fabric/edit/main/docs/purview-integration.md
+            - img [ref=e133]
+          - heading "Microsoft Purview integration ¶" [level=1] [ref=e136]:
+            - text: Microsoft Purview integration
+            - link "¶" [ref=e137] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#microsoft-purview-integration
+          - paragraph [ref=e138]:
+            - text: This adapter can sync dbt metadata to
+            - link "Microsoft Purview Data Catalog" [ref=e139] [cursor=pointer]:
+              - /url: https://learn.microsoft.com/en-us/purview/
+            - text: ", enriching your existing scanned assets with descriptions, business metadata, and lineage from your dbt project."
+          - heading "Why this integration ¶" [level=2] [ref=e140]:
+            - text: Why this integration
+            - link "¶" [ref=e141] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#why-this-integration
+          - paragraph [ref=e142]:
+            - text: Microsoft Purview has a
+            - link "built-in integration with Microsoft Fabric" [ref=e143] [cursor=pointer]:
+              - /url: https://learn.microsoft.com/en-us/fabric/governance/microsoft-purview-fabric
+            - text: "that scans your Fabric workspace and discovers items like Warehouses, Lakehouses, Notebooks, and Pipelines. However, this built-in scanner has significant limitations when it comes to the metadata that dbt users care about:"
+          - table [ref=e146]:
+            - rowgroup [ref=e147]:
+              - row "Capability Built-in Purview scanner dbt Purview sync" [ref=e148]:
+                - columnheader "Capability" [ref=e149]
+                - columnheader "Built-in Purview scanner" [ref=e150]
+                - columnheader "dbt Purview sync" [ref=e151]
+            - rowgroup [ref=e152]:
+              - row "Table discovery Lakehouse tables only (preview). Data Warehouse tables are not scanned as sub-items. Works with any table entity already in Purview, regardless of how it was discovered." [ref=e153]:
+                - cell "Table discovery" [ref=e154]:
+                  - strong [ref=e155]: Table discovery
+                - cell "Lakehouse tables only (preview). Data Warehouse tables are not scanned as sub-items." [ref=e156]:
+                  - text: Lakehouse tables only (preview). Data Warehouse tables are
+                  - link "not scanned as sub-items" [ref=e157] [cursor=pointer]:
+                    - /url: https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric
+                  - text: .
+                - cell "Works with any table entity already in Purview, regardless of how it was discovered." [ref=e158]
+              - row "Column discovery Lakehouse column names and data types (preview). N/A — works with columns already discovered by the scanner." [ref=e159]:
+                - cell "Column discovery" [ref=e160]:
+                  - strong [ref=e161]: Column discovery
+                - cell "Lakehouse column names and data types (preview)." [ref=e162]
+                - cell "N/A — works with columns already discovered by the scanner." [ref=e163]
+              - row "Table descriptions Not populated. Must be manually entered in the Purview portal per table. Automatically pushed from dbt model YAML files after every run." [ref=e164]:
+                - cell "Table descriptions" [ref=e165]:
+                  - strong [ref=e166]: Table descriptions
+                - cell "Not populated. Must be manually entered in the Purview portal per table." [ref=e167]:
+                  - text: Not populated. Must be
+                  - link "manually entered" [ref=e168] [cursor=pointer]:
+                    - /url: https://learn.microsoft.com/en-us/purview/data-gov-classic-metadata-curation
+                  - text: in the Purview portal per table.
+                - cell "Automatically pushed from dbt model YAML files after every run." [ref=e169]
+              - row "Column descriptions Not populated. Must be manually entered per column. Automatically pushed from dbt column YAML files after every run." [ref=e170]:
+                - cell "Column descriptions" [ref=e171]:
+                  - strong [ref=e172]: Column descriptions
+                - cell "Not populated. Must be manually entered per column." [ref=e173]
+                - cell "Automatically pushed from dbt column YAML files after every run." [ref=e174]
+              - row "Table-level lineage Not supported. The scanner only captures item-level lineage (e.g., Lakehouse → Notebook → Lakehouse), not which specific table was derived from which other tables. Full table-level lineage graph based on dbt's ref() and source() dependencies." [ref=e175]:
+                - cell "Table-level lineage" [ref=e176]:
+                  - strong [ref=e177]: Table-level lineage
+                - cell "Not supported. The scanner only captures item-level lineage (e.g., Lakehouse → Notebook → Lakehouse), not which specific table was derived from which other tables." [ref=e178]:
+                  - text: Not supported. The scanner only captures
+                  - link "item-level lineage" [ref=e179] [cursor=pointer]:
+                    - /url: https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric
+                  - text: (e.g., Lakehouse → Notebook → Lakehouse), not which specific table was derived from which other tables.
+                - cell "Full table-level lineage graph based on dbt's ref() and source() dependencies." [ref=e180]:
+                  - text: Full table-level lineage graph based on dbt's
+                  - code [ref=e181]: ref()
+                  - text: and
+                  - code [ref=e182]: source()
+                  - text: dependencies.
+              - row "Business metadata Not populated. No built-in mechanism to attach tags, test results, or custom metadata to table entities. Automatically creates a dbt_metadata business metadata type with model ID, tags, materialization, test names, test results, custom meta, and sync timestamp." [ref=e183]:
+                - cell "Business metadata" [ref=e184]:
+                  - strong [ref=e185]: Business metadata
+                - cell "Not populated. No built-in mechanism to attach tags, test results, or custom metadata to table entities." [ref=e186]
+                - cell "Automatically creates a dbt_metadata business metadata type with model ID, tags, materialization, test names, test results, custom meta, and sync timestamp." [ref=e187]:
+                  - text: Automatically creates a
+                  - code [ref=e188]: dbt_metadata
+                  - text: business metadata type with model ID, tags, materialization, test names, test results, custom meta, and sync timestamp.
+              - row "Automation Runs on a scan schedule configured in Purview. Runs automatically after every dbt run via on-run-end hook, or on-demand via dbt run-operation." [ref=e189]:
+                - cell "Automation" [ref=e190]:
+                  - strong [ref=e191]: Automation
+                - cell "Runs on a scan schedule configured in Purview." [ref=e192]
+                - cell "Runs automatically after every dbt run via on-run-end hook, or on-demand via dbt run-operation." [ref=e193]:
+                  - text: Runs automatically after every
+                  - code [ref=e194]: dbt run
+                  - text: via
+                  - code [ref=e195]: on-run-end
+                  - text: hook, or on-demand via
+                  - code [ref=e196]: dbt run-operation
+                  - text: .
+          - paragraph [ref=e197]:
+            - text: "In short: the built-in scanner discovers"
+            - emphasis [ref=e198]: what exists
+            - text: "in Fabric (table names, column schemas). This dbt integration adds the context that the scanner cannot provide:"
+            - emphasis [ref=e199]: what each table means
+            - text: (descriptions),
+            - emphasis [ref=e200]: how tables relate to each other
+            - text: (lineage), and
+            - emphasis [ref=e201]: what guarantees are in place
+            - text: (tests, tags, metadata).
+          - paragraph [ref=e202]: The two are complementary — the scanner creates the entities in Purview, and the dbt sync enriches them.
+          - heading "How it works ¶" [level=2] [ref=e203]:
+            - text: How it works
+            - link "¶" [ref=e204] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#how-it-works
+          - paragraph [ref=e205]: "When Purview scans your Fabric workspace, it discovers tables and views but doesn't know about the rich metadata in your dbt project: model descriptions, column documentation, tests, tags, and lineage. The Purview sync bridges this gap by:"
+          - list [ref=e206]:
+            - listitem [ref=e207]:
+              - strong [ref=e208]: Matching
+              - text: each dbt model to its corresponding Purview entity (table/view) via the Purview Discovery API
+            - listitem [ref=e209]:
+              - strong [ref=e210]: Enriching
+              - text: the entity with dbt descriptions (on both tables and columns)
+            - listitem [ref=e211]:
+              - strong [ref=e212]: Adding business metadata
+              - text: like dbt tags, materialization type, test results, and custom meta
+            - listitem [ref=e213]:
+              - strong [ref=e214]: Creating lineage
+              - text: between tables using dbt's dependency graph
+          - paragraph [ref=e215]:
+            - text: The sync writes to
+            - code [ref=e216]: userDescription
+            - text: (not
+            - code [ref=e217]: description
+            - text: ), so it never overwrites metadata set by Purview scanners.
+          - heading "Configuration ¶" [level=2] [ref=e218]:
+            - text: Configuration
+            - link "¶" [ref=e219] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#configuration
+          - paragraph [ref=e220]:
+            - text: Add the
+            - code [ref=e221]: purview_endpoint
+            - text: to your target in
+            - code [ref=e222]: profiles.yml
+            - text: ":"
+          - generic [ref=e224]:
+            - navigation [ref=e225]:
+              - button "Toggle line selection" [ref=e226] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e227] [cursor=pointer]
+            - code [ref=e228]:
+              - generic [ref=e229]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-1
+                - text: "my_project:"
+              - generic [ref=e230]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-2
+                - text: "target: dev"
+              - generic [ref=e231]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-3
+                - text: "outputs:"
+              - generic [ref=e232]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-4
+                - text: "dev:"
+              - generic [ref=e233]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-5
+                - text: "type: fabric # or fabricspark"
+              - generic [ref=e234]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-6
+                - text: "# ... existing configuration ..."
+              - generic [ref=e235]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-0-7
+                - text: "purview_endpoint: \"https://your-account.purview.azure.com\""
+          - paragraph [ref=e236]: You can find the endpoint URL in the Azure portal under your Purview account's Properties page (labeled "Atlas endpoint") or in the Purview governance portal settings.
+          - generic [ref=e237]:
+            - paragraph [ref=e238]: Alias
+            - paragraph [ref=e239]:
+              - text: You can also use
+              - code [ref=e240]: purview
+              - text: as an alias for
+              - code [ref=e241]: purview_endpoint
+              - text: .
+          - heading "Authentication ¶" [level=3] [ref=e242]:
+            - text: Authentication
+            - link "¶" [ref=e243] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#authentication
+          - paragraph [ref=e244]:
+            - text: The Purview integration reuses the same authentication method configured for your Fabric connection. No additional authentication setup is needed. The identity must have
+            - strong [ref=e245]: Data Curator
+            - text: and
+            - strong [ref=e246]: Data Reader
+            - text: roles in the Purview account's root collection.
+          - paragraph [ref=e247]:
+            - text: All
+            - link "authentication methods" [ref=e248] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/authentication/
+            - text: supported by the adapter work with Purview.
+          - heading "Usage ¶" [level=2] [ref=e249]:
+            - text: Usage
+            - link "¶" [ref=e250] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#usage
+          - heading "Automatic sync after every run ¶" [level=3] [ref=e251]:
+            - text: Automatic sync after every run
+            - link "¶" [ref=e252] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#automatic-sync-after-every-run
+          - paragraph [ref=e253]:
+            - text: Add the macro to your
+            - code [ref=e254]: dbt_project.yml
+            - text: as an
+            - code [ref=e255]: on-run-end
+            - text: "hook:"
+          - generic [ref=e257]:
+            - navigation [ref=e258]:
+              - button "Toggle line selection" [ref=e259] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e260] [cursor=pointer]
+            - code [ref=e261]:
+              - generic [ref=e262]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-1-1
+                - text: "on-run-end:"
+              - generic [ref=e263]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-1-2
+                - text: "- \"{{ purview_sync() }}\""
+          - paragraph [ref=e264]: This syncs metadata for all models that were part of the run.
+          - heading "Manual sync ¶" [level=3] [ref=e265]:
+            - text: Manual sync
+            - link "¶" [ref=e266] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#manual-sync
+          - paragraph [ref=e267]: "Run the sync manually as a dbt operation:"
+          - generic [ref=e269]:
+            - navigation [ref=e270]:
+              - button "Toggle line selection" [ref=e271] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e272] [cursor=pointer]
+            - code [ref=e273]:
+              - generic [ref=e274]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-2-1
+                - text: dbt run-operation purview_sync
+          - paragraph [ref=e275]: This syncs metadata for all models in the project, regardless of whether they were recently run.
+          - heading "Options ¶" [level=3] [ref=e276]:
+            - text: Options
+            - link "¶" [ref=e277] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#options
+          - paragraph [ref=e278]:
+            - text: The
+            - code [ref=e279]: purview_sync
+            - text: "macro accepts these parameters:"
+          - table [ref=e282]:
+            - rowgroup [ref=e283]:
+              - row "Parameter Default Description" [ref=e284]:
+                - columnheader "Parameter" [ref=e285]
+                - columnheader "Default" [ref=e286]
+                - columnheader "Description" [ref=e287]
+            - rowgroup [ref=e288]:
+              - row "sync_descriptions true Push model and column descriptions to Purview" [ref=e289]:
+                - cell "sync_descriptions" [ref=e290]:
+                  - code [ref=e291]: sync_descriptions
+                - cell "true" [ref=e292]:
+                  - code [ref=e293]: "true"
+                - cell "Push model and column descriptions to Purview" [ref=e294]
+              - row "sync_lineage true Create lineage relationships in Purview" [ref=e295]:
+                - cell "sync_lineage" [ref=e296]:
+                  - code [ref=e297]: sync_lineage
+                - cell "true" [ref=e298]:
+                  - code [ref=e299]: "true"
+                - cell "Create lineage relationships in Purview" [ref=e300]
+              - row "sync_metadata true Push business metadata (tags, tests, materialization)" [ref=e301]:
+                - cell "sync_metadata" [ref=e302]:
+                  - code [ref=e303]: sync_metadata
+                - cell "true" [ref=e304]:
+                  - code [ref=e305]: "true"
+                - cell "Push business metadata (tags, tests, materialization)" [ref=e306]
+          - paragraph [ref=e307]: "Example with options:"
+          - generic [ref=e309]:
+            - navigation [ref=e310]:
+              - button "Toggle line selection" [ref=e311] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e312] [cursor=pointer]
+            - code [ref=e313]:
+              - generic [ref=e314]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-3-1
+                - text: "# Only sync descriptions, skip lineage and metadata"
+              - generic [ref=e315]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-3-2
+                - text: "on-run-end:"
+              - generic [ref=e316]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-3-3
+                - text: "- \"{{ purview_sync(sync_lineage=false, sync_metadata=false) }}\""
+          - paragraph [ref=e317]: "Or via the CLI:"
+          - generic [ref=e319]:
+            - navigation [ref=e320]:
+              - button "Toggle line selection" [ref=e321] [cursor=pointer]
+              - button "Copy to clipboard" [ref=e322] [cursor=pointer]
+            - code [ref=e323]:
+              - generic [ref=e324]:
+                - link:
+                  - /url: http://127.0.0.1:8000/purview-integration/#__codelineno-4-1
+                - text: "dbt run-operation purview_sync --args '{sync_lineage: false}'"
+          - heading "What gets synced ¶" [level=2] [ref=e325]:
+            - text: What gets synced
+            - link "¶" [ref=e326] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#what-gets-synced
+          - heading "Descriptions ¶" [level=3] [ref=e327]:
+            - text: Descriptions
+            - link "¶" [ref=e328] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#descriptions
+          - table [ref=e331]:
+            - rowgroup [ref=e332]:
+              - row "Source Target" [ref=e333]:
+                - columnheader "Source" [ref=e334]
+                - columnheader "Target" [ref=e335]
+            - rowgroup [ref=e336]:
+              - row "Model description userDescription on the table/view entity" [ref=e337]:
+                - cell "Model description" [ref=e338]:
+                  - text: Model
+                  - code [ref=e339]: description
+                - cell "userDescription on the table/view entity" [ref=e340]:
+                  - code [ref=e341]: userDescription
+                  - text: on the table/view entity
+              - row "Column description userDescription on the column entity" [ref=e342]:
+                - cell "Column description" [ref=e343]:
+                  - text: Column
+                  - code [ref=e344]: description
+                - cell "userDescription on the column entity" [ref=e345]:
+                  - code [ref=e346]: userDescription
+                  - text: on the column entity
+          - heading "Business metadata ¶" [level=3] [ref=e347]:
+            - text: Business metadata
+            - link "¶" [ref=e348] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#business-metadata
+          - paragraph [ref=e349]:
+            - text: A custom business metadata type called
+            - code [ref=e350]: dbt_metadata
+            - text: "is automatically created in Purview. It contains:"
+          - table [ref=e353]:
+            - rowgroup [ref=e354]:
+              - row "Attribute Source Example" [ref=e355]:
+                - columnheader "Attribute" [ref=e356]
+                - columnheader "Source" [ref=e357]
+                - columnheader "Example" [ref=e358]
+            - rowgroup [ref=e359]:
+              - row "dbt_model_id Model unique ID model.my_project.orders" [ref=e360]:
+                - cell "dbt_model_id" [ref=e361]:
+                  - code [ref=e362]: dbt_model_id
+                - cell "Model unique ID" [ref=e363]
+                - cell "model.my_project.orders" [ref=e364]:
+                  - code [ref=e365]: model.my_project.orders
+              - row "dbt_tags Model tags finance,daily" [ref=e366]:
+                - cell "dbt_tags" [ref=e367]:
+                  - code [ref=e368]: dbt_tags
+                - cell "Model tags" [ref=e369]
+                - cell "finance,daily" [ref=e370]:
+                  - code [ref=e371]: finance,daily
+              - row "dbt_materialization Materialization type incremental" [ref=e372]:
+                - cell "dbt_materialization" [ref=e373]:
+                  - code [ref=e374]: dbt_materialization
+                - cell "Materialization type" [ref=e375]
+                - cell "incremental" [ref=e376]:
+                  - code [ref=e377]: incremental
+              - 'row "dbt_meta Custom meta (JSON) {\"owner\": \"data-team\"}" [ref=e378]':
+                - cell "dbt_meta" [ref=e379]:
+                  - code [ref=e380]: dbt_meta
+                - cell "Custom meta (JSON)" [ref=e381]
+                - 'cell "{\"owner\": \"data-team\"}" [ref=e382]':
+                  - code [ref=e383]: "{\"owner\": \"data-team\"}"
+              - row "dbt_tests Test names on model not_null_id,unique_id" [ref=e384]:
+                - cell "dbt_tests" [ref=e385]:
+                  - code [ref=e386]: dbt_tests
+                - cell "Test names on model" [ref=e387]
+                - cell "not_null_id,unique_id" [ref=e388]:
+                  - code [ref=e389]: not_null_id,unique_id
+              - row "dbt_test_status Test results from last run all_passed or 2/3 passed" [ref=e390]:
+                - cell "dbt_test_status" [ref=e391]:
+                  - code [ref=e392]: dbt_test_status
+                - cell "Test results from last run" [ref=e393]
+                - cell "all_passed or 2/3 passed" [ref=e394]:
+                  - code [ref=e395]: all_passed
+                  - text: or
+                  - code [ref=e396]: 2/3 passed
+              - row "dbt_last_sync Sync timestamp 2026-01-15T10:30:00+00:00" [ref=e397]:
+                - cell "dbt_last_sync" [ref=e398]:
+                  - code [ref=e399]: dbt_last_sync
+                - cell "Sync timestamp" [ref=e400]
+                - cell "2026-01-15T10:30:00+00:00" [ref=e401]:
+                  - code [ref=e402]: 2026-01-15T10:30:00+00:00
+          - heading "Lineage ¶" [level=3] [ref=e403]:
+            - text: Lineage
+            - link "¶" [ref=e404] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#lineage
+          - paragraph [ref=e405]: "For each dbt model with upstream dependencies, the sync creates:"
+          - list [ref=e406]:
+            - listitem [ref=e407]:
+              - text: A
+              - code [ref=e408]: dbt_transformation
+              - text: entity representing the dbt transformation
+            - listitem [ref=e409]:
+              - code [ref=e410]: dataset_process_inputs
+              - text: relationships from upstream tables to the process
+            - listitem [ref=e411]:
+              - code [ref=e412]: process_dataset_outputs
+              - text: relationships from the process to the output table
+          - paragraph [ref=e413]: This shows up in Purview's lineage view as a graph of how data flows through your dbt models.
+          - heading "Entity matching ¶" [level=2] [ref=e414]:
+            - text: Entity matching
+            - link "¶" [ref=e415] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#entity-matching
+          - paragraph [ref=e416]:
+            - text: The sync finds existing Purview entities by searching for tables matching the dbt model's name, schema, and database. This works regardless of how Purview discovered the entities or what entity types they have (e.g.,
+            - code [ref=e417]: fabric_lakehouse_table
+            - text: ","
+            - code [ref=e418]: azure_sql_table
+            - text: ).
+          - paragraph [ref=e419]: If a dbt model cannot be matched to a Purview entity (e.g., the table hasn't been scanned yet, or it's an ephemeral model), it's skipped with a log message.
+          - heading "Supported adapters ¶" [level=2] [ref=e420]:
+            - text: Supported adapters
+            - link "¶" [ref=e421] [cursor=pointer]:
+              - /url: http://127.0.0.1:8000/purview-integration/#supported-adapters
+          - paragraph [ref=e422]: "The Purview integration works with both adapter types:"
+          - list [ref=e423]:
+            - listitem [ref=e424]:
+              - strong [ref=e425]: FabricSpark
+              - text: (Lakehouse) — matches
+              - code [ref=e426]: fabric_lakehouse_table
+              - text: entities discovered by Purview's Fabric workspace scan. This requires
+              - link "Lakehouse sub-item metadata scanning" [ref=e427] [cursor=pointer]:
+                - /url: https://learn.microsoft.com/en-us/purview/register-scan-fabric-tenant
+              - text: to be enabled.
+            - listitem [ref=e428]:
+              - strong [ref=e429]: Fabric
+              - text: (Data Warehouse) — Purview currently scans Fabric Data Warehouses at the item level only (
+              - code [ref=e430]: fabric_data_warehouse
+              - text: ), without indexing individual tables. To get table-level entities, register the Data Warehouse's SQL analytics endpoint as an Azure SQL data source in Purview. The resulting
+              - code [ref=e431]: azure_sql_table
+              - text: entities are matched by the sync.
+      - button "Back to top":
+        - img
+        - text: Back to top
+    - contentinfo [ref=e432]:
+      - navigation "Footer" [ref=e433]:
+        - 'link "Previous: External tables" [ref=e434] [cursor=pointer]':
+          - /url: http://127.0.0.1:8000/external-tables/
+          - img [ref=e436]
+          - generic [ref=e438]:
+            - text: Previous
+            - generic [ref=e439]: External tables
+        - 'link "Next: Python models" [ref=e440] [cursor=pointer]':
+          - /url: http://127.0.0.1:8000/python-models/
+          - generic [ref=e441]:
+            - text: Next
+            - generic [ref=e442]: Python models
+          - img [ref=e444]
+      - generic [ref=e447]:
+        - generic [ref=e448]:
+          - generic [ref=e449]: dbt and dbt Core are trademarks of dbt Labs, Inc. Microsoft and Microsoft Fabric are trademarks of the Microsoft Corporation. This website is not affiliated with dbt Labs or Microsoft.
+          - text: Made with
+          - link "Zensical" [ref=e450] [cursor=pointer]:
+            - /url: https://zensical.org/
+        - generic [ref=e451]:
+          - link "github.com" [ref=e452] [cursor=pointer]:
+            - /url: https://github.com/sdebruyn/dbt-fabric
+            - img [ref=e453]
+          - link "www.linkedin.com" [ref=e455] [cursor=pointer]:
+            - /url: https://www.linkedin.com/in/samueldebruyn/
+            - img [ref=e456]
+          - link "x.com" [ref=e458] [cursor=pointer]:
+            - /url: https://x.com/s_debruyn
+            - img [ref=e459]
+          - link "debruyn.dev" [ref=e461] [cursor=pointer]:
+            - /url: https://debruyn.dev
+            - img [ref=e462]
+  - progressbar
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - button:
+              - img
+            - generic:
+              - combobox "Search"
+            - button:
+              - img
+          - generic:
+            - list
+        - generic:
+          - generic:
+            - heading "Filters" [level=3]
+            - heading "Tags" [level=4]
+            - list

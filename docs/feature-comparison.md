@@ -91,6 +91,16 @@ Both adapters support Fabric [warehouse snapshots](https://learn.microsoft.com/f
 
 This adapter provides [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) compatibility macros that use Fabric's `OPENROWSET(BULK ...)` function to query Parquet, CSV, and JSONL files stored in Azure Blob Storage, ADLS, or OneLake. External sources are created as views wrapping OPENROWSET queries, so data is always fresh. See the [external tables guide](external-tables.md) for details.
 
+## [Microsoft Purview integration](purview-integration.md)
+
+This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:
+
+- **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
+- **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
+- **Table-level lineage**: a full lineage graph based on dbt's `ref()` and `source()` dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and [does not support sub-item lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric).
+
+The sync runs via `{{ purview_sync() }}` as an `on-run-end` hook or as a manual `dbt run-operation`.
+
 ## [Catalog statistics](catalog-stats.md)
 
 When you run `dbt docs generate`, this adapter includes **approximate row counts** for every table in the catalog output. Microsoft's upstream adapter does not include any statistics — the dbt docs site shows no table size information. With this adapter, table sizes are visible out of the box, with no extra configuration.
@@ -103,14 +113,13 @@ When you run `dbt docs generate`, this adapter includes **approximate row counts
 
 The quality of this adapter is guaranteed by an extensive test suite of integration tests, which run on every change. Through this process, quite a few bugs have been found and fixed.
 
-## More on the roadmap
+## [More on the roadmap](roadmap.md)
 
 Ideas for future improvements include:
 
-- Synchronization of documentation between Microsoft Purview and dbt docs
-- Merging support for Spark SQL models into this adapter and allowing users to choose between Fabric SQL and Spark SQL models in the same project
-- Integration with external Iceberg/Delta Lake tables
-- Integration with external Iceberg/Delta Lake catalogs
+- [Spark SQL and T-SQL models in the same project](roadmap.md#spark-sql-and-t-sql-models-in-the-same-project) — choose per model which Fabric engine to use
+- [External Iceberg and Delta Lake tables](roadmap.md#external-iceberg-and-delta-lake-tables) — OneLake shortcuts to external Delta/Iceberg data as dbt sources
+- [External catalog integration](roadmap.md#external-catalog-integration) — consume mirrored catalogs (Unity Catalog, Dremio) and expose Fabric tables via the Iceberg REST Catalog API
 - [Create an issue with your idea](https://github.com/sdebruyn/dbt-fabric/issues)
 
 ## Paid support
