@@ -69,7 +69,7 @@
         FROM
         (
             SELECT
-            '[' + CAST(c.COLUMN_NAME AS VARCHAR(128)) + ']' AS ColumnName
+            '[' + REPLACE(CAST(c.COLUMN_NAME AS VARCHAR(128)), ']', ']]') + ']' AS ColumnName
             FROM INFORMATION_SCHEMA.TABLES t
             JOIN INFORMATION_SCHEMA.COLUMNS c
                 ON t.TABLE_SCHEMA = c.TABLE_SCHEMA
@@ -90,7 +90,7 @@
 
     {% set tempTable %}
         CREATE TABLE {{tempTableName}}
-        AS SELECT {{query_result_text}}, CAST([{{ column_name }}] AS {{new_column_type}}) AS [{{column_name}}] FROM {{ relation.schema }}.{{ relation.identifier }}
+        AS SELECT {{query_result_text}}, CAST([{{ column_name | replace(']', ']]') }}] AS {{new_column_type}}) AS [{{ column_name | replace(']', ']]') }}] FROM {{ relation.schema }}.{{ relation.identifier }}
         {{ apply_label() }}
     {% endset %}
 
@@ -128,12 +128,12 @@
   {% call statement('add_drop_columns') -%}
     {% if add_columns %}
         alter {{ relation.type }} {{ relation }}
-        add {% for column in add_columns %}[{{ column.name }}] {{ column.data_type }}{{ ', ' if not loop.last }}{% endfor %};
+        add {% for column in add_columns %}[{{ column.name | replace(']', ']]') }}] {{ column.data_type }}{{ ', ' if not loop.last }}{% endfor %};
     {% endif %}
 
     {% if remove_columns %}
         alter {{ relation.type }} {{ relation }}
-        drop column {% for column in remove_columns %}[{{ column.name }}]{{ ',' if not loop.last }}{% endfor %};
+        drop column {% for column in remove_columns %}[{{ column.name | replace(']', ']]') }}]{{ ',' if not loop.last }}{% endfor %};
     {% endif %}
   {%- endcall -%}
 {% endmacro %}

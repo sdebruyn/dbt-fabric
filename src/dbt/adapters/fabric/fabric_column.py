@@ -40,7 +40,7 @@ class FabricColumn(Column):
 
     @property
     def quoted(self) -> str:
-        return "[{}]".format(self.column)
+        return "[{}]".format(self.column.replace("]", "]]"))
 
     @property
     def data_type(self) -> str:

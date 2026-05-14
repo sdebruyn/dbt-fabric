@@ -1,6 +1,10 @@
 import pytest
 from jinja2 import Environment
 
+# This test renders a simplified copy of the fabric__get_use_database_sql macro
+# directly via Jinja2, without a full dbt context. It validates the sanitization
+# logic in isolation but does not exercise the actual macro file. Integration
+# tests cover the real macro through adapter.dispatch().
 MACRO_TEMPLATE = """\
 {%- macro fabric__get_use_database_sql(database) -%}
   {%- if database is not none -%}
@@ -46,3 +50,11 @@ def test_database_with_spaces(jinja_env):
 
 def test_database_with_brackets_and_spaces(jinja_env):
     assert _render(jinja_env, "[my database]") == "USE [my database];"
+
+
+def test_database_with_closing_bracket_in_name(jinja_env):
+    assert _render(jinja_env, "my]database") == "USE [mydatabase];"
+
+
+def test_database_with_brackets_containing_closing_bracket(jinja_env):
+    assert _render(jinja_env, "[my]database]") == "USE [mydatabase];"
