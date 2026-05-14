@@ -52,7 +52,7 @@ class FabricStoreTestFailuresMixin:
                     raise
 
 
-class TestFabricStoreTestFailures(BaseStoreTestFailures):
+class TestFabricStoreTestFailures(FabricStoreTestFailuresMixin, BaseStoreTestFailures):
     @pytest.fixture(scope="class")
     def tests(self):
         return {
@@ -67,7 +67,9 @@ class TestFabricStoreTestFailuresAsGeneric(
     pass
 
 
-class TestFabricStoreTestFailuresAsExceptions(StoreTestFailuresAsExceptions):
+class TestFabricStoreTestFailuresAsExceptions(
+    FabricStoreTestFailuresMixin, StoreTestFailuresAsExceptions
+):
     pass
 
 

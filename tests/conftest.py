@@ -257,8 +257,10 @@ def dbt_project_yml(project_root, project_config_update, adapter_type: str):
             project_config_update = yaml.safe_load(project_config_update)
         if isinstance(project_config_update, dict):
             _deep_merge(project_config, project_config_update)
-        elif isinstance(project_config_update, str):
-            updates = yaml.safe_load(project_config_update)
-            _deep_merge(project_config, updates)
+        else:
+            raise TypeError(
+                f"project_config_update must be a dict or YAML string, "
+                f"got {type(project_config_update).__name__}: {project_config_update!r}"
+            )
     write_file(yaml.safe_dump(project_config), project_root, "dbt_project.yml")
     return project_config

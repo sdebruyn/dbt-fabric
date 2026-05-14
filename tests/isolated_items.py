@@ -18,6 +18,7 @@ class FabricTestItemManager:
     FABRIC_API = "https://api.fabric.microsoft.com/v1"
     POWERBI_API = "https://api.powerbi.com/v1.0"
     PROVISION_TIMEOUT = 600
+    MAX_RETRIES = 10
 
     def __init__(self, workspace_name: str) -> None:
         self._workspace_name = workspace_name
@@ -43,11 +44,18 @@ class FabricTestItemManager:
         }
 
     def _request(self, method: str, url: str, body: dict | None = None) -> requests.Response:
-        resp = requests.request(method, url, json=body, headers=self._headers())
-        if resp.status_code == 429:
-            time.sleep(int(resp.headers.get("Retry-After", 5)))
-            return self._request(method, url, body)
-        return resp
+        for attempt in range(self.MAX_RETRIES):
+            resp = requests.request(method, url, json=body, headers=self._headers())
+            if resp.status_code != 429:
+                return resp
+            delay = int(resp.headers.get("Retry-After", 5))
+            if attempt == self.MAX_RETRIES - 1:
+                raise RuntimeError(
+                    f"Fabric API rate limit (429) not resolved after "
+                    f"{self.MAX_RETRIES} retries on {method.upper()} {url}"
+                )
+            time.sleep(delay)
+        raise RuntimeError("Unreachable")
 
     def get_workspace_id(self) -> str:
         if self._workspace_id:
@@ -63,19 +71,26 @@ class FabricTestItemManager:
         assert self._workspace_id is not None
         return self._workspace_id
 
+    def _create_item(self, item_type: str, url: str, name: str, body: dict) -> None:
+        resp = self._request("post", url, body)
+
+        if resp.status_code == 201:
+            self._items[name] = (item_type, resp.json()["id"])
+        elif resp.status_code == 202:
+            location = resp.headers.get("Location")
+            if not location:
+                raise RuntimeError(
+                    f"Fabric returned 202 Accepted for {item_type} '{name}' "
+                    f"but no Location header for polling"
+                )
+            self._pending.append((item_type, name, location))
+        else:
+            resp.raise_for_status()
+
     def create_warehouse(self, name: str) -> None:
         ws = self.get_workspace_id()
         url = f"{self.FABRIC_API}/workspaces/{ws}/warehouses"
-        resp = self._request("post", url, {"displayName": name})
-
-        if resp.status_code == 201:
-            self._items[name] = ("warehouse", resp.json()["id"])
-        elif resp.status_code == 202:
-            location = resp.headers.get("Location")
-            if location:
-                self._pending.append(("warehouse", name, location))
-        else:
-            resp.raise_for_status()
+        self._create_item("warehouse", url, name, {"displayName": name})
 
     def create_lakehouse(self, name: str) -> None:
         ws = self.get_workspace_id()
@@ -84,20 +99,11 @@ class FabricTestItemManager:
             "displayName": name,
             "creationPayload": {"enableSchemas": True},
         }
-        resp = self._request("post", url, body)
-
-        if resp.status_code == 201:
-            self._items[name] = ("lakehouse", resp.json()["id"])
-        elif resp.status_code == 202:
-            location = resp.headers.get("Location")
-            if location:
-                self._pending.append(("lakehouse", name, location))
-        else:
-            resp.raise_for_status()
+        self._create_item("lakehouse", url, name, body)
 
     def wait_for_all(self) -> None:
-        start = time.time()
         for item_type, name, location_url in self._pending:
+            start = time.time()
             while True:
                 elapsed = time.time() - start
                 if elapsed > self.PROVISION_TIMEOUT:
@@ -111,9 +117,13 @@ class FabricTestItemManager:
 
                 if status == "Succeeded":
                     result_location = resp.headers.get("Location")
-                    if result_location:
-                        result = self._request("get", result_location)
-                        self._items[name] = (item_type, result.json()["id"])
+                    if not result_location:
+                        raise RuntimeError(
+                            f"Provisioning succeeded for {item_type} '{name}' "
+                            f"but response has no Location header to retrieve item id"
+                        )
+                    result = self._request("get", result_location)
+                    self._items[name] = (item_type, result.json()["id"])
                     break
 
                 if status not in ("NotStarted", "Running"):
@@ -137,7 +147,8 @@ class FabricTestItemManager:
         else:
             return
 
-        self._request("delete", url)
+        resp = self._request("delete", url)
+        resp.raise_for_status()
 
     def delete_all(self) -> None:
         for name in list(self._items):
