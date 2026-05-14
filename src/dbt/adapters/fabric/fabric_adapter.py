@@ -32,6 +32,10 @@ class FabricAdapter(BaseFabricAdapter, SQLAdapter):
     AdapterSpecificConfigs = FabricConfigs
     Relation = FabricRelation
 
+    @classmethod
+    def quote(cls, identifier):
+        return "[{}]".format(identifier.replace("]", "]]"))
+
     _capabilities: CapabilityDict = CapabilityDict(
         {
             Capability.SchemaMetadataByRelations: CapabilitySupport(support=Support.Full),
