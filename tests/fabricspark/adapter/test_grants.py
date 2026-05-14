@@ -7,26 +7,26 @@ from dbt.tests.adapter.grants.test_seed_grants import BaseSeedGrants
 from dbt.tests.adapter.grants.test_snapshot_grants import BaseSnapshotGrants
 
 
-@pytest.mark.skip("FabricSpark Lakehouse does not support GRANT operations")
+@pytest.mark.skip("TODO: FabricSpark Lakehouse does not support GRANT operations")
 class TestModelGrantsFabricSpark(BaseModelGrants):
     pass
 
 
-@pytest.mark.skip("FabricSpark Lakehouse does not support GRANT operations")
+@pytest.mark.skip("TODO: FabricSpark Lakehouse does not support GRANT operations")
 class TestSeedGrantsFabricSpark(BaseSeedGrants):
     pass
 
 
-@pytest.mark.skip("FabricSpark Lakehouse does not support GRANT operations")
+@pytest.mark.skip("TODO: FabricSpark Lakehouse does not support GRANT operations")
 class TestSnapshotGrantsFabricSpark(BaseSnapshotGrants):
     pass
 
 
-@pytest.mark.skip("FabricSpark Lakehouse does not support GRANT operations")
+@pytest.mark.skip("TODO: FabricSpark Lakehouse does not support GRANT operations")
 class TestIncrementalGrantsFabricSpark(BaseIncrementalGrants):
     pass
 
 
-@pytest.mark.skip("FabricSpark Lakehouse does not support GRANT operations")
+@pytest.mark.skip("TODO: FabricSpark Lakehouse does not support GRANT operations")
 class TestInvalidGrantsFabricSpark(BaseInvalidGrants):
     pass
