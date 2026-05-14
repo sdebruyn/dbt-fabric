@@ -125,6 +125,16 @@ When you run `dbt docs generate`, this adapter includes **approximate row counts
 
 This adapter provides [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) compatibility macros that use Fabric's `OPENROWSET(BULK ...)` function to query Parquet, CSV, and JSONL files stored in Azure Blob Storage, ADLS, or OneLake. External sources are created as views wrapping OPENROWSET queries, so data is always fresh. See the [external tables guide](external-tables.md) for details.
 
+## [Microsoft Purview integration](purview-integration.md)
+
+This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:
+
+- **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
+- **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
+- **Table-level lineage**: a full lineage graph based on dbt's `ref()` and `source()` dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and [does not support sub-item lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric).
+
+The sync runs via `{{ purview_sync() }}` as an `on-run-end` hook or as a manual `dbt run-operation`.
+
 ## Better support for popular packages
 
 [dbt-utils](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) is already fully supported and more packages are being tested and added.

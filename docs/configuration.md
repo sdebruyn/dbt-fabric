@@ -378,3 +378,14 @@ The name of the Livy session. Sessions are reused across statements within a dbt
 !!! info "Used by both adapter types"
 
     This option is used by `type: fabricspark` for all SQL execution, and by `type: fabric` for Python model execution.
+
+### `purview_endpoint`
+
+Alias: `purview`<br>
+Example value: `https://your-account.purview.azure.com`
+
+The endpoint URL of your Microsoft Purview account. This is required to use the [Purview integration](purview-integration.md).
+
+You can find this in the Azure portal under your Purview account's Properties page (labeled "Atlas endpoint") or in the Purview governance portal settings.
+
+Your authentication identity must have **Data Curator** and **Data Reader** roles in the Purview account's root collection.
