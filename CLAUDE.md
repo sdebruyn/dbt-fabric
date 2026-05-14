@@ -233,6 +233,12 @@ Update this section by adding entries as patterns emerge. Format: short descript
 
 - **FabricSpark: base class `dbt_profile_target` override** — Some base test classes (e.g., `BaseSimpleCopyUppercase`) override `dbt_profile_target` with postgres-specific credentials. FabricSpark tests inheriting from these classes must re-override `dbt_profile_target` to pass through the conftest fixture: `@pytest.fixture(scope="class") def dbt_profile_target(self, dbt_profile_target): return dbt_profile_target`.
 
+- **FabricSpark: `seeds__expected_sql` multi-statement and type errors** — dbt-tests-adapter's seed test `setUp` fixture runs `seeds__expected_sql` which contains (1) PostgreSQL types (`TEXT`, `TIMESTAMP WITHOUT TIME ZONE`, `INTEGER`) and (2) multiple SQL statements separated by semicolons. Spark SQL fails on both: wrong types and multi-statement execution. Fix: replace types (`TEXT`→`STRING`, `TIMESTAMP WITHOUT TIME ZONE`→`TIMESTAMP`, `INTEGER`→`INT`), strip double quotes from column names (Spark uses backticks), and split on `;` to execute each statement separately via a `run_sql_statements()` helper. Also note Spark infers untyped integer columns as `bigint`, not `int` — use `bigint` in `properties__schema_yml` for seed_id type checks. See `tests/fabricspark/adapter/test_simple_seed.py`.
+
+- **FabricSpark: seed full-refresh cascade drop tests fail** — Tests like `test_simple_seed_full_refresh_flag` and `BaseSeedConfigFullRefreshOn` assume dropping a seed table cascades to drop dependent models (views). Fabric materialized views are not automatically dropped when their source table is recreated. Fix: skip these tests with reason "Dropping a seed table does not cascade to materialized views in Fabric". Same pattern as the Fabric T-SQL adapter.
+
+- **FabricSpark: `BaseSimpleSeedEnabledViaConfig` tests conflict in same class** — The three test methods (`test_simple_seed_with_disabled`, `test_simple_seed_selection`, `test_simple_seed_exclude`) assume a clean schema between each test (via `clear_test_schema` which drops and recreates the schema). FabricSpark can't drop schemas this way, and the `clear_test_schema` fixture is overridden to no-op. Fix: split into three test classes with one non-skipped test each, same pattern as the Fabric T-SQL adapter.
+
 ## Multi-agent development
 
 When implementing multiple test classes or fixing many failures at once, use parallel agents to speed up the work. The main conversation acts as coordinator.
