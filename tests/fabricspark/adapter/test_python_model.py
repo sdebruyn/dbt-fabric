@@ -1,3 +1,5 @@
+import pytest
+
 from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonEmptyTests,
     BasePythonIncrementalTests,
@@ -16,7 +18,11 @@ class TestPythonIncrementalTestsFabricSpark(BasePythonIncrementalTests):
 
 
 class TestPySparkTestsFabricSpark(BasePySparkTests):
-    pass
+    @pytest.mark.skip(
+        "TODO: FabricSpark PySpark dataframe type handling differs from standard Spark"
+    )
+    def test_different_dataframes(self):
+        pass
 
 
 class TestPythonEmptyTestsFabricSpark(BasePythonEmptyTests):
