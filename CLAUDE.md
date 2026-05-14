@@ -247,6 +247,10 @@ Update this section by adding entries as patterns emerge. Format: short descript
 
 - **FabricSpark: tests with raw DDL SQL fail** — Base tests that create objects via `project.run_sql()` with T-SQL DDL (e.g., `create materialized view`, `create view`) will fail on Spark. Fix: skip these tests with a descriptive reason.
 
+- **FabricSpark: snapshot `file_format` check fails** — dbt-spark's snapshot materialization requires `file_format` to be `delta`, `iceberg`, or `hudi` (default is `parquet`). Fabric Lakehouse is always Delta, so this check is unnecessary. Fix: the `fabricspark` adapter has its own snapshot materialization in `src/dbt/include/fabricspark/macros/materializations/snapshots/snapshot.sql` that skips the file format check. It also uses a real table (not a view) for the staging relation since FabricSpark doesn't support views, and provides `fabricspark__snapshot_merge_sql`, `fabricspark__snapshot_hash_arguments`, `fabricspark__snapshot_string_as_time`, `fabricspark__create_columns`, and `fabricspark__post_snapshot`.
+
+- **FabricSpark: `DEFAULT` values not supported in `ALTER TABLE ADD COLUMN`** — Delta tables in Fabric Lakehouse don't support `DEFAULT` clauses when adding columns via `ALTER TABLE ADD COLUMN`. The test harness's `add_column` helper uses `varchar(200) default null` which fails. Fix: override the method to strip `default ...` from the column definition and replace `varchar(N)` with `string` for Spark compatibility. See `tests/fabricspark/adapter/test_simple_snapshot.py` for the pattern.
+
 ## Multi-agent development
 
 When implementing multiple test classes or fixing many failures at once, use parallel agents to speed up the work. The main conversation acts as coordinator.
