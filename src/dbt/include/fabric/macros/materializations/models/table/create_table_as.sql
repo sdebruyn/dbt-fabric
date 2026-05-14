@@ -13,13 +13,23 @@
 {% endmacro %}
 
 
-{% macro fabric__build_cluster_by_clause() %}
-    {%- set cluster_by = config.get('cluster_by') -%}
-    {%- if cluster_by is not none -%}
-        {%- if cluster_by is string -%}
-            {%- set cluster_by = [cluster_by] -%}
+{% macro build_cluster_by_clause(temporary) %}
+    {{ return(adapter.dispatch('build_cluster_by_clause', 'dbt')(temporary)) }}
+{% endmacro %}
+
+{% macro fabric__build_cluster_by_clause(temporary) %}
+    {%- if not temporary -%}
+        {%- set cluster_by = config.get('cluster_by') -%}
+        {%- if cluster_by is not none -%}
+            {%- if cluster_by is string -%}
+                {%- set cluster_by = [cluster_by] -%}
+            {%- endif -%}
+            {%- set quoted_columns = [] -%}
+            {%- for col in cluster_by -%}
+                {%- do quoted_columns.append('[' ~ col | replace(']', ']]') ~ ']') -%}
+            {%- endfor -%}
+            WITH (CLUSTER BY ({{ quoted_columns | join(', ') }}))
         {%- endif -%}
-        WITH (CLUSTER BY ({{ cluster_by | join(', ') }}))
     {%- endif -%}
 {% endmacro %}
 
@@ -42,7 +52,7 @@
             CREATE TABLE {{relation}}
             {{ build_columns_constraints(relation) }}
             {{ get_assert_columns_equivalent(compiled_code)  }}
-            {{ fabric__build_cluster_by_clause() }}
+            {{ build_cluster_by_clause(temporary) }}
 
             {% set listColumns %}
                 {% for column in model['columns'] %}
@@ -60,7 +70,7 @@
         {%- else %}
 
             CREATE TABLE {{relation}}
-            {{ fabric__build_cluster_by_clause() }}
+            {{ build_cluster_by_clause(temporary) }}
             AS {{compiled_code}} {{ query_label }}
 
         {% endif %}

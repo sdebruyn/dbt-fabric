@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from dbt.tests.util import run_dbt
@@ -42,6 +44,13 @@ select 1 as id, 'blue' as color
 """
 
 
+def _read_compiled_sql(project, model_name):
+    run_dir = Path(project.project_root) / "target" / "run"
+    candidates = list(run_dir.rglob(f"{model_name}.sql"))
+    assert candidates, f"No compiled SQL found for {model_name} in {run_dir}"
+    return candidates[0].read_text()
+
+
 class TestClusterBySingleColumn:
     @pytest.fixture(scope="class")
     def models(self):
@@ -51,6 +60,10 @@ class TestClusterBySingleColumn:
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
+
+        compiled_sql = _read_compiled_sql(project, "model_single")
+        assert "CLUSTER BY" in compiled_sql
+        assert "[id]" in compiled_sql
 
 
 class TestClusterByMultipleColumns:
@@ -63,6 +76,11 @@ class TestClusterByMultipleColumns:
         assert len(results) == 1
         assert results[0].status == "success"
 
+        compiled_sql = _read_compiled_sql(project, "model_multi")
+        assert "CLUSTER BY" in compiled_sql
+        assert "[id]" in compiled_sql
+        assert "[color]" in compiled_sql
+
 
 class TestClusterByNoCluster:
     @pytest.fixture(scope="class")
@@ -73,6 +91,9 @@ class TestClusterByNoCluster:
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
+
+        compiled_sql = _read_compiled_sql(project, "model_no_cluster")
+        assert "CLUSTER BY" not in compiled_sql
 
 
 class TestClusterByWithContract:
@@ -88,6 +109,11 @@ class TestClusterByWithContract:
         assert len(results) == 1
         assert results[0].status == "success"
 
+        compiled_sql = _read_compiled_sql(project, "model_cluster_contract")
+        assert "CLUSTER BY" in compiled_sql
+        assert "[id]" in compiled_sql
+        assert "[color]" in compiled_sql
+
 
 class TestClusterByIncremental:
     @pytest.fixture(scope="class")
@@ -98,6 +124,10 @@ class TestClusterByIncremental:
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
+
+        compiled_sql = _read_compiled_sql(project, "model_cluster_incr")
+        assert "CLUSTER BY" in compiled_sql
+        assert "[id]" in compiled_sql
 
         results = run_dbt(["run"])
         assert len(results) == 1
