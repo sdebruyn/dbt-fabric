@@ -27,7 +27,9 @@ class TestIncrementalOnSchemaChangeFabricSpark(BaseIncrementalOnSchemaChange):
         pass
 
 
-@pytest.mark.skip("dbt-spark does not implement the delete+insert incremental strategy")
+@pytest.mark.skip(
+    "Delta Lake on Fabric Lakehouse does not support subqueries in DELETE statements"
+)
 class TestIncrementalPredicatesDeleteInsertFabricSpark(BaseIncrementalPredicates):
     pass
 
@@ -70,11 +72,13 @@ class TestFabricSparkMicrobatch(BaseMicrobatch):
 
     @pytest.fixture(scope="class")
     def insert_two_rows_sql(self, project) -> str:
-        test_schema_relation = project.adapter.Relation.create(
-            database=project.database, schema=project.test_schema
+        target_relation = project.adapter.Relation.create(
+            database=project.database,
+            schema=project.test_schema,
+            identifier="input_model",
         )
         return (
-            f"merge into {test_schema_relation}.input_model as t "
+            f"merge into {target_relation} as t "
             "using (select 4 as id, cast('2020-01-04 00:00:00' as timestamp) as event_time "
             "union all "
             "select 5 as id, cast('2020-01-05 00:00:00' as timestamp) as event_time) as s "

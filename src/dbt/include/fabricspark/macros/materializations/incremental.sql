@@ -13,9 +13,9 @@
   {%- set language = model['language'] -%}
   {%- set on_schema_change = incremental_validate_on_schema_change(config.get('on_schema_change'), default='ignore') -%}
   {%- set incremental_predicates = config.get('predicates', none) or config.get('incremental_predicates', none) -%}
-  {%- set target_relation = this -%}
+  {%- set target_relation = this.incorporate(type='table') -%}
   {%- set existing_relation = load_relation(this) -%}
-  {% set tmp_relation = this.incorporate(path = {"identifier": this.identifier ~ '__dbt_tmp'}) -%}
+  {% set tmp_relation = this.incorporate(path={"identifier": this.identifier ~ '__dbt_tmp'}, type='table') -%}
 
   {%- if strategy in ['insert_overwrite', 'microbatch'] and partition_by -%}
     {%- call statement() -%}
@@ -23,7 +23,8 @@
     {%- endcall -%}
   {%- endif -%}
 
-  {{ run_hooks(pre_hooks) }}
+  {{ run_hooks(pre_hooks, inside_transaction=False) }}
+  {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
   {%- if existing_relation is none -%}
     {%- call statement('main', language=language) -%}
@@ -55,7 +56,8 @@
 
   {% do persist_docs(target_relation, model) %}
 
-  {{ run_hooks(post_hooks) }}
+  {{ run_hooks(post_hooks, inside_transaction=True) }}
+  {{ run_hooks(post_hooks, inside_transaction=False) }}
 
   {{ return({'relations': [target_relation]}) }}
 
