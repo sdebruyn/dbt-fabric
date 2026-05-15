@@ -1,6 +1,8 @@
 ---
 name: "DW integration tests"
 on:
+  schedule:
+    - cron: "0 2 * * 0"
   workflow_dispatch:
   pull_request:
     branches:
@@ -35,18 +37,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  resolve-matrix:
+    name: Resolve Python matrix
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set.outputs.matrix }}
+    steps:
+      - id: set
+        run: |
+          if [[ "${{ github.event_name }}" == "schedule" ]]; then
+            echo 'matrix=[{"python_version":"3.11","dwh_name":"ci02"},{"python_version":"3.12","dwh_name":"ci03"},{"python_version":"3.13","dwh_name":"ci04"}]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'matrix=[{"python_version":"3.13","dwh_name":"ci04"}]' >> "$GITHUB_OUTPUT"
+          fi
+
   integration-tests-fabric-dw:
     name: DW tests (Python ${{ matrix.python_version }})
+    needs: resolve-matrix
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - python_version: "3.11"
-            dwh_name: "ci02"
-          - python_version: "3.12"
-            dwh_name: "ci03"
-          - python_version: "3.13"
-            dwh_name: "ci04"
+        include: ${{ fromJson(needs.resolve-matrix.outputs.matrix) }}
 
     runs-on: ubuntu-latest
     environment: azure

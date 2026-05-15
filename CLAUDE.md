@@ -311,7 +311,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
-| `integration-tests-dw.yml` | PR, push, manual | DW tests: Python 3.11/3.12/3.13 matrix |
+| `integration-tests-dw.yml` | PR, push, manual, weekly (Sun 02:00 UTC) | DW tests: Python 3.13 only on PR/push/manual, full matrix (3.11/3.12/3.13) on weekly schedule |
 | `integration-tests-de.yml` | Weekly (Sun 01:00 UTC), PR comment (`/test-de`), manual | DE tests: weekly full run on main + on-demand per PR via `/test-de <filter>` or `gh workflow run` |
 | `publish-docker.yml` | Manual | Build CI Docker image (`.github/CI.Dockerfile`) → ghcr.io |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
