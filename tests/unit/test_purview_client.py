@@ -228,6 +228,33 @@ class TestBusinessMetadata:
         assert "guid-1" in call_args[0][1]
         assert "dbt_metadata" in call_args[0][1]
 
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_delete_business_metadata(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 204
+        mock_request.return_value = mock_response
+
+        client.delete_business_metadata("guid-1", "dbt_metadata")
+
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "delete"
+        assert "guid-1" in call_args[0][1]
+        assert "dbt_metadata" in call_args[0][1]
+
+
+class TestDeleteEntity:
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_delete_entity_by_guid(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_request.return_value = mock_response
+
+        client.delete_entity_by_guid("guid-1")
+
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "delete"
+        assert "guid-1" in call_args[0][1]
+
 
 class TestUpdateColumnDescriptions:
     @patch("dbt.adapters.fabric.purview_client.requests.request")
