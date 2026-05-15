@@ -32,10 +32,9 @@ The sync uses a "search first, create if missing" approach for all entity types.
 
 For both adapter types, the sync then:
 
-1. **Pushes descriptions** from dbt model and column YAML to `userDescription` on the entities
-2. **Creates column entities** for all physical columns (from database catalog), with descriptions from dbt YAML where available
-3. **Adds business metadata** like dbt tags, materialization type, test results, and custom meta
-4. **Creates lineage** between tables using dbt's `ref()` and `source()` dependency graph
+1. **Pushes descriptions and business metadata** from dbt model and column YAML to the entities — model descriptions, column descriptions, tags, materialization type, test results, and custom meta are all synced in a single bulk update
+2. **Creates column entities** for all physical columns (from database catalog), with data types and descriptions from dbt YAML where available
+3. **Creates lineage** between tables using dbt's `ref()` and `source()` dependency graph
 
 The sync writes to `userDescription` (not `description`), so it never overwrites metadata set by Purview scanners.
 
