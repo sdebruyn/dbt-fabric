@@ -6,10 +6,10 @@ on:
     - cron: '0 1 * * 0'
   pull_request:
     branches:
-      - forked-version
+      - main
   push:
     branches:
-      - forked-version
+      - main
 
 permissions:
   contents: read
