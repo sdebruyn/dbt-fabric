@@ -1,9 +1,19 @@
 import pytest
 
-from dbt.tests.adapter.basic import files
+from dbt.tests.adapter.basic import expected_catalog, files
 from dbt.tests.adapter.basic.test_adapter_methods import BaseAdapterMethod
 from dbt.tests.adapter.basic.test_base import BaseSimpleMaterializations
-from dbt.tests.adapter.basic.test_docs_generate import BaseDocsGenerate, BaseDocsGenReferences
+from dbt.tests.adapter.basic.test_docs_generate import (
+    BaseDocsGenerate,
+    BaseDocsGenReferences,
+    models__readme_md,
+    models__schema_yml,
+    ref_models__docs_md,
+    ref_models__ephemeral_copy_sql,
+    ref_models__ephemeral_summary_sql,
+    ref_models__schema_yml,
+    ref_sources__schema_yml,
+)
 from dbt.tests.adapter.basic.test_empty import BaseEmpty
 from dbt.tests.adapter.basic.test_ephemeral import BaseEphemeral
 from dbt.tests.adapter.basic.test_generic_tests import BaseGenericTests
@@ -24,6 +34,7 @@ from dbt.tests.adapter.basic.test_snapshot_timestamp import BaseSnapshotTimestam
 from dbt.tests.adapter.basic.test_table_materialization import BaseTableMaterialization
 from dbt.tests.adapter.basic.test_validate_connection import BaseValidateConnection
 from dbt.tests.util import (
+    AnyInteger,
     check_relation_types,
     check_relations_equal,
     check_result_nodes_by_name,
@@ -137,7 +148,9 @@ class TestEphemeralSpark(BaseEphemeral):
 
 
 class TestIncrementalSpark(BaseIncremental):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {"name": "incremental", "models": {"+materialized": "table"}}
 
 
 class TestIncrementalNotSchemaChangeFabric(BaseIncrementalNotSchemaChange):
@@ -145,19 +158,60 @@ class TestIncrementalNotSchemaChangeFabric(BaseIncrementalNotSchemaChange):
 
 
 class TestGenericTestsSpark(BaseGenericTests):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "view_model.sql": """
+  {{ config(materialized="materialized_view") }}
+"""
+            + files.model_base,
+            "table_model.sql": files.base_table_sql,
+            "schema.yml": files.schema_base_yml,
+            "schema_view.yml": files.generic_test_view_yml,
+            "schema_table.yml": files.generic_test_table_yml,
+        }
 
 
 class TestSnapshotCheckColsSpark(BaseSnapshotCheckCols):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {"name": "snapshot_strategy_check_cols", "models": {"+materialized": "table"}}
 
 
 class TestSnapshotTimestampSpark(BaseSnapshotTimestamp):
-    pass
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {"name": "snapshot_strategy_timestamp", "models": {"+materialized": "table"}}
 
 
 class TestBaseCachingSpark(BaseAdapterMethod):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        adapter_methods_model_sql = """
+{% set upstream = ref('upstream') %}
+
+{% if execute %}
+    {%- do adapter.drop_schema(upstream) -%}
+    {% set existing = adapter.get_relation(upstream.database, upstream.schema, upstream.identifier) %}
+    {% if existing is not none %}
+        {% do exceptions.raise_compiler_error('expected ' ~ ' to not exist, but it did') %}
+    {% endif %}
+
+    {%- do adapter.create_schema(upstream) -%}
+
+    {# upstream uses create_view_as — FabricSpark has no view support #}
+    {% set sql = create_table_as(False, upstream, 'select 2 as id') %}
+    {% do run_query(sql) %}
+{% endif %}
+
+
+select * from {{ upstream }}
+"""
+        return {
+            "upstream.sql": "select 1 as id",
+            "expected.sql": "-- {{ ref('model') }}\nselect 2 as id",
+            "model.sql": adapter_methods_model_sql,
+        }
 
 
 class TestValidateConnectionSpark(BaseValidateConnection):
@@ -165,11 +219,84 @@ class TestValidateConnectionSpark(BaseValidateConnection):
 
 
 class TestDocsGenerateSpark(BaseDocsGenerate):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "schema.yml": models__schema_yml,
+            "second_model.sql": """
+{{
+    config(
+        materialized='materialized_view',
+        schema='test',
+    )
+}}
+
+select * from {{ ref('seed') }}
+""",
+            "readme.md": models__readme_md,
+            "model.sql": """
+{{
+    config(
+        materialized='materialized_view',
+    )
+}}
+
+select * from {{ ref('seed') }}
+""",
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_catalog(self, project, profile_user):
+        return expected_catalog.base_expected_catalog(
+            project,
+            role=None,
+            id_type="bigint",
+            text_type="string",
+            time_type="timestamp",
+            view_type="materialized_view",
+            table_type="table",
+            model_stats=expected_catalog.no_stats(),
+        )
 
 
 class TestDocsGenReferencesSpark(BaseDocsGenReferences):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "schema.yml": ref_models__schema_yml,
+            "sources.yml": ref_sources__schema_yml,
+            "view_summary.sql": """
+{{
+  config(
+    materialized = "materialized_view"
+  )
+}}
+
+select first_name, ct from {{ref('ephemeral_summary')}}
+""",
+            "ephemeral_summary.sql": ref_models__ephemeral_summary_sql,
+            "ephemeral_copy.sql": ref_models__ephemeral_copy_sql,
+            "docs.md": ref_models__docs_md,
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_catalog(self, project, profile_user):
+        catalog = expected_catalog.expected_references_catalog(
+            project,
+            role=None,
+            id_type="bigint",
+            text_type="string",
+            time_type="timestamp",
+            bigint_type="bigint",
+            view_type="materialized_view",
+            table_type="table",
+            model_stats=expected_catalog.no_stats(),
+        )
+        for section in catalog.values():
+            for node in section.values():
+                for col in node.get("columns", {}).values():
+                    col["index"] = AnyInteger()
+        return catalog
 
 
 class TestTableMaterializationSpark(BaseTableMaterialization):
