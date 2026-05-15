@@ -1,59 +1,8 @@
-import os
-
 import pytest
-import requests
 
-from dbt.adapters.fabric.purview_client import _API_VERSION, _SEARCH_API, PurviewClient
+from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import run_dbt, write_file
 from tests.conftest import requires_purview
-
-_PURVIEW_SCOPE = "https://purview.azure.net/.default"
-
-
-def _find_any_table(client: PurviewClient) -> dict | None:
-    """Search Purview for any table entity to use in tests."""
-    url = f"{client._endpoint}{_SEARCH_API}"
-    body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
-    resp = client._api_post(url, body)
-    results = resp.json().get("value", [])
-    return results[0] if results else None
-
-
-def _find_any_table_standalone(endpoint: str) -> dict | None:
-    """Search Purview for any table entity without depending on adapter fixtures.
-
-    Uses AzureCliCredential directly so that this can be called before the dbt
-    adapter and project are initialised (breaking the fixture dependency cycle
-    between models → purview_table → adapter → models).
-    """
-    from azure.identity import AzureCliCredential
-
-    token = AzureCliCredential().get_token(_PURVIEW_SCOPE).token
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type": "application/json",
-        "Accept": "application/json",
-    }
-    url = f"{endpoint.rstrip('/')}{_SEARCH_API}?api-version={_API_VERSION}"
-    body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
-    resp = requests.post(url, json=body, headers=headers)
-    if resp.status_code == 200:
-        results = resp.json().get("value", [])
-        if results:
-            return results[0]
-    return None
-
-
-def _find_test_process_entities(client: PurviewClient) -> list[dict]:
-    """Find dbt_transformation process entities created by tests."""
-    url = f"{client._endpoint}{_SEARCH_API}"
-    body = {"keywords": None, "filter": {"and": [{"objectType": "Process"}]}, "limit": 100}
-    resp = client._api_post(url, body)
-    return [
-        r
-        for r in resp.json().get("value", [])
-        if r.get("qualifiedName", "").startswith("dbt://model.test.")
-    ]
 
 
 @requires_purview
@@ -189,19 +138,9 @@ class TestPurviewMetadataSync:
     """Validates that dbt metadata lands correctly in Purview entities.
 
     Uses a model name from a real Purview entity so that purview_sync resolves it.
-    The purview_table fixture queries Purview independently (via AzureCliCredential)
-    to break the fixture dependency cycle: models → purview_table → adapter → models.
+    The purview_table fixture (session-scoped, from conftest) queries Purview
+    independently to break the fixture dependency cycle.
     """
-
-    @pytest.fixture(scope="class")
-    def purview_table(self):
-        endpoint = os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT")
-        if not endpoint:
-            pytest.skip("FABRIC_TEST_PURVIEW_ENDPOINT not set")
-        entity = _find_any_table_standalone(endpoint)
-        if entity is None:
-            pytest.skip("No tables indexed in Purview")
-        return entity
 
     @pytest.fixture(scope="class")
     def models(self, purview_table):
@@ -246,7 +185,7 @@ class TestPurviewMetadataSync:
             )
         except Exception:
             pass
-        for proc in _find_test_process_entities(purview_client):
+        for proc in purview_client.search_process_entities("dbt://model.test."):
             try:
                 purview_client.delete_entity_by_guid(proc["id"])
             except Exception:
