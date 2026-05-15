@@ -1,21 +1,8 @@
-import time
-
 import pytest
 
 from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import run_dbt, write_file
 from tests.conftest import requires_purview
-
-
-def _wait_for_purview_indexing(client: PurviewClient, table_name: str, timeout: int = 300):
-    """Poll Purview until a table entity with the given name appears."""
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        results = client.search_entities(name=table_name)
-        if results:
-            return results[0]
-        time.sleep(10)
-    pytest.fail(f"Purview did not index table '{table_name}' within {timeout}s")
 
 
 @requires_purview
@@ -53,10 +40,12 @@ models:
     columns:
       - name: id
         description: "Primary key"
+        data_type: int
         tests:
           - not_null
       - name: name
         description: "Display name"
+        data_type: varchar
   - name: derived_model
     description: "Derived model referencing base"
   - name: no_docs_model
@@ -78,11 +67,13 @@ models:
     columns:
       - name: id
         description: "Primary key (updated)"
+        data_type: int
         tests:
           - not_null
           - unique
       - name: name
         description: "Display name (updated)"
+        data_type: varchar
         tests:
           - not_null
   - name: derived_model
@@ -104,9 +95,9 @@ models:
 class TestPurviewSync:
     """Full integration test for Purview sync.
 
-    Creates dbt models, runs them, waits for Purview to index the tables,
-    then syncs and verifies that metadata, descriptions, and lineage land
-    correctly in Purview.
+    Creates dbt models, runs them, then syncs metadata to Purview.
+    The sync creates entities in Purview if they don't exist (e.g. for
+    Data Warehouse tables that Purview's live view doesn't index).
     """
 
     @pytest.fixture(scope="class")
@@ -119,13 +110,20 @@ class TestPurviewSync:
         }
 
     @pytest.fixture(scope="class")
-    def base_model_entity(self, project, purview_client):
-        """Run dbt models and wait for Purview to index base_model."""
+    def synced_entities(self, project, purview_client):
+        """Run dbt models and sync to Purview, then search for created entities."""
         run_dbt(["run"])
-        return _wait_for_purview_indexing(purview_client, "base_model")
+        run_dbt(["run-operation", "purview_sync"])
+
+        entities = {}
+        for name in ("base_model", "derived_model", "no_docs_model"):
+            results = purview_client.search_entities(name=name)
+            if results:
+                entities[name] = results[0]
+        return entities
 
     @pytest.fixture(scope="class", autouse=True)
-    def cleanup_purview(self, purview_client, base_model_entity, project):
+    def cleanup_purview(self, purview_client, synced_entities, project):
         yield
         for name in ("base_model", "derived_model", "no_docs_model"):
             results = purview_client.search_entities(name=name)
@@ -151,16 +149,19 @@ class TestPurviewSync:
             except Exception:
                 pass
 
-    def test_sync_completes(self, base_model_entity, project):
-        run_dbt(["run-operation", "purview_sync"])
+    def test_sync_creates_entities(self, synced_entities):
+        assert "base_model" in synced_entities
+        assert "derived_model" in synced_entities
 
-    def test_description_landed(self, purview_client, base_model_entity):
-        entity_data = purview_client.get_entity_by_guid(base_model_entity["id"])
+    def test_description_landed(self, purview_client, synced_entities):
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
         assert desc == "Base model for Purview integration test"
 
-    def test_business_metadata_landed(self, purview_client, base_model_entity):
-        entity_data = purview_client.get_entity_by_guid(base_model_entity["id"])
+    def test_business_metadata_landed(self, purview_client, synced_entities):
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
         assert bm["dbt_model_id"] == "model.test.base_model"
         assert "dbt_last_sync" in bm
@@ -171,15 +172,14 @@ class TestPurviewSync:
         processes = purview_client.search_process_entities("dbt://model.test.derived_model")
         assert len(processes) >= 1
 
-    def test_persist_docs_false_skips_model(self, purview_client):
-        results = purview_client.search_entities(name="no_docs_model")
-        if not results:
+    def test_persist_docs_false_skips_model(self, purview_client, synced_entities):
+        if "no_docs_model" not in synced_entities:
             return
-        entity_data = purview_client.get_entity_by_guid(results[0]["id"])
+        entity_data = purview_client.get_entity_by_guid(synced_entities["no_docs_model"]["id"])
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata")
         assert bm is None
 
-    def test_selective_flags(self, base_model_entity, project):
+    def test_selective_flags(self, synced_entities, project):
         run_dbt(
             [
                 "run-operation",
@@ -189,21 +189,20 @@ class TestPurviewSync:
             ]
         )
 
-    def test_update_overwrites(self, project, purview_client, base_model_entity):
+    def test_update_overwrites(self, project, purview_client, synced_entities):
         write_file(_SCHEMA_V2, project.project_root, "models", "schema.yml")
         run_dbt(["run"])
         run_dbt(["run-operation", "purview_sync"])
 
-        entity_data = purview_client.get_entity_by_guid(base_model_entity["id"])
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
 
         assert desc == "Updated base model (v2)"
         assert "unique" in bm.get("dbt_tests", "")
 
-    def test_persist_docs_false_does_not_overwrite(
-        self, project, purview_client, base_model_entity
-    ):
+    def test_persist_docs_false_does_not_overwrite(self, project, purview_client, synced_entities):
         write_file(
             "version: 2\n"
             "models:\n"
@@ -220,7 +219,8 @@ class TestPurviewSync:
         run_dbt(["run"])
         run_dbt(["run-operation", "purview_sync"])
 
-        entity_data = purview_client.get_entity_by_guid(base_model_entity["id"])
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
 
