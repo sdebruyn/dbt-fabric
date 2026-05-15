@@ -204,11 +204,11 @@ class PurviewClient:
     dbt-to-Purview sync workflow.
 
     Typical usage flow:
-        1. ensure_type_definitions() — registers custom types (dbt_metadata, dbt_transformation)
+        1. ensure_type_definitions() — registers custom types (dbt_metadata, dbt_transformation,
+           fabric_warehouse entity/relationship types)
         2. search_entities() — finds Purview entities matching dbt model names
-        3. update_entity_description() / update_column_descriptions() — pushes dbt descriptions
-        4. set_business_metadata() — attaches dbt tags, materialization, test results
-        5. bulk_create_or_update() — creates lineage process entities
+        3. bulk_create_or_update() — creates/updates entities with descriptions,
+           business metadata, labels, columns, and lineage in batched calls
 
     All HTTP requests go through _api_request(), which handles auth headers and
     retries on 429 (rate limit). Batch operations (bulk_create_or_update) split
@@ -399,13 +399,14 @@ class PurviewClient:
         try:
             self._api_post(url, type_def)
             return True
-        except dbt_common.exceptions.DbtRuntimeError:
-            pass
+        except dbt_common.exceptions.DbtRuntimeError as e:
+            logger.debug(f"Type definition POST failed (may already exist), trying PUT: {e}")
 
         try:
             self._api_put(url, type_def)
             return True
-        except dbt_common.exceptions.DbtRuntimeError:
+        except dbt_common.exceptions.DbtRuntimeError as e:
+            logger.warning(f"Type definition PUT also failed: {e}")
             return False
 
     def ensure_type_definitions(self) -> bool:
@@ -444,6 +445,24 @@ class PurviewClient:
 
         self._types_ensured = all_ok
         return self._types_ensured
+
+    def get_type_def_by_name(self, name: str) -> dict | None:
+        """Fetch a type definition by name. Returns None if not found."""
+        url = f"{self._endpoint}{_TYPEDEF_API}/name/{name}"
+        try:
+            response = self._api_get(url)
+            return response.json()
+        except dbt_common.exceptions.DbtRuntimeError:
+            return None
+
+    def delete_type_def_by_name(self, name: str) -> bool:
+        """Delete a type definition by name. Returns True if deleted or not found."""
+        url = f"{self._endpoint}{_TYPEDEF_API}/name/{name}"
+        try:
+            self._api_request(url, method="delete")
+            return True
+        except dbt_common.exceptions.DbtRuntimeError:
+            return False
 
     def delete_business_metadata(self, guid: str, bm_name: str) -> None:
         """Remove all attributes of a business metadata type from an entity."""
@@ -485,7 +504,7 @@ class PurviewClient:
         referred_entities = entity_data.get("referredEntities", {})
 
         lower_descs = {k.lower(): v for k, v in column_descriptions.items()}
-        updates: list[dict] = []
+        updates: list[AtlasEntity] = []
         for col_guid, col_entity in referred_entities.items():
             col_name = col_entity.get("attributes", {}).get("name", "")
             desc = lower_descs.get(col_name.lower())

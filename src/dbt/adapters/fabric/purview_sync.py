@@ -13,6 +13,9 @@ from dbt.adapters.fabric.purview_types import (
 
 logger = AdapterLogger("fabric")
 
+_FABRIC_PORTAL_BASE_URL = "https://app.fabric.microsoft.com"
+_FABRIC_GROUPS_URL = f"{_FABRIC_PORTAL_BASE_URL}/groups"
+
 
 def extract_syncable_models(graph: dict, results: list | None = None) -> list[dict]:
     """Extract models, seeds, and snapshots from the dbt graph that should be synced to Purview.
@@ -68,17 +71,15 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
     return f"{database}.{schema}.{name}".lower()
 
 
-_FABRIC_BASE_URL = "https://app.fabric.microsoft.com/groups"
-
-
 def _extract_guid(result: BulkResponse, qualified_name: str) -> str | None:
     """Extract the GUID for an entity from a bulk_create_or_update response."""
     for entities in result.get("mutatedEntities", {}).values():
         for entity in entities:
             if entity.get("attributes", {}).get("qualifiedName") == qualified_name:
                 return entity.get("guid")
-    for key, guid in result.get("guidAssignments", {}).items():
-        return guid
+    assignments = result.get("guidAssignments", {})
+    if len(assignments) == 1:
+        return next(iter(assignments.values()))
     return None
 
 
@@ -272,7 +273,7 @@ class PurviewSync:
         Entities are created sequentially because Purview requires referenced entities
         to exist before they can be used in relationshipAttributes.
         """
-        wh_qn = f"{_FABRIC_BASE_URL}/{workspace_id}/warehouses/{warehouse_id}"
+        wh_qn = f"{_FABRIC_GROUPS_URL}/{workspace_id}/warehouses/{warehouse_id}"
         schema_qn = f"{wh_qn}/schemas/{schema}"
         table_qn = f"{schema_qn}/tables/{table_name}"
 
@@ -327,7 +328,7 @@ class PurviewSync:
     ) -> PurviewEntityRef | None:
         """Create a fabric_lakehouse_table entity."""
         table_qn = (
-            f"{_FABRIC_BASE_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_name}"
+            f"{_FABRIC_GROUPS_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_name}"
         )
 
         result = self._client.bulk_create_or_update(
@@ -642,7 +643,11 @@ class PurviewSync:
             return resolved[cache_key]
 
         item = self._resolve_item(database) if database else None
-        db_ids = [database, item[1]] if item else None
+        if not item:
+            logger.info(f"Purview: no entity found for source {source_id}, skipping")
+            return None
+
+        db_ids = [database, item[1]]
         results = self._client.search_entities(name=name, database_identifiers=db_ids)
 
         if not results:

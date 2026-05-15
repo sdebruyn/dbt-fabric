@@ -2,22 +2,119 @@ import pytest
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.purview_client import PurviewClient
-from dbt.adapters.fabric.purview_sync import _FABRIC_BASE_URL
+from dbt.adapters.fabric.purview_sync import _FABRIC_GROUPS_URL
 from dbt.tests.util import run_dbt, write_file
 from tests.conftest import requires_purview
+
+_CUSTOM_RELATIONSHIP_TYPES = [
+    "fabric_warehouse_table_columns",
+    "fabric_warehouse_table_schemas",
+    "fabric_warehouse_schema_warehouses",
+]
+_CUSTOM_ENTITY_TYPES = [
+    "fabric_warehouse_table_column",
+    "fabric_warehouse_table",
+    "fabric_warehouse_schema",
+    "dbt_transformation",
+]
+_CUSTOM_BM_TYPES = ["dbt_metadata"]
+
+
+def _cleanup_custom_types(client: PurviewClient) -> None:
+    """Best-effort deletion of custom Purview type definitions.
+
+    Deletion order: relationships first (they reference entity types),
+    then entity types, then business metadata types.
+    May fail if entities of these types still exist.
+    """
+    for name in _CUSTOM_RELATIONSHIP_TYPES:
+        client.delete_type_def_by_name(name)
+    for name in _CUSTOM_ENTITY_TYPES:
+        client.delete_type_def_by_name(name)
+    for name in _CUSTOM_BM_TYPES:
+        client.delete_type_def_by_name(name)
+
+
+def _build_warehouse_qn(workspace_id: str, warehouse_id: str) -> str:
+    return f"{_FABRIC_GROUPS_URL}/{workspace_id}/warehouses/{warehouse_id}"
+
+
+def _cleanup_test_entities(
+    client: PurviewClient,
+    workspace_id: str,
+    warehouse_id: str,
+    schema: str,
+    table_names: list[str],
+) -> None:
+    """Delete all test entities from Purview: process, columns, tables, schema.
+
+    Uses direct qualified-name lookups (not search) so cleanup works even
+    immediately after creation (bypasses eventually-consistent search index).
+    """
+    wh_qn = _build_warehouse_qn(workspace_id, warehouse_id)
+
+    for name in table_names:
+        _delete_entity_if_exists(client, "dbt_transformation", f"dbt://model.test.{name}")
+
+    for name in table_names:
+        table_qn = f"{wh_qn}/schemas/{schema}/tables/{name}"
+        table_result = client.get_entity_by_qualified_name("fabric_warehouse_table", table_qn)
+        if table_result and "entity" in table_result:
+            for col_guid in table_result.get("referredEntities", {}):
+                try:
+                    client.delete_entity_by_guid(col_guid)
+                except Exception:
+                    pass
+
+    for name in table_names:
+        _delete_entity_if_exists(
+            client, "fabric_warehouse_table", f"{wh_qn}/schemas/{schema}/tables/{name}"
+        )
+
+    _delete_entity_if_exists(client, "fabric_warehouse_schema", f"{wh_qn}/schemas/{schema}")
+
+    for proc in client.search_process_entities("dbt://model.test."):
+        try:
+            client.delete_entity_by_guid(proc["id"])
+        except Exception:
+            pass
+
+
+def _delete_entity_if_exists(client: PurviewClient, type_name: str, qualified_name: str) -> None:
+    result = client.get_entity_by_qualified_name(type_name, qualified_name)
+    if result and "entity" in result:
+        try:
+            client.delete_entity_by_guid(result["entity"]["guid"])
+        except Exception:
+            pass
 
 
 @requires_purview
 class TestPurviewEnsureTypeDefinitions:
-    def test_registers_type_definitions(self, purview_client: PurviewClient):
-        purview_client.ensure_type_definitions()
-        assert purview_client._types_ensured
+    """Test custom type definition registration from a clean state.
+
+    Deletes existing custom types before testing so the POST (creation) path
+    is exercised, not just the PUT (update) path.
+    """
+
+    @pytest.fixture(scope="class", autouse=True)
+    def clean_types(self, purview_client: PurviewClient):
+        _cleanup_custom_types(purview_client)
+        yield
+
+    def test_creates_and_verifies_type_definitions(self, purview_client: PurviewClient):
+        purview_client._types_ensured = False
+        assert purview_client.ensure_type_definitions()
+
+        for name in _CUSTOM_ENTITY_TYPES + _CUSTOM_BM_TYPES:
+            td = purview_client.get_type_def_by_name(name)
+            assert td is not None, f"Type {name} not found after registration"
 
     def test_idempotent_registration(self, purview_client: PurviewClient):
         purview_client._types_ensured = False
-        purview_client.ensure_type_definitions()
+        assert purview_client.ensure_type_definitions()
         purview_client._types_ensured = False
-        purview_client.ensure_type_definitions()
+        assert purview_client.ensure_type_definitions()
         assert purview_client._types_ensured
 
 
@@ -92,14 +189,16 @@ models:
         columns: false
 """
 
+_TABLE_NAMES = ["base_model", "derived_model", "no_docs_model"]
+
 
 @requires_purview
 class TestPurviewSync:
     """Full integration test for Purview sync.
 
     Creates dbt models, runs them, then syncs metadata to Purview.
-    The sync creates entities in Purview if they don't exist (e.g. for
-    Data Warehouse tables that Purview's live view doesn't index).
+    Cleans up all created entities both before (stale state from previous runs)
+    and after the test class.
     """
 
     @pytest.fixture(scope="class")
@@ -112,25 +211,31 @@ class TestPurviewSync:
         }
 
     @pytest.fixture(scope="class")
-    def synced_entities(self, project, purview_client, fabric_api_client: FabricApiClient):
-        """Run dbt models and sync to Purview, then look up created entities.
-
-        Uses get_entity_by_qualified_name instead of the search API because
-        Purview's search index is eventually consistent and doesn't index
-        custom entity types like fabric_warehouse_table under objectType:Tables.
-        """
-        run_dbt(["run"])
-        run_dbt(["run-operation", "purview_sync"])
-
+    def warehouse_info(self, fabric_api_client: FabricApiClient, project):
         workspace_id = fabric_api_client.get_workspace_id()
         warehouses = fabric_api_client.get_warehouses()
         warehouse_id = next(wh["id"] for wh in warehouses if wh["displayName"] == project.database)
+        return workspace_id, warehouse_id
+
+    @pytest.fixture(scope="class")
+    def synced_entities(self, project, purview_client, warehouse_info):
+        """Run dbt models and sync to Purview, then look up created entities.
+
+        Cleans up stale entities from previous runs before syncing.
+        Uses get_entity_by_qualified_name (bypasses eventually-consistent search index).
+        """
+        workspace_id, warehouse_id = warehouse_info
         schema = project.test_schema
 
+        _cleanup_test_entities(purview_client, workspace_id, warehouse_id, schema, _TABLE_NAMES)
+
+        run_dbt(["run"])
+        run_dbt(["run-operation", "purview_sync"])
+
         entities = {}
-        for name in ("base_model", "derived_model", "no_docs_model"):
+        for name in _TABLE_NAMES:
             qn = (
-                f"{_FABRIC_BASE_URL}/{workspace_id}/warehouses/{warehouse_id}"
+                f"{_FABRIC_GROUPS_URL}/{workspace_id}/warehouses/{warehouse_id}"
                 f"/schemas/{schema}/tables/{name}"
             )
             result = purview_client.get_entity_by_qualified_name("fabric_warehouse_table", qn)
@@ -145,29 +250,12 @@ class TestPurviewSync:
         return entities
 
     @pytest.fixture(scope="class", autouse=True)
-    def cleanup_purview(self, purview_client, synced_entities, project):
+    def cleanup_purview(self, purview_client, synced_entities, warehouse_info, project):
         yield
-        for entity in synced_entities.values():
-            guid = entity["id"]
-            try:
-                purview_client.delete_business_metadata(guid, "dbt_metadata")
-            except Exception:
-                pass
-            try:
-                purview_client.update_entity_description(
-                    guid=guid,
-                    type_name=entity["entityType"],
-                    qualified_name=entity["qualifiedName"],
-                    name=entity["name"],
-                    description="",
-                )
-            except Exception:
-                pass
-        for proc in purview_client.search_process_entities("dbt://model.test."):
-            try:
-                purview_client.delete_entity_by_guid(proc["id"])
-            except Exception:
-                pass
+        workspace_id, warehouse_id = warehouse_info
+        _cleanup_test_entities(
+            purview_client, workspace_id, warehouse_id, project.test_schema, _TABLE_NAMES
+        )
 
     def test_sync_creates_entities(self, synced_entities):
         assert "base_model" in synced_entities
@@ -178,6 +266,27 @@ class TestPurviewSync:
         entity_data = purview_client.get_entity_by_guid(entity["id"])
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
         assert desc == "Base model for Purview integration test"
+
+    def test_column_entities_created(self, purview_client, synced_entities):
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
+        referred = entity_data.get("referredEntities", {})
+
+        col_names = {
+            e["attributes"]["name"]: e
+            for e in referred.values()
+            if "column" in e.get("typeName", "").lower()
+        }
+        assert "id" in col_names, "Column 'id' not found"
+        assert "name" in col_names, "Column 'name' not found"
+
+        id_col = col_names["id"]
+        assert id_col["attributes"].get("userDescription") == "Primary key"
+        assert id_col["attributes"].get("data_type") == "int"
+
+        name_col = col_names["name"]
+        assert name_col["attributes"].get("userDescription") == "Display name"
+        assert name_col["attributes"].get("data_type") == "varchar"
 
     def test_business_metadata_landed(self, purview_client, synced_entities):
         entity = synced_entities["base_model"]

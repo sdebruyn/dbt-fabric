@@ -862,6 +862,33 @@ class TestPushLineage:
 
         client.bulk_create_or_update.assert_not_called()
 
+    def test_skips_source_when_database_unresolvable(self):
+        client = MagicMock()
+        graph = _make_graph(
+            sources={
+                "source.test.raw.orders": _make_source(database="unknown_db"),
+            }
+        )
+        sync = PurviewSync(
+            client,
+            _make_fabric_client(lakehouses=[], warehouses=[]),
+            graph,
+        )
+
+        downstream = _make_purview_entity()
+        node = _make_node(
+            depends_on={"nodes": ["source.test.raw.orders"]},
+        )
+        resolved = {
+            "model.test.my_model": downstream,
+            "my_db.dbo.my_model": downstream,
+        }
+
+        sync.push_lineage([node], resolved)
+
+        client.search_entities.assert_not_called()
+        client.bulk_create_or_update.assert_not_called()
+
     def test_skips_when_no_upstream_resolved(self):
         client = MagicMock()
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
