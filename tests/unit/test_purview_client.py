@@ -105,30 +105,30 @@ class TestSearchEntities:
         assert len(results) == 75
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
-    def test_search_falls_back_without_schema(self, mock_request, client):
-        no_results = MagicMock()
-        no_results.status_code = 200
-        no_results.json.return_value = {"value": [], "@search.count": 0}
-
-        with_results = MagicMock()
-        with_results.status_code = 200
-        with_results.json.return_value = {
+    def test_search_returns_all_without_database_filter(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
             "value": [
                 {
                     "id": "guid-1",
-                    "name": "my_table",
-                    "qualifiedName": "https://app.fabric.microsoft.com/groups/ws/lakehouses/lh/tables/my_table",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-dev/tables/fct_orders",
                     "entityType": "fabric_lakehouse_table",
-                }
+                },
+                {
+                    "id": "guid-2",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-prod/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
+                },
             ],
-            "@search.count": 1,
+            "@search.count": 2,
         }
-        mock_request.side_effect = [no_results, with_results]
+        mock_request.return_value = mock_response
 
-        results = client.search_entities(name="my_table", schema="dbo")
-        assert len(results) == 1
-        assert results[0]["entityType"] == "fabric_lakehouse_table"
-        assert mock_request.call_count == 2
+        results = client.search_entities(name="fct_orders")
+        assert len(results) == 2
 
 
 class TestBulkCreateOrUpdate:

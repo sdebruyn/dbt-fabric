@@ -130,60 +130,35 @@ class PurviewClient:
     def search_entities(
         self,
         name: str,
-        schema: str | None = None,
         database_identifiers: list[str] | None = None,
     ) -> list[dict]:
         """Search Purview for table entities by name, filtering by database identifiers.
 
         The database_identifiers list can contain both human-readable names and Fabric item
         GUIDs. Results are filtered by checking if any identifier appears in the qualifiedName.
-
-        When schema is provided, first tries a server-side filter on qualifiedName. Falls back
-        to searching without schema since Lakehouse qualifiedNames don't contain schema names.
         """
         url = f"{self._endpoint}{_SEARCH_API}"
-        base_filters: list[dict] = [
+        filters: list[dict] = [
             {"attributeName": "name", "operator": "eq", "attributeValue": name},
             {"objectType": "Tables"},
         ]
 
-        results = self._run_search(url, base_filters, schema)
+        results = self._run_search(url, filters)
+
         if database_identifiers:
-            filtered = self._filter_by_database(results, database_identifiers)
+            lower_ids = [i.lower() for i in database_identifiers]
+            filtered = [
+                r
+                for r in results
+                if any(i in r.get("qualifiedName", "").lower() for i in lower_ids)
+            ]
             if filtered:
                 return filtered
 
-        if results:
-            return results
-
-        if schema:
-            results = self._run_search(url, base_filters, None)
-            if database_identifiers:
-                filtered = self._filter_by_database(results, database_identifiers)
-                if filtered:
-                    return filtered
-
         return results
 
-    @staticmethod
-    def _filter_by_database(results: list[dict], identifiers: list[str]) -> list[dict]:
-        """Filter search results to those whose qualifiedName contains any of the identifiers."""
-        lower_ids = [i.lower() for i in identifiers]
-        return [
-            r for r in results if any(i in r.get("qualifiedName", "").lower() for i in lower_ids)
-        ]
-
-    def _run_search(self, url: str, base_filters: list[dict], schema: str | None) -> list[dict]:
+    def _run_search(self, url: str, filters: list[dict]) -> list[dict]:
         """Execute a paginated search request against the Purview Data Map search API."""
-        filters = list(base_filters)
-        if schema:
-            filters.append(
-                {
-                    "attributeName": "qualifiedName",
-                    "operator": "contains",
-                    "attributeValue": schema,
-                }
-            )
 
         body: dict = {
             "keywords": None,
