@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import pytest
 
@@ -20,6 +21,17 @@ from dbt.tests.adapter.hooks.test_model_hooks import (
 )
 from dbt.tests.adapter.hooks.test_run_hooks import BaseAfterRunHooks, BasePrePostRunHooks
 from dbt.tests.fixtures.project import TestProjInfo
+from dbt.tests.util import write_file
+
+SPARK_SNAPSHOT = """
+{% snapshot example_snapshot %}
+{{
+    config(target_schema=schema, unique_key='a', strategy='check', check_cols='all',
+           file_format='delta')
+}}
+select * from {{ ref('example_seed') }}
+{% endsnapshot %}
+"""
 
 
 class SparkRunModelFile:
@@ -186,6 +198,12 @@ class TestPrePostModelHooksOnSeedsPlusPrefixedWhitespaceFabricSpark(
 
 
 class TestPrePostModelHooksOnSnapshotsFabricSpark(BasePrePostModelHooksOnSnapshots):
+    @pytest.fixture(scope="class", autouse=True)
+    def setUp(self, project):
+        path = Path(project.project_root) / "test-snapshots"
+        Path.mkdir(path, exist_ok=True)
+        write_file(SPARK_SNAPSHOT, path, "snapshot.sql")
+
     @pytest.fixture(scope="class")
     def project_config_update(self):
         return {
@@ -205,6 +223,12 @@ class TestPrePostModelHooksOnSnapshotsFabricSpark(BasePrePostModelHooksOnSnapsho
 
 
 class TestPrePostSnapshotHooksInConfigKwargsFabricSpark(BasePrePostSnapshotHooksInConfigKwargs):
+    @pytest.fixture(scope="class", autouse=True)
+    def setUp(self, project):
+        path = Path(project.project_root) / "test-kwargs-snapshots"
+        Path.mkdir(path, exist_ok=True)
+        write_file(SPARK_SNAPSHOT, path, "snapshot.sql")
+
     @pytest.fixture(scope="class")
     def project_config_update(self):
         return {
