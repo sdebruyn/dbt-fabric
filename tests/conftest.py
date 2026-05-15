@@ -89,6 +89,33 @@ def pytest_configure(config):
     )
 
 
+def pytest_ignore_collect(collection_path, config):
+    tests_root = Path(__file__).parent
+    try:
+        rel = collection_path.relative_to(tests_root)
+    except ValueError:
+        return None
+
+    parts = rel.parts
+    if not parts:
+        return None
+
+    top_dir = parts[0]
+
+    if config.getoption("--dw", default=False) and top_dir == "fabricspark":
+        return True
+    if config.getoption("--de", default=False) and top_dir == "fabric":
+        return True
+
+    if top_dir == "fabricspark":
+        try:
+            import dbt.adapters.spark  # noqa: F401
+        except ImportError:
+            return True
+
+    return None
+
+
 def pytest_collection_modifyitems(config, items):
     if config.getoption("--de") and config.getoption("--dw"):
         raise ValueError("Cannot specify both --de and --dw options")
