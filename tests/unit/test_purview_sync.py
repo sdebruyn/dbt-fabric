@@ -317,16 +317,11 @@ class TestResolveEntities:
         assert len(resolved) == 0
 
     def test_creates_entity_when_no_match_but_database_known(self):
-        table_qn = (
-            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/b2c3d4e5/tables/my_model"
-        )
         client = MagicMock()
         client.search_entities.return_value = []
         client.bulk_create_or_update.return_value = {
-            "mutatedEntities": {
-                "CREATE": [{"guid": "new-guid", "attributes": {"qualifiedName": table_qn}}]
-            },
-            "guidAssignments": {},
+            "mutatedEntities": {},
+            "guidAssignments": {"-1": "new-guid"},
         }
 
         fabric_client = _make_fabric_client()
@@ -1112,10 +1107,8 @@ class TestResolveItemType:
 class TestCreateEntityForModel:
     def _make_bulk_response(self, guid, qualified_name):
         return {
-            "mutatedEntities": {
-                "CREATE": [{"guid": guid, "attributes": {"qualifiedName": qualified_name}}]
-            },
-            "guidAssignments": {},
+            "mutatedEntities": {},
+            "guidAssignments": {"-1": guid},
         }
 
     def test_creates_warehouse_table_entity(self):

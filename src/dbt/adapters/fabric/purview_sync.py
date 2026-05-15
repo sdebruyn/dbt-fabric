@@ -71,15 +71,23 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
     return f"{database}.{schema}.{name}".lower()
 
 
-def _extract_guid(result: BulkResponse, qualified_name: str) -> str | None:
-    """Extract the GUID for an entity from a bulk_create_or_update response."""
+_TEMP_GUID = "-1"
+
+
+def _extract_guid(result: BulkResponse, temp_guid: str = _TEMP_GUID) -> str | None:
+    """Extract the GUID for an entity from a bulk_create_or_update response.
+
+    Relies on guidAssignments populated by the temp negative GUID in the create payload.
+    Falls back to mutatedEntities if guidAssignments doesn't contain the temp GUID.
+    """
+    assignments = result.get("guidAssignments", {})
+    if temp_guid in assignments:
+        return assignments[temp_guid]
     for entities in result.get("mutatedEntities", {}).values():
         for entity in entities:
-            if entity.get("attributes", {}).get("qualifiedName") == qualified_name:
-                return entity.get("guid")
-    assignments = result.get("guidAssignments", {})
-    if len(assignments) == 1:
-        return next(iter(assignments.values()))
+            guid = entity.get("guid")
+            if guid:
+                return guid
     return None
 
 
@@ -310,6 +318,7 @@ class PurviewSync:
             [
                 {
                     "typeName": "fabric_warehouse_table",
+                    "guid": _TEMP_GUID,
                     "attributes": {"qualifiedName": table_qn, "name": table_name},
                     "relationshipAttributes": {
                         "dbSchema": {
@@ -321,10 +330,13 @@ class PurviewSync:
             ]
         )
 
-        guid = _extract_guid(result, table_qn)
+        guid = _extract_guid(result)
+        if not guid:
+            logger.info(f"Purview: created entity {table_qn} but could not determine GUID")
+            return None
         logger.info(f"Purview: created warehouse table entity {table_qn}")
         return {
-            "id": guid or table_qn,
+            "id": guid,
             "name": table_name,
             "entityType": "fabric_warehouse_table",
             "qualifiedName": table_qn,
@@ -342,15 +354,19 @@ class PurviewSync:
             [
                 {
                     "typeName": "fabric_lakehouse_table",
+                    "guid": _TEMP_GUID,
                     "attributes": {"qualifiedName": table_qn, "name": table_name},
                 },
             ]
         )
 
-        guid = _extract_guid(result, table_qn)
+        guid = _extract_guid(result)
+        if not guid:
+            logger.info(f"Purview: created entity {table_qn} but could not determine GUID")
+            return None
         logger.info(f"Purview: created lakehouse table entity {table_qn}")
         return {
-            "id": guid or table_qn,
+            "id": guid,
             "name": table_name,
             "entityType": "fabric_lakehouse_table",
             "qualifiedName": table_qn,
