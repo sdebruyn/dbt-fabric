@@ -69,12 +69,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--dw", action="store_true", default=False, help="run only Fabric T-SQL tests"
     )
-    parser.addoption(
-        "--isolated",
-        action="store_true",
-        default=False,
-        help="create a temporary DW/Lakehouse for this test run (for multi-agent parallelism)",
-    )
 
 
 def pytest_configure(config):
@@ -181,54 +175,6 @@ def fabric_api_client(
     fabric_token_provider: FabricTokenProvider, credentials: FabricCredentials
 ) -> FabricApiClient:
     return FabricApiClient.create(credentials, fabric_token_provider)
-
-
-@pytest.fixture(scope="session", autouse=True)
-def isolated_fabric_items(request):
-    if not request.config.getoption("--isolated"):
-        yield
-        return
-
-    from tests.isolated_items import FabricTestItemManager
-
-    workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
-    if not workspace_name:
-        raise ValueError("FABRIC_TEST_WORKSPACE_NAME must be set for --isolated mode")
-
-    manager = FabricTestItemManager(workspace_name)
-    suffix = manager.generate_suffix()
-
-    run_dw = request.config.getoption("--dw") or not request.config.getoption("--de")
-    run_de = request.config.getoption("--de") or not request.config.getoption("--dw")
-
-    dw_name = f"dbt_test_dw_{suffix}" if run_dw else None
-    lh_name = f"dbt_test_lh_{suffix}" if run_de else None
-
-    try:
-        if dw_name:
-            print(f"\n=== Creating isolated Data Warehouse: {dw_name}")
-            manager.create_warehouse(dw_name)
-
-        if lh_name:
-            print(f"\n=== Creating isolated Lakehouse: {lh_name}")
-            manager.create_lakehouse(lh_name)
-
-        print("\n=== Waiting for Fabric items to provision...")
-        manager.wait_for_all()
-
-        if dw_name:
-            os.environ["FABRIC_TEST_DWH_NAME"] = dw_name
-            print(f"=== Data Warehouse ready: {dw_name}")
-
-        if lh_name:
-            os.environ["FABRIC_TEST_LAKEHOUSE_NAME"] = lh_name
-            print(f"=== Lakehouse ready: {lh_name}")
-
-        yield
-    finally:
-        print("\n=== Cleaning up isolated Fabric items...")
-        manager.delete_all()
-        print("=== Cleanup complete")
 
 
 def _deep_merge(base: dict, override: dict) -> dict:

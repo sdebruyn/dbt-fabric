@@ -58,7 +58,7 @@ Key environment variables:
 | Variable | Required for | Description |
 |---|---|---|
 | `FABRIC_TEST_WORKSPACE_NAME` | Both | Fabric workspace name |
-| `FABRIC_TEST_WORKSPACE_ID` | `--isolated` | Workspace ID (looked up from name if omitted) |
+| `FABRIC_TEST_WORKSPACE_ID` | Both | Workspace ID (optional, looked up from name if omitted) |
 | `FABRIC_TEST_DWH_NAME` | `--dw` | Data Warehouse name |
 | `FABRIC_TEST_HOST` | `--dw` | SQL endpoint host |
 | `FABRIC_TEST_LAKEHOUSE_NAME` | `--de` | Lakehouse name |
