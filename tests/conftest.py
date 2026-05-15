@@ -89,6 +89,18 @@ def pytest_configure(config):
     )
 
 
+def _requires_spark(collection_path, tests_root):
+    rel = collection_path.relative_to(tests_root)
+    parts = rel.parts
+    if not parts:
+        return False
+    if parts[0] == "fabricspark":
+        return True
+    if "fabricspark" in collection_path.name:
+        return True
+    return False
+
+
 def pytest_ignore_collect(collection_path, config):
     tests_root = Path(__file__).parent
     try:
@@ -102,12 +114,13 @@ def pytest_ignore_collect(collection_path, config):
 
     top_dir = parts[0]
 
-    if config.getoption("--dw", default=False) and top_dir == "fabricspark":
-        return True
+    if config.getoption("--dw", default=False):
+        if top_dir == "fabricspark" or "fabricspark" in collection_path.name:
+            return True
     if config.getoption("--de", default=False) and top_dir == "fabric":
         return True
 
-    if top_dir == "fabricspark":
+    if _requires_spark(collection_path, tests_root):
         try:
             import dbt.adapters.spark  # noqa: F401
         except ImportError:
