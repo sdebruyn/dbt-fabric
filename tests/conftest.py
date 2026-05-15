@@ -113,6 +113,45 @@ def pytest_collection_modifyitems(config, items):
             )
 
 
+@pytest.fixture(scope="session", autouse=True)
+def livy_session_lifecycle(request):
+    session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
+    lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
+
+    if not session_name or not lakehouse_name or request.config.getoption("--dw"):
+        yield
+        return
+
+    from dbt.adapters.fabric.fabric_livy_session import LivySession
+    from dbt.adapters.fabricspark.fabricspark_connection_manager import (
+        FabricSparkConnectionManager,
+    )
+    from dbt.adapters.fabricspark.fabricspark_credentials import FabricSparkCredentials
+
+    creds = FabricSparkCredentials(
+        database=lakehouse_name,
+        schema="dbo",
+        workspace_name=os.getenv("FABRIC_TEST_WORKSPACE_NAME"),
+        workspace_id=os.getenv("FABRIC_TEST_WORKSPACE_ID"),
+        livy_session_name=session_name,
+    )
+    token_provider = FabricTokenProvider(creds)
+    client = FabricApiClient(creds, token_provider)
+
+    client.get_livy_session_id()
+    LivySession(client).wait_for_session_ready()
+
+    FabricSparkConnectionManager._fabric_api_client = client
+    FabricSparkConnectionManager._fabric_token_provider = token_provider
+
+    yield
+
+    try:
+        client.delete_livy_session()
+    except Exception:
+        pass
+
+
 @pytest.fixture(scope="class")
 def logs_dir(request, prefix):
     dbt_log_dir = os.path.join(request.config.rootdir, "logs", prefix)
