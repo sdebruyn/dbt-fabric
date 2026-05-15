@@ -1,5 +1,6 @@
 import json
 import time
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 import dbt_common.exceptions
 import requests
@@ -9,13 +10,16 @@ from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 
 logger = AdapterLogger("fabric")
 
+_API_VERSION = "2023-09-01"
 _PURVIEW_SCOPE = "https://purview.azure.net/.default"
 _SEARCH_API = "/datamap/api/search/query"
 _ENTITY_API = "/datamap/api/atlas/v2/entity"
 _ENTITY_BULK_API = "/datamap/api/atlas/v2/entity/bulk"
 _RELATIONSHIP_API = "/datamap/api/atlas/v2/relationship"
 _TYPEDEF_API = "/datamap/api/atlas/v2/types/typedefs"
-_BUSINESS_METADATA_API = "/datamap/api/atlas/v2/entity/guid/{guid}/businessmetadata/{bm_name}"
+_BUSINESS_METADATA_API = (
+    "/datamap/api/atlas/v2/entity/guid/{guid}/businessmetadata/{bm_name}?isOverwrite=true"
+)
 
 _BM_APPLICABLE_TYPES = {"DataSet"}
 
@@ -111,22 +115,24 @@ class PurviewClient:
         self, url: str, method: str = "get", body: dict | list | None = None
     ) -> requests.Response:
         """Send an HTTP request with auth headers, automatic 429 retry, and error handling."""
+        parsed = urlparse(url)
+        params = parse_qs(parsed.query)
+        params["api-version"] = [_API_VERSION]
+        url = urlunparse(parsed._replace(query=urlencode(params, doseq=True)))
+
         response = requests.request(method, url, json=body, headers=self._get_auth_headers())
 
-        if response.status_code == 429:
+        retries = 0
+        while response.status_code == 429 and retries < 10:
             retry_after = int(response.headers.get("Retry-After", 5))
-            for attempt in range(10):
-                time.sleep(retry_after)
-                response = requests.request(
-                    method, url, json=body, headers=self._get_auth_headers()
-                )
-                if response.status_code != 429:
-                    break
-                retry_after = int(response.headers.get("Retry-After", 5))
-            else:
-                raise dbt_common.exceptions.DbtRuntimeError(
-                    f"Purview {method.upper()} {url} rate limited after 10 retries"
-                )
+            time.sleep(retry_after)
+            response = requests.request(method, url, json=body, headers=self._get_auth_headers())
+            retries += 1
+
+        if response.status_code == 429:
+            raise dbt_common.exceptions.DbtRuntimeError(
+                f"Purview {method.upper()} {url} rate limited after {retries} retries"
+            )
 
         if not (200 <= response.status_code < 300):
             raise dbt_common.exceptions.DbtRuntimeError(
@@ -226,15 +232,17 @@ class PurviewClient:
         url = f"{self._endpoint}{_BUSINESS_METADATA_API.format(guid=guid, bm_name=bm_name)}"
         self._api_post(url, attrs)
 
-    def ensure_type_definitions(self) -> None:
+    def ensure_type_definitions(self) -> bool:
         """Register or update the dbt_metadata business metadata type and dbt_transformation
         entity type in Purview.
 
         Uses PUT (idempotent create-or-update) so that definition changes in future adapter
         versions are always applied. Only runs once per client instance.
+
+        Returns True if both type definitions were registered successfully.
         """
         if self._types_ensured:
-            return
+            return True
 
         url = f"{self._endpoint}{_TYPEDEF_API}"
 
@@ -253,6 +261,7 @@ class PurviewClient:
             logger.warning("Failed to register dbt_transformation entity type in Purview")
 
         self._types_ensured = bm_ok and entity_ok
+        return self._types_ensured
 
     def delete_business_metadata(self, guid: str, bm_name: str) -> None:
         """Remove all attributes of a business metadata type from an entity."""

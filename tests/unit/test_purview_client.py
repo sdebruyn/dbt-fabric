@@ -3,6 +3,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from dbt.adapters.fabric.purview_client import (
+    _API_VERSION,
     _DBT_BUSINESS_METADATA_DEF,
     _DBT_TRANSFORMATION_TYPE_DEF,
     _PURVIEW_SCOPE,
@@ -31,6 +32,20 @@ class TestPurviewClientAuth:
     def test_endpoint_trailing_slash_stripped(self, token_provider):
         c = PurviewClient("https://test.purview.azure.com/", token_provider)
         assert c._endpoint == "https://test.purview.azure.com"
+
+
+class TestApiVersion:
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_api_version_appended_to_urls(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"value": [], "@search.count": 0}
+        mock_request.return_value = mock_response
+
+        client.search_entities(name="test")
+
+        call_url = mock_request.call_args[0][1]
+        assert f"api-version={_API_VERSION}" in call_url
 
 
 class TestSearchEntities:
@@ -197,9 +212,11 @@ class TestEnsureTypeDefinitions:
         mock_response.json.return_value = {}
         mock_request.return_value = mock_response
 
-        client.ensure_type_definitions()
-        client.ensure_type_definitions()
+        result1 = client.ensure_type_definitions()
+        result2 = client.ensure_type_definitions()
 
+        assert result1 is True
+        assert result2 is True
         assert mock_request.call_count == 2  # one PUT for BM def, one PUT for entity def
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
@@ -214,6 +231,16 @@ class TestEnsureTypeDefinitions:
         for call in mock_request.call_args_list:
             assert call[0][0] == "put"
 
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_returns_false_when_registration_fails(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 400
+        mock_response.text = "Bad Request"
+        mock_request.return_value = mock_response
+
+        result = client.ensure_type_definitions()
+        assert result is False
+
 
 class TestBusinessMetadata:
     @patch("dbt.adapters.fabric.purview_client.requests.request")
@@ -225,8 +252,11 @@ class TestBusinessMetadata:
         client.set_business_metadata("guid-1", "dbt_metadata", {"dbt_model_id": "model.test.x"})
 
         call_args = mock_request.call_args
-        assert "guid-1" in call_args[0][1]
-        assert "dbt_metadata" in call_args[0][1]
+        call_url = call_args[0][1]
+        assert "guid-1" in call_url
+        assert "dbt_metadata" in call_url
+        assert "isOverwrite=true" in call_url
+        assert f"api-version={_API_VERSION}" in call_url
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_delete_business_metadata(self, mock_request, client):
@@ -238,8 +268,9 @@ class TestBusinessMetadata:
 
         call_args = mock_request.call_args
         assert call_args[0][0] == "delete"
-        assert "guid-1" in call_args[0][1]
-        assert "dbt_metadata" in call_args[0][1]
+        call_url = call_args[0][1]
+        assert "guid-1" in call_url
+        assert "dbt_metadata" in call_url
 
 
 class TestDeleteEntity:
