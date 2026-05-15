@@ -197,6 +197,7 @@ Workflow for every change:
 1. Create a worktree on a new branch:
    ```shell
    git worktree add ../dbt-fabric-<short-name> -b <branch-name>
+   cp test.env ../dbt-fabric-<short-name>/
    ```
 2. Make changes, run ruff, commit.
 3. Push and create a PR:
