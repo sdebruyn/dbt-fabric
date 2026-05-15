@@ -80,12 +80,16 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
             logger.warning("Purview sync: no models could be matched to Purview entities")
             return ""
 
-        if sync_descriptions:
-            sync.push_descriptions(models, resolved)
-        if sync_metadata:
-            sync.push_business_metadata(models, resolved, results)
+        if sync_descriptions or sync_metadata:
+            sync.push_metadata(
+                models,
+                resolved,
+                results,
+                sync_descriptions=sync_descriptions,
+                sync_metadata=sync_metadata,
+            )
         if sync_lineage:
-            sync.push_lineage(models, resolved)
+            sync.push_lineage(models, resolved, is_full_sync=(results is None))
 
         logger.info("Purview sync completed")
         return ""
