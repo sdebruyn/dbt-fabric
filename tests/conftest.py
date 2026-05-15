@@ -120,19 +120,12 @@ def livy_session_lifecycle(request):
     workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
     workspace_id = os.getenv("FABRIC_TEST_WORKSPACE_ID")
 
-    if (
-        not session_name
-        or not lakehouse_name
-        or not (workspace_name or workspace_id)
-        or request.config.getoption("--dw")
-    ):
+    if not session_name or not lakehouse_name or not (workspace_name or workspace_id):
         yield
         return
 
+    from dbt.adapters.fabric.base_connection_manager import BaseFabricConnectionManager
     from dbt.adapters.fabric.fabric_livy_session import LivySession
-    from dbt.adapters.fabricspark.fabricspark_connection_manager import (
-        FabricSparkConnectionManager,
-    )
     from dbt.adapters.fabricspark.fabricspark_credentials import FabricSparkCredentials
 
     creds = FabricSparkCredentials(
@@ -148,8 +141,8 @@ def livy_session_lifecycle(request):
     client.get_livy_session_id()
     LivySession(client).wait_for_session_ready()
 
-    FabricSparkConnectionManager._fabric_api_client = client
-    FabricSparkConnectionManager._fabric_token_provider = token_provider
+    BaseFabricConnectionManager._fabric_api_client = client
+    BaseFabricConnectionManager._fabric_token_provider = token_provider
 
     yield
 
