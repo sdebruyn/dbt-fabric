@@ -3,7 +3,7 @@ import pytest
 from dbt.tests.adapter.simple_copy import fixtures
 from dbt.tests.adapter.simple_copy.test_copy_uppercase import BaseSimpleCopyUppercase
 from dbt.tests.adapter.simple_copy.test_simple_copy import EmptyModelsArentRunBase, SimpleCopyBase
-from dbt.tests.util import check_relations_equal, run_dbt
+from dbt.tests.util import check_relations_equal, rm_file, run_dbt, write_file
 
 _FABRICSPARK_VIEW_MODEL = """
 {{
@@ -26,17 +26,54 @@ _FABRICSPARK_DISABLED = """
 select * from {{ ref('seed') }}
 """
 
+_FABRICSPARK_INCREMENTAL = """
+{{
+  config(
+    materialized = "incremental",
+    incremental_strategy = "merge",
+    file_format = "delta"
+  )
+}}
+
+select * from {{ ref('seed') }}
+
+{% if is_incremental() %}
+    where id > (select max(id) from {{this}})
+{% endif %}
+"""
+
+_FABRICSPARK_ADVANCED_INCREMENTAL = """
+{{
+  config(
+    materialized = "incremental",
+    unique_key = "id",
+    incremental_strategy = "merge",
+    file_format = "delta",
+    persist_docs = {"relation": true}
+  )
+}}
+
+select *
+from {{ ref('seed') }}
+
+{% if is_incremental() %}
+
+    where id > (select max(id) from {{this}})
+
+{% endif %}
+"""
+
 
 class FabricSparkSimpleCopySetup:
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "advanced_incremental.sql": fixtures._MODELS__ADVANCED_INCREMENTAL,
+            "advanced_incremental.sql": _FABRICSPARK_ADVANCED_INCREMENTAL,
             "compound_sort.sql": fixtures._MODELS__COMPOUND_SORT,
             "disabled.sql": _FABRICSPARK_DISABLED,
             "empty.sql": fixtures._MODELS__EMPTY,
             "get_and_ref.sql": fixtures._MODELS__GET_AND_REF,
-            "incremental.sql": fixtures._MODELS__INCREMENTAL,
+            "incremental.sql": _FABRICSPARK_INCREMENTAL,
             "interleaved_sort.sql": fixtures._MODELS__INTERLEAVED_SORT,
             "materialized.sql": fixtures._MODELS__MATERIALIZED,
             "view_model.sql": _FABRICSPARK_VIEW_MODEL,
@@ -83,6 +120,17 @@ class TestSimpleCopyBaseFabricSpark(FabricSparkSimpleCopySetup, SimpleCopyBase):
             project.adapter, ["seed", "view_model", "incremental", "materialized", "get_and_ref"]
         )
 
+        main_seed_file = project.project_root / "seeds" / "seed.csv"
+        rm_file(main_seed_file)
+        write_file(fixtures._SEEDS__SEED_UPDATE, main_seed_file)
+        results = run_dbt(["seed"])
+        assert len(results) == 1
+        results = run_dbt(["run", "--full-refresh"])
+        assert len(results) == 7
+        check_relations_equal(
+            project.adapter, ["seed", "view_model", "incremental", "materialized", "get_and_ref"]
+        )
+
     @pytest.mark.skip(
         "FabricSpark does not support CREATE VIEW or CREATE MATERIALIZED VIEW via raw SQL"
     )
@@ -98,12 +146,12 @@ class TestSimpleCopyUppercaseFabricSpark(BaseSimpleCopyUppercase):
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "ADVANCED_INCREMENTAL.sql": fixtures._MODELS__ADVANCED_INCREMENTAL,
+            "ADVANCED_INCREMENTAL.sql": _FABRICSPARK_ADVANCED_INCREMENTAL,
             "COMPOUND_SORT.sql": fixtures._MODELS__COMPOUND_SORT,
             "DISABLED.sql": _FABRICSPARK_DISABLED,
             "EMPTY.sql": fixtures._MODELS__EMPTY,
             "GET_AND_REF.sql": fixtures._MODELS_GET_AND_REF_UPPERCASE,
-            "INCREMENTAL.sql": fixtures._MODELS__INCREMENTAL,
+            "INCREMENTAL.sql": _FABRICSPARK_INCREMENTAL,
             "INTERLEAVED_SORT.sql": fixtures._MODELS__INTERLEAVED_SORT,
             "MATERIALIZED.sql": fixtures._MODELS__MATERIALIZED,
             "VIEW_MODEL.sql": _FABRICSPARK_VIEW_MODEL,
