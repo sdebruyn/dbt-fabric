@@ -26,7 +26,6 @@
 
   {%- set strategy_name = config.get('strategy') -%}
   {%- set unique_key = config.get('unique_key') %}
-  {%- set file_format = config.get('file_format') or 'delta' -%}
   {%- set grant_config = config.get('grants') -%}
 
   {% set target_relation_exists, target_relation = get_or_create_relation(
@@ -34,14 +33,6 @@
           schema=model.schema,
           identifier=target_table,
           type='table') -%}
-
-  {%- if file_format not in ['delta', 'iceberg', 'hudi'] -%}
-    {% set invalid_format_msg -%}
-      Invalid file format: {{ file_format }}
-      Snapshot functionality requires file_format be set to 'delta' or 'iceberg' or 'hudi'
-    {%- endset %}
-    {% do exceptions.raise_compiler_error(invalid_format_msg) %}
-  {% endif %}
 
   {%- if not target_relation.is_table -%}
     {% do exceptions.relation_wrong_type(target_relation, 'table') %}
