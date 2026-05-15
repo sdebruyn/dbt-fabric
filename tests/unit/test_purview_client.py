@@ -42,16 +42,16 @@ class TestSearchEntities:
             "value": [
                 {
                     "id": "guid-1",
-                    "name": "my_table",
-                    "qualifiedName": "mssql://server/db/dbo/my_table",
-                    "entityType": "azure_sql_table",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
                 }
             ],
             "@search.count": 1,
         }
         mock_request.return_value = mock_response
 
-        results = client.search_entities(name="my_table")
+        results = client.search_entities(name="fct_orders")
         assert len(results) == 1
         assert results[0]["id"] == "guid-1"
 
@@ -63,22 +63,22 @@ class TestSearchEntities:
             "value": [
                 {
                     "id": "guid-1",
-                    "name": "my_table",
-                    "qualifiedName": "mssql://server/db_a/dbo/my_table",
-                    "entityType": "azure_sql_table",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-dev/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
                 },
                 {
                     "id": "guid-2",
-                    "name": "my_table",
-                    "qualifiedName": "mssql://server/db_b/dbo/my_table",
-                    "entityType": "azure_sql_table",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-prod/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
                 },
             ],
             "@search.count": 2,
         }
         mock_request.return_value = mock_response
 
-        results = client.search_entities(name="my_table", database="db_b")
+        results = client.search_entities(name="fct_orders", database="lh-prod")
         assert len(results) == 1
         assert results[0]["id"] == "guid-2"
 
@@ -142,7 +142,14 @@ class TestBulkCreateOrUpdate:
         }
         mock_request.return_value = mock_response
 
-        entities = [{"typeName": "azure_sql_table", "attributes": {"qualifiedName": "test"}}]
+        entities = [
+            {
+                "typeName": "fabric_lakehouse_table",
+                "attributes": {
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/fct_orders"
+                },
+            }
+        ]
         result = client.bulk_create_or_update(entities)
         assert "g1" in result["guidAssignments"].values()
 
@@ -236,20 +243,20 @@ class TestUpdateColumnDescriptions:
         get_response = MagicMock()
         get_response.status_code = 200
         get_response.json.return_value = {
-            "entity": {"typeName": "azure_sql_table"},
+            "entity": {"typeName": "fabric_lakehouse_table"},
             "referredEntities": {
                 "col-guid-1": {
-                    "typeName": "azure_sql_column",
+                    "typeName": "fabric_lakehouse_column",
                     "attributes": {
                         "name": "user_id",
-                        "qualifiedName": "mssql://s/db/dbo/t/user_id",
+                        "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/fct_orders/columns/user_id",
                     },
                 },
                 "col-guid-2": {
-                    "typeName": "azure_sql_column",
+                    "typeName": "fabric_lakehouse_column",
                     "attributes": {
                         "name": "email",
-                        "qualifiedName": "mssql://s/db/dbo/t/email",
+                        "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/fct_orders/columns/email",
                     },
                 },
             },
@@ -273,13 +280,13 @@ class TestUpdateColumnDescriptions:
         get_response = MagicMock()
         get_response.status_code = 200
         get_response.json.return_value = {
-            "entity": {"typeName": "azure_sql_table"},
+            "entity": {"typeName": "fabric_lakehouse_table"},
             "referredEntities": {
                 "col-guid-1": {
-                    "typeName": "azure_sql_column",
+                    "typeName": "fabric_lakehouse_column",
                     "attributes": {
                         "name": "User_ID",
-                        "qualifiedName": "mssql://s/db/dbo/t/User_ID",
+                        "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/fct_orders/columns/User_ID",
                     },
                 },
             },
