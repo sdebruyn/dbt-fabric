@@ -221,6 +221,16 @@ Update this section by adding entries as patterns emerge. Format: short descript
 
 - **FabricSpark: `'view' is not a valid FabricSparkRelationType`** — dbt's default materialization is `view`, but Fabric Lakehouse with schemas doesn't support Spark SQL views. This will come up in almost every FabricSpark test class. Fix: override the test's `models` or `project_config_update` fixture to replace `view` with `materialized_view` or `table` depending on what the test is validating. Use `materialized_view` when the test is about read-only derived data (closest equivalent to a view), and `table` when the test needs DML or other table-specific behavior. The `conftest.py` sets `+materialized: materialized_view` as default, but this gets overwritten when a test provides its own `models` key in `project_config_update` (shallow dict merge).
 
+## Handling PR review comments
+
+When processing review comments on a pull request, follow this workflow for each comment:
+
+1. **Evaluate the comment** — Verify the claim against the actual code or documentation. Determine whether it's valid, partially valid, or not applicable.
+2. **Fix if needed** — If the comment is valid (or partially valid), implement the fix. If it's not applicable, prepare a clear explanation of why.
+3. **Reply to the comment** — Always reply to every comment on the PR via the GitHub API (`gh api repos/.../pulls/.../comments/{id}/replies`). Explain what was done to resolve it, or why the comment doesn't apply. Be specific: reference the code, the change made, or the reasoning.
+
+Never silently fix comments without replying, and never ignore comments without explaining why they don't apply.
+
 ## Multi-agent development
 
 When implementing multiple test classes or fixing many failures at once, use parallel agents to speed up the work. The main conversation acts as coordinator.
