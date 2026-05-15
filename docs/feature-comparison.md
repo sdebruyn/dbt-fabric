@@ -130,7 +130,7 @@ This allows you to write a configuration like this:
 ```yaml
 default:
   target: dev
-    outputs:
+  outputs:
     dev:
       type: fabric
       workspace: "gold_{{ env_var('FABRIC_ENV', 'dev') }}"

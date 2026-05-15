@@ -35,6 +35,9 @@ def extract_syncable_models(graph: dict, results: list | None = None) -> list[di
         if ran_node_ids is not None and unique_id not in ran_node_ids:
             continue
 
+        if node.get("config", {}).get("materialized") == "ephemeral":
+            continue
+
         if not _has_persist_docs_enabled(node):
             continue
 
@@ -60,6 +63,17 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
 
 
 _FABRIC_BASE_URL = "https://app.fabric.microsoft.com/groups"
+
+
+def _extract_guid(result: dict, qualified_name: str) -> str | None:
+    """Extract the GUID for an entity from a bulk_create_or_update response."""
+    for entities in result.get("mutatedEntities", {}).values():
+        for entity in entities:
+            if entity.get("attributes", {}).get("qualifiedName") == qualified_name:
+                return entity.get("guid")
+    for key, guid in result.get("guidAssignments", {}).items():
+        return guid
+    return None
 
 
 class PurviewSync:
@@ -249,52 +263,56 @@ class PurviewSync:
         schema: str,
         table_name: str,
     ) -> dict | None:
-        """Create fabric_warehouse, fabric_warehouse_schema, and fabric_warehouse_table entities."""
+        """Create fabric_warehouse, fabric_warehouse_schema, and fabric_warehouse_table entities.
+
+        Entities are created sequentially because Purview requires referenced entities
+        to exist before they can be used in relationshipAttributes.
+        """
         wh_qn = f"{_FABRIC_BASE_URL}/{workspace_id}/warehouses/{warehouse_id}"
         schema_qn = f"{wh_qn}/schemas/{schema}"
         table_qn = f"{schema_qn}/tables/{table_name}"
 
-        entities = [
-            {
-                "typeName": "fabric_warehouse",
-                "attributes": {
-                    "qualifiedName": wh_qn,
-                    "name": warehouse_name,
+        self._client.bulk_create_or_update(
+            [
+                {
+                    "typeName": "fabric_warehouse",
+                    "attributes": {"qualifiedName": wh_qn, "name": warehouse_name},
                 },
-            },
-            {
-                "typeName": "fabric_warehouse_schema",
-                "attributes": {
-                    "qualifiedName": schema_qn,
-                    "name": schema,
-                },
-                "relationshipAttributes": {
-                    "warehouse": {
-                        "typeName": "fabric_warehouse",
-                        "uniqueAttributes": {"qualifiedName": wh_qn},
+            ]
+        )
+        self._client.bulk_create_or_update(
+            [
+                {
+                    "typeName": "fabric_warehouse_schema",
+                    "attributes": {"qualifiedName": schema_qn, "name": schema},
+                    "relationshipAttributes": {
+                        "warehouse": {
+                            "typeName": "fabric_warehouse",
+                            "uniqueAttributes": {"qualifiedName": wh_qn},
+                        },
                     },
                 },
-            },
-            {
-                "typeName": "fabric_warehouse_table",
-                "attributes": {
-                    "qualifiedName": table_qn,
-                    "name": table_name,
-                },
-                "relationshipAttributes": {
-                    "dbSchema": {
-                        "typeName": "fabric_warehouse_schema",
-                        "uniqueAttributes": {"qualifiedName": schema_qn},
+            ]
+        )
+        result = self._client.bulk_create_or_update(
+            [
+                {
+                    "typeName": "fabric_warehouse_table",
+                    "attributes": {"qualifiedName": table_qn, "name": table_name},
+                    "relationshipAttributes": {
+                        "dbSchema": {
+                            "typeName": "fabric_warehouse_schema",
+                            "uniqueAttributes": {"qualifiedName": schema_qn},
+                        },
                     },
                 },
-            },
-        ]
+            ]
+        )
 
-        self._client.bulk_create_or_update(entities)
+        guid = _extract_guid(result, table_qn)
         logger.info(f"Purview: created warehouse table entity {table_qn}")
-
         return {
-            "id": table_qn,
+            "id": guid or table_qn,
             "name": table_name,
             "entityType": "fabric_warehouse_table",
             "qualifiedName": table_qn,
@@ -308,21 +326,19 @@ class PurviewSync:
             f"{_FABRIC_BASE_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_name}"
         )
 
-        entities = [
-            {
-                "typeName": "fabric_lakehouse_table",
-                "attributes": {
-                    "qualifiedName": table_qn,
-                    "name": table_name,
+        result = self._client.bulk_create_or_update(
+            [
+                {
+                    "typeName": "fabric_lakehouse_table",
+                    "attributes": {"qualifiedName": table_qn, "name": table_name},
                 },
-            },
-        ]
+            ]
+        )
 
-        self._client.bulk_create_or_update(entities)
+        guid = _extract_guid(result, table_qn)
         logger.info(f"Purview: created lakehouse table entity {table_qn}")
-
         return {
-            "id": table_qn,
+            "id": guid or table_qn,
             "name": table_name,
             "entityType": "fabric_lakehouse_table",
             "qualifiedName": table_qn,

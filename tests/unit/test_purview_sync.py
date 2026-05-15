@@ -180,6 +180,23 @@ class TestExtractSyncableModels:
         models = extract_syncable_models(graph)
         assert len(models) == 1
 
+    def test_excludes_ephemeral_models(self):
+        graph = {
+            "nodes": {
+                "model.test.a": _make_node(
+                    unique_id="model.test.a",
+                    config={"materialized": "table"},
+                ),
+                "model.test.b": _make_node(
+                    unique_id="model.test.b",
+                    config={"materialized": "ephemeral"},
+                ),
+            }
+        }
+        models = extract_syncable_models(graph)
+        ids = {m["unique_id"] for m in models}
+        assert ids == {"model.test.a"}
+
 
 class TestHasPersistDocsEnabled:
     def test_no_config(self):
@@ -300,10 +317,15 @@ class TestResolveEntities:
         assert len(resolved) == 0
 
     def test_creates_entity_when_no_match_but_database_known(self):
+        table_qn = (
+            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/b2c3d4e5/tables/my_model"
+        )
         client = MagicMock()
         client.search_entities.return_value = []
         client.bulk_create_or_update.return_value = {
-            "mutatedEntities": {},
+            "mutatedEntities": {
+                "CREATE": [{"guid": "new-guid", "attributes": {"qualifiedName": table_qn}}]
+            },
             "guidAssignments": {},
         }
 
@@ -986,13 +1008,21 @@ class TestResolveItemType:
 
 
 class TestCreateEntityForModel:
+    def _make_bulk_response(self, guid, qualified_name):
+        return {
+            "mutatedEntities": {
+                "CREATE": [{"guid": guid, "attributes": {"qualifiedName": qualified_name}}]
+            },
+            "guidAssignments": {},
+        }
+
     def test_creates_warehouse_table_entity(self):
+        table_qn = "https://app.fabric.microsoft.com/groups/ws-id/warehouses/wh-id/schemas/dbo/tables/fct_orders"
         client = MagicMock()
         client.search_entities.return_value = []
-        client.bulk_create_or_update.return_value = {
-            "mutatedEntities": {"CREATE": [{"guid": "new-guid"}]},
-            "guidAssignments": {"-1": "wh-guid", "-2": "schema-guid", "-3": "table-guid"},
-        }
+        client.bulk_create_or_update.return_value = self._make_bulk_response(
+            "table-guid", table_qn
+        )
 
         fabric_client = _make_fabric_client(
             lakehouses=[], warehouses=[{"displayName": "my_dwh", "id": "wh-id"}]
@@ -1006,15 +1036,16 @@ class TestCreateEntityForModel:
         assert "model.test.my_model" in resolved
         entity = resolved["model.test.my_model"]
         assert entity["entityType"] == "fabric_warehouse_table"
+        assert entity["id"] == "table-guid"
         assert "fct_orders" in entity["qualifiedName"]
 
-    def test_warehouse_entity_has_correct_qualified_name(self):
+    def test_warehouse_entities_created_sequentially(self):
+        table_qn = "https://app.fabric.microsoft.com/groups/ws-id/warehouses/wh-id/schemas/dbo/tables/fct_orders"
         client = MagicMock()
         client.search_entities.return_value = []
-        client.bulk_create_or_update.return_value = {
-            "mutatedEntities": {},
-            "guidAssignments": {"-1": "wh-guid", "-2": "schema-guid", "-3": "table-guid"},
-        }
+        client.bulk_create_or_update.return_value = self._make_bulk_response(
+            "table-guid", table_qn
+        )
 
         fabric_client = _make_fabric_client(
             lakehouses=[], warehouses=[{"displayName": "my_dwh", "id": "wh-id"}]
@@ -1025,30 +1056,31 @@ class TestCreateEntityForModel:
         node = _make_node(database="my_dwh", schema="dbo", name="fct_orders")
         sync.resolve_entities([node])
 
-        entities = client.bulk_create_or_update.call_args[0][0]
-        type_names = [e["typeName"] for e in entities]
-        assert "fabric_warehouse" in type_names
-        assert "fabric_warehouse_schema" in type_names
-        assert "fabric_warehouse_table" in type_names
+        assert client.bulk_create_or_update.call_count == 3
+        all_entities = [call[0][0][0] for call in client.bulk_create_or_update.call_args_list]
+        type_names = [e["typeName"] for e in all_entities]
+        assert type_names == [
+            "fabric_warehouse",
+            "fabric_warehouse_schema",
+            "fabric_warehouse_table",
+        ]
 
-        wh_entity = next(e for e in entities if e["typeName"] == "fabric_warehouse")
+        wh_entity = all_entities[0]
         assert wh_entity["attributes"]["qualifiedName"] == (
             "https://app.fabric.microsoft.com/groups/ws-id/warehouses/wh-id"
         )
-
-        schema_entity = next(e for e in entities if e["typeName"] == "fabric_warehouse_schema")
-        assert "dbo" in schema_entity["attributes"]["qualifiedName"]
-
-        table_entity = next(e for e in entities if e["typeName"] == "fabric_warehouse_table")
-        assert "fct_orders" in table_entity["attributes"]["qualifiedName"]
+        assert "dbo" in all_entities[1]["attributes"]["qualifiedName"]
+        assert "fct_orders" in all_entities[2]["attributes"]["qualifiedName"]
 
     def test_creates_lakehouse_table_entity(self):
+        table_qn = (
+            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/lh-id/tables/fct_orders"
+        )
         client = MagicMock()
         client.search_entities.return_value = []
-        client.bulk_create_or_update.return_value = {
-            "mutatedEntities": {},
-            "guidAssignments": {"-1": "table-guid"},
-        }
+        client.bulk_create_or_update.return_value = self._make_bulk_response(
+            "table-guid", table_qn
+        )
 
         fabric_client = _make_fabric_client(lakehouses=[{"displayName": "my_lh", "id": "lh-id"}])
         fabric_client.get_workspace_id.return_value = "ws-id"
@@ -1060,13 +1092,13 @@ class TestCreateEntityForModel:
         assert "model.test.my_model" in resolved
         entity = resolved["model.test.my_model"]
         assert entity["entityType"] == "fabric_lakehouse_table"
+        assert entity["id"] == "table-guid"
 
-        entities = client.bulk_create_or_update.call_args[0][0]
+        assert client.bulk_create_or_update.call_count == 1
+        entities = client.bulk_create_or_update.call_args_list[0][0][0]
         assert len(entities) == 1
         assert entities[0]["typeName"] == "fabric_lakehouse_table"
-        assert entities[0]["attributes"]["qualifiedName"] == (
-            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/lh-id/tables/fct_orders"
-        )
+        assert entities[0]["attributes"]["qualifiedName"] == table_qn
 
     def test_skips_when_database_not_found(self):
         client = MagicMock()

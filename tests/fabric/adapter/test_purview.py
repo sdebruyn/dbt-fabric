@@ -1,6 +1,8 @@
 import pytest
 
+from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.purview_client import PurviewClient
+from dbt.adapters.fabric.purview_sync import _FABRIC_BASE_URL
 from dbt.tests.util import run_dbt, write_file
 from tests.conftest import requires_purview
 
@@ -110,39 +112,57 @@ class TestPurviewSync:
         }
 
     @pytest.fixture(scope="class")
-    def synced_entities(self, project, purview_client):
-        """Run dbt models and sync to Purview, then search for created entities."""
+    def synced_entities(self, project, purview_client, fabric_api_client: FabricApiClient):
+        """Run dbt models and sync to Purview, then look up created entities.
+
+        Uses get_entity_by_qualified_name instead of the search API because
+        Purview's search index is eventually consistent and doesn't index
+        custom entity types like fabric_warehouse_table under objectType:Tables.
+        """
         run_dbt(["run"])
         run_dbt(["run-operation", "purview_sync"])
 
+        workspace_id = fabric_api_client.get_workspace_id()
+        warehouses = fabric_api_client.get_warehouses()
+        warehouse_id = next(wh["id"] for wh in warehouses if wh["displayName"] == project.database)
+        schema = project.test_schema
+
         entities = {}
         for name in ("base_model", "derived_model", "no_docs_model"):
-            results = purview_client.search_entities(name=name)
-            if results:
-                entities[name] = results[0]
+            qn = (
+                f"{_FABRIC_BASE_URL}/{workspace_id}/warehouses/{warehouse_id}"
+                f"/schemas/{schema}/tables/{name}"
+            )
+            result = purview_client.get_entity_by_qualified_name("fabric_warehouse_table", qn)
+            if result and "entity" in result:
+                entity = result["entity"]
+                entities[name] = {
+                    "id": entity["guid"],
+                    "name": entity["attributes"].get("name", name),
+                    "entityType": entity["typeName"],
+                    "qualifiedName": entity["attributes"]["qualifiedName"],
+                }
         return entities
 
     @pytest.fixture(scope="class", autouse=True)
     def cleanup_purview(self, purview_client, synced_entities, project):
         yield
-        for name in ("base_model", "derived_model", "no_docs_model"):
-            results = purview_client.search_entities(name=name)
-            for entity in results:
-                guid = entity["id"]
-                try:
-                    purview_client.delete_business_metadata(guid, "dbt_metadata")
-                except Exception:
-                    pass
-                try:
-                    purview_client.update_entity_description(
-                        guid=guid,
-                        type_name=entity["entityType"],
-                        qualified_name=entity["qualifiedName"],
-                        name=entity["name"],
-                        description="",
-                    )
-                except Exception:
-                    pass
+        for entity in synced_entities.values():
+            guid = entity["id"]
+            try:
+                purview_client.delete_business_metadata(guid, "dbt_metadata")
+            except Exception:
+                pass
+            try:
+                purview_client.update_entity_description(
+                    guid=guid,
+                    type_name=entity["entityType"],
+                    qualified_name=entity["qualifiedName"],
+                    name=entity["name"],
+                    description="",
+                )
+            except Exception:
+                pass
         for proc in purview_client.search_process_entities("dbt://model.test."):
             try:
                 purview_client.delete_entity_by_guid(proc["id"])

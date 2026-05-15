@@ -286,11 +286,13 @@ class PurviewClient:
 
         return results
 
-    def _run_search(self, url: str, filters: list[dict]) -> list[dict]:
+    def _run_search(
+        self, url: str, filters: list[dict], keywords: str | None = None
+    ) -> list[dict]:
         """Execute a paginated search request against the Purview Data Map search API."""
 
         body: dict = {
-            "keywords": None,
+            "keywords": keywords,
             "filter": {"and": filters},
             "limit": 50,
         }
@@ -311,7 +313,7 @@ class PurviewClient:
         """Search for process entities with a given qualifiedName prefix."""
         url = f"{self._endpoint}{_SEARCH_API}"
         filters = [{"objectType": "Process"}]
-        results = self._run_search(url, filters)
+        results = self._run_search(url, filters, keywords=qualified_name_prefix)
         return [r for r in results if r.get("qualifiedName", "").startswith(qualified_name_prefix)]
 
     def get_entity_by_guid(self, guid: str) -> dict:
@@ -319,6 +321,22 @@ class PurviewClient:
         url = f"{self._endpoint}{_ENTITY_API}/guid/{guid}"
         response = self._api_get(url)
         return response.json()
+
+    def get_entity_by_qualified_name(self, type_name: str, qualified_name: str) -> dict | None:
+        """Fetch a single entity by its type and qualifiedName.
+
+        Uses the Atlas uniqueAttribute endpoint, which bypasses the search index
+        and returns immediately after entity creation.
+        """
+        url = (
+            f"{self._endpoint}{_ENTITY_API}"
+            f"/uniqueAttribute/type/{type_name}?attr:qualifiedName={qualified_name}"
+        )
+        try:
+            response = self._api_get(url)
+            return response.json()
+        except dbt_common.exceptions.DbtRuntimeError:
+            return None
 
     def bulk_create_or_update(
         self, entities: list[dict], merge_business_attrs: bool = False
