@@ -50,7 +50,6 @@
       {% do adapter.expand_target_column_types(from_relation=staging_table,
                                                to_relation=target_relation) %}
 
-      {# dbt-spark: repeated rejectattr('name', 'equalto', ...) — uses 'in' filter + composite key support #}
       {% set remove_columns = ['dbt_change_type', 'DBT_CHANGE_TYPE', 'dbt_unique_key', 'DBT_UNIQUE_KEY'] %}
       {% if unique_key | is_list %}
           {% for key in strategy.unique_key %}
