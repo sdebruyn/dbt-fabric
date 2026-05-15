@@ -35,7 +35,12 @@ class FabricApiClient:
     def create(
         cls, credentials: BaseFabricCredentials, token_provider: FabricTokenProvider
     ) -> Self:
-        """Return a shared singleton instance, creating one on first call."""
+        """Return a shared singleton instance, creating one on first call.
+
+        Args:
+            credentials: Fabric connection credentials.
+            token_provider: Provider for Azure access tokens.
+        """
         if cls._instance is None:
             cls._instance = FabricApiClient(credentials, token_provider)
         return cls._instance
@@ -50,7 +55,16 @@ class FabricApiClient:
     def _api_request(
         self, url: str, method: str = "get", body: dict | None = None
     ) -> requests.Response:
-        """Send an authenticated HTTP request, retrying automatically on 429."""
+        """Send an authenticated HTTP request, retrying automatically on 429.
+
+        Args:
+            url: The full API URL.
+            method: HTTP method (get, post, patch, delete).
+            body: Optional JSON body for the request.
+
+        Raises:
+            DbtRuntimeError: If the response status code is not 2xx.
+        """
         response = requests.request(method, url, json=body, headers=self._get_auth_headers())
 
         if response.status_code == 429:
@@ -77,7 +91,15 @@ class FabricApiClient:
         return self._api_request(url, method="delete")
 
     def get_workspace_id(self) -> str:
-        """Resolve the Fabric workspace ID from config or by looking up the workspace name."""
+        """Resolve the Fabric workspace ID from config or by looking up the workspace name.
+
+        Uses the cached value if available, then falls back to ``workspace_id``
+        from credentials, and finally queries the Power BI API by ``workspace_name``.
+
+        Raises:
+            DbtConfigError: If neither workspace_id nor workspace_name is configured.
+            DbtRuntimeError: If no workspace matches the configured name.
+        """
         if self._workspace_id is not None:
             return self._workspace_id
         if self._credentials.workspace_id:
@@ -104,7 +126,12 @@ class FabricApiClient:
         return self._workspace_id
 
     def get_warehouses(self, fetch_all: bool = True) -> list[dict]:
-        """List all Data Warehouses in the workspace, with pagination and caching."""
+        """List all Data Warehouses in the workspace, with pagination and caching.
+
+        Args:
+            fetch_all: If True, follow pagination and cache the full result.
+                If False, return only the first page without caching.
+        """
         if self._cached_warehouses is not None:
             return self._cached_warehouses
 
@@ -123,7 +150,12 @@ class FabricApiClient:
         return warehouses
 
     def get_lakehouses(self, fetch_all: bool = True) -> list[dict]:
-        """List all Lakehouses in the workspace, with pagination and caching."""
+        """List all Lakehouses in the workspace, with pagination and caching.
+
+        Args:
+            fetch_all: If True, follow pagination and cache the full result.
+                If False, return only the first page without caching.
+        """
         if self._cached_lakehouses is not None:
             return self._cached_lakehouses
 
@@ -142,7 +174,14 @@ class FabricApiClient:
         return lakehouses
 
     def get_warehouse_connection_string(self) -> str:
-        """Return the SQL endpoint connection string from any warehouse or lakehouse."""
+        """Return the SQL endpoint connection string from any warehouse or lakehouse.
+
+        All items in a workspace share the same connection string, so the first
+        warehouse or lakehouse found is used.
+
+        Raises:
+            DbtRuntimeError: If no warehouses or lakehouses exist in the workspace.
+        """
         if self._warehouse_connection_string is not None:
             return self._warehouse_connection_string
 
@@ -167,7 +206,12 @@ class FabricApiClient:
         )
 
     def get_lakehouse_id(self) -> str:
-        """Resolve the Lakehouse ID by matching the configured lakehouse name."""
+        """Resolve the Lakehouse ID by matching the configured lakehouse name.
+
+        Raises:
+            DbtConfigError: If no lakehouse name is configured.
+            DbtRuntimeError: If no lakehouse matches the configured name.
+        """
         if self._lakehouse_id is not None:
             return self._lakehouse_id
         if not self._credentials.lakehouse_name:
@@ -184,7 +228,11 @@ class FabricApiClient:
         )
 
     def get_warehouse_id(self) -> str:
-        """Resolve the Data Warehouse ID by matching the configured database name."""
+        """Resolve the Data Warehouse ID by matching the configured database name.
+
+        Raises:
+            DbtRuntimeError: If no warehouse matches the configured database name.
+        """
         if self._warehouse_id is not None:
             return self._warehouse_id
 
@@ -222,7 +270,15 @@ class FabricApiClient:
     def create_warehouse_snapshot(
         self, snapshot_name: str, description: str | None = None
     ) -> None:
-        """Create a new warehouse snapshot and track its long-running operation."""
+        """Create a new warehouse snapshot and track its long-running operation.
+
+        If the API returns a 202 with a Location header, the operation URI is
+        stored so ``create_or_update_warehouse_snapshot`` can poll for completion.
+
+        Args:
+            snapshot_name: Display name for the new snapshot.
+            description: Optional description for the snapshot.
+        """
         url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots"
         body = {
             "displayName": snapshot_name,
@@ -243,7 +299,13 @@ class FabricApiClient:
     def update_warehouse_snapshot(
         self, snapshot_id: str, snapshot_name: str, description: str | None = None
     ) -> None:
-        """Update the description of an existing warehouse snapshot."""
+        """Update the description of an existing warehouse snapshot.
+
+        Args:
+            snapshot_id: The ID of the snapshot to update.
+            snapshot_name: Display name (used to track the long-running operation).
+            description: New description, or None to leave unchanged.
+        """
         url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots/{snapshot_id}"
         body: dict[str, Any] = {"properties": {}}
         if description is not None:
@@ -255,7 +317,14 @@ class FabricApiClient:
             self._warehouse_snapshot_operations[snapshot_name] = location_uri
 
     def wait_and_get_snapshot_id_from_operation(self, operation_uri: str) -> str:
-        """Poll a long-running operation until it completes and return the snapshot ID."""
+        """Poll a long-running operation until it completes and return the snapshot ID.
+
+        Args:
+            operation_uri: The Location URI returned by a snapshot create/update call.
+
+        Raises:
+            DbtRuntimeError: If the operation times out or fails.
+        """
         timer = time.time()
         while True:
             if time.time() - timer > self._WAREHOUSE_SNAPSHOT_TIMEOUT_SECONDS:
@@ -282,7 +351,15 @@ class FabricApiClient:
     def create_or_update_warehouse_snapshot(
         self, snapshot_name: str, description: str | None = None
     ) -> None:
-        """Create a snapshot if none exists with this name, otherwise update it."""
+        """Create a snapshot if none exists with this name, otherwise update it.
+
+        If a previous create operation is still pending, waits for it to complete
+        before deciding whether to update or create.
+
+        Args:
+            snapshot_name: Display name for the snapshot.
+            description: Optional description for the snapshot.
+        """
         existing_snapshot_id = None
 
         snapshot_operation_uri = self._warehouse_snapshot_operations.get(snapshot_name)
@@ -303,7 +380,11 @@ class FabricApiClient:
             self.create_warehouse_snapshot(snapshot_name, description)
 
     def delete_warehouse_snapshot(self, snapshot_name: str) -> None:
-        """Delete a warehouse snapshot by its display name."""
+        """Delete a warehouse snapshot by its display name.
+
+        Args:
+            snapshot_name: Display name of the snapshot to delete.
+        """
         for snapshot in self.get_warehouse_snapshots():
             if snapshot["displayName"] == snapshot_name:
                 self._api_delete(
@@ -339,7 +420,11 @@ class FabricApiClient:
         return response.json()["id"]
 
     def get_livy_session_id(self) -> str:
-        """Return the active Livy session ID, reusing an existing session or creating one."""
+        """Return the active Livy session ID, reusing an existing session or creating one.
+
+        Thread-safe: uses a lock to prevent multiple sessions from being created
+        concurrently when dbt runs with multiple threads.
+        """
         if self._livy_session_id is None:
             with _livy_session_thread_lock:
                 self._livy_session_id = (
@@ -357,25 +442,41 @@ class FabricApiClient:
         return response.json().get("state", "unknown")
 
     def get_livy_statement(self, statement_id: int) -> dict[str, Any]:
-        """Fetch the current status and output of a Livy statement."""
+        """Fetch the current status and output of a Livy statement.
+
+        Args:
+            statement_id: The statement ID returned by a submit call.
+        """
         url = self.get_livy_session_base_uri() + f"/statements/{statement_id}"
         response = self._api_get(url)
         return response.json()
 
     def submit_livy_python_statement(self, code: str) -> int:
-        """Submit Python code to the Livy session and return the statement ID."""
+        """Submit Python code to the Livy session and return the statement ID.
+
+        Args:
+            code: The Python/PySpark code to execute.
+        """
         url = self.get_livy_session_base_uri() + "/statements"
         response = self._api_post(url, {"code": code, "kind": "pyspark"})
         return response.json()["id"]
 
     def submit_livy_sql_statement(self, code: str) -> int:
-        """Submit SQL code to the Livy session and return the statement ID."""
+        """Submit SQL code to the Livy session and return the statement ID.
+
+        Args:
+            code: The Spark SQL code to execute.
+        """
         url = self.get_livy_session_base_uri() + "/statements"
         response = self._api_post(url, {"code": code, "kind": "sql"})
         return response.json()["id"]
 
     def cancel_livy_statement(self, statement_id: int) -> str:
-        """Cancel a running Livy statement."""
+        """Cancel a running Livy statement.
+
+        Args:
+            statement_id: The statement ID to cancel.
+        """
         url = self.get_livy_session_base_uri() + f"/statements/{statement_id}/cancel"
         response = self._api_post(url, {})
         return response.json()["msg"]

@@ -24,7 +24,11 @@ class LivySessionResult:
     json_data: dict[str, Any] | None = field(default_factory=dict)
 
     def to_submission_result(self, code: str) -> LivySubmissionResult:
-        """Convert this result to a LivySubmissionResult for the dbt adapter response."""
+        """Convert this result to a LivySubmissionResult for the dbt adapter response.
+
+        Args:
+            code: The compiled Python code that was submitted.
+        """
         return LivySubmissionResult(
             run_id=str(self.statement_id),
             compiled_code=code,
@@ -44,7 +48,12 @@ class LivySession:
         return f"https://app.fabric.microsoft.com/workloads/de-ds/sparkmonitor/{self._fabric_api_client.get_lakehouse_id()}/{self._fabric_api_client.get_livy_session_id()}"
 
     def wait_for_session_ready(self) -> None:
-        """Poll until the Livy session reaches the idle state, or raise TimeoutError."""
+        """Poll until the Livy session reaches the idle state.
+
+        Raises:
+            TimeoutError: If the session does not become idle within
+                the configured ``spark_session_timeout``.
+        """
         start_time = time.time()
         while self._fabric_api_client.get_livy_session_state() != "idle":
             if (
@@ -55,7 +64,15 @@ class LivySession:
             time.sleep(self._POLLING_INTERVAL)
 
     def wait_for_statement_ready(self, statement_id: int) -> dict[str, Any]:
-        """Poll a Livy statement until it reaches a terminal state, or raise TimeoutError."""
+        """Poll a Livy statement until it reaches a terminal state.
+
+        Args:
+            statement_id: The statement ID to poll.
+
+        Raises:
+            TimeoutError: If the statement does not complete within
+                the configured ``query_timeout``.
+        """
         start_time = time.time()
         while True:
             statement_response = self._fabric_api_client.get_livy_statement(statement_id)
@@ -67,7 +84,14 @@ class LivySession:
             time.sleep(self._POLLING_INTERVAL)
 
     def wait_and_get_statement_result(self, statement_id: int) -> LivySessionResult:
-        """Wait for a statement to complete and return its result, catching timeouts."""
+        """Wait for a statement to complete and return its result.
+
+        Unlike ``wait_for_statement_ready``, this method catches all exceptions
+        and returns a failed ``LivySessionResult`` instead of raising.
+
+        Args:
+            statement_id: The statement ID to wait for.
+        """
         try:
             response = self.wait_for_statement_ready(statement_id)
             return LivySessionResult(
@@ -98,7 +122,17 @@ class LivySession:
     def run_statement(
         self, statement_code: str, statement_language: str, wait_for_result: bool = True
     ) -> LivySessionResult | int:
-        """Submit a Python or SQL statement and optionally wait for its result."""
+        """Submit a Python or SQL statement and optionally wait for its result.
+
+        Waits for the session to be idle before submitting. If submission fails,
+        returns a failed ``LivySessionResult`` instead of raising.
+
+        Args:
+            statement_code: The code to execute.
+            statement_language: Either ``"sql"`` or ``"python"``.
+            wait_for_result: If True, block until the statement completes and
+                return a ``LivySessionResult``. If False, return the statement ID.
+        """
         try:
             self.wait_for_session_ready()
             func = (
