@@ -20,9 +20,9 @@ This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** an
 
 The Lakehouse adapter (`type: fabricspark`) uses Spark SQL via Livy sessions and supports tables, materialized lake views, and Python models natively. See the [Lakehouse guide](lakehouse.md) for details.
 
-## dbt Core 1.11 support
+## dbt Core 1.12 support
 
-This adapter is compatible with dbt Core 1.11, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.
+This adapter is compatible with dbt Core 1.11 and 1.12, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.
 
 ## Functions in dbt
 
