@@ -1,21 +1,15 @@
-{# Based on dbt-spark's snapshot materialization with these differences:
-   - database=model.database instead of none (FabricSpark supports 3-part names)
-   - No file_format config/validation (Fabric Lakehouse only supports Delta)
-   - create_schema receives a relation, not a string
-   - Uses fabricspark__build_snapshot_staging_table which creates a real table, not a view
-     (Fabric Lakehouse does not support Spark SQL views)
-   - Column filtering uses 'in' with a list instead of repeated 'equalto' filters,
-     and handles composite unique keys
-#}
+{# Based on dbt-spark's snapshot materialization. Inline comments mark each deviation. #}
 {% materialization snapshot, adapter='fabricspark' %}
 
   {%- set target_table = model.get('alias', model.get('name')) -%}
 
   {%- set strategy_name = config.get('strategy') -%}
   {%- set unique_key = config.get('unique_key') %}
+  {# dbt-spark: file_format config + validation removed — Fabric Lakehouse only supports Delta #}
   {%- set grant_config = config.get('grants') -%}
 
   {% set target_relation_exists, target_relation = get_or_create_relation(
+          {# dbt-spark: database=none — FabricSpark supports 3-part names #}
           database=model.database,
           schema=model.schema,
           identifier=target_table,
@@ -26,6 +20,7 @@
   {%- endif -%}
 
   {% if not adapter.check_schema_exists(model.database, model.schema) %}
+    {# dbt-spark: create_schema(model.schema) — FabricSpark expects a relation, not a string #}
     {% do create_schema(target_relation.without_identifier()) %}
   {% endif %}
 
@@ -49,11 +44,13 @@
 
       {{ adapter.valid_snapshot_target(target_relation, columns) }}
 
+      {# dbt-spark: spark_build_snapshot_staging_table (creates a view) — Fabric Lakehouse has no view support #}
       {% set staging_table = fabricspark__build_snapshot_staging_table(strategy, sql, target_relation) %}
 
       {% do adapter.expand_target_column_types(from_relation=staging_table,
                                                to_relation=target_relation) %}
 
+      {# dbt-spark: repeated rejectattr('name', 'equalto', ...) — uses 'in' filter + composite key support #}
       {% set remove_columns = ['dbt_change_type', 'DBT_CHANGE_TYPE', 'dbt_unique_key', 'DBT_UNIQUE_KEY'] %}
       {% if unique_key | is_list %}
           {% for key in strategy.unique_key %}
