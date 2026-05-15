@@ -1236,3 +1236,192 @@ class TestFormatTestStatus:
     def test_empty(self):
         sync = PurviewSync(MagicMock(), _make_fabric_client(), _make_graph())
         assert sync._format_test_status({}) == ""
+
+    def test_none_values_in_results(self):
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), _make_graph())
+        result = sync._format_test_status({"t1": None, "t2": "pass", "t3": None})
+        assert result == "1/3 passed"
+
+
+class TestExtractSyncableModelsEdgeCases:
+    def test_empty_graph(self):
+        models = extract_syncable_models({})
+        assert models == []
+
+    def test_node_missing_config_key(self):
+        node = {
+            "unique_id": "model.test.no_config",
+            "name": "no_config",
+            "resource_type": "model",
+        }
+        graph = {"nodes": {"model.test.no_config": node}}
+        models = extract_syncable_models(graph)
+        assert len(models) == 1
+        assert models[0]["unique_id"] == "model.test.no_config"
+
+
+class TestResolveEntitiesEdgeCases:
+    def test_skips_model_with_empty_name_and_alias(self):
+        client = MagicMock()
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+        node = _make_node(name="", alias="")
+        resolved = sync.resolve_entities([node])
+        assert len(resolved) == 0
+        client.search_entities.assert_not_called()
+
+    def test_skips_model_when_entity_creation_returns_none(self):
+        client = MagicMock()
+        client.search_entities.return_value = []
+
+        fabric_client = _make_fabric_client(lakehouses=[], warehouses=[])
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node(database="unknown_db")
+        resolved = sync.resolve_entities([node])
+
+        assert len(resolved) == 0
+
+
+class TestPushMetadataEdgeCases:
+    def test_model_missing_description_and_config(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = {
+            "unique_id": "model.test.bare",
+            "name": "bare",
+            "schema": "dbo",
+            "database": "my_db",
+            "resource_type": "model",
+            "columns": {},
+            "tags": [],
+            "meta": {},
+            "depends_on": {"nodes": []},
+        }
+        resolved = {"model.test.bare": entity, "my_db.dbo.bare": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=True)
+
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert len(entities) == 1
+        assert "userDescription" not in entities[0]["attributes"]
+        bm = entities[0]["businessAttributes"]["dbt_metadata"]
+        assert bm["dbt_model_id"] == "model.test.bare"
+
+
+class TestBuildColumnEntitiesEdgeCases:
+    def test_warehouse_column_missing_data_type_falls_back_to_unknown(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_warehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/warehouses/wh/schemas/dbo/tables/t",
+        )
+        node = _make_node(
+            columns={"id": {"name": "id", "description": "Primary key", "data_type": ""}},
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        col_entities = []
+        for c in client.bulk_create_or_update.call_args_list:
+            for e in c[0][0]:
+                if e.get("typeName") == "fabric_warehouse_table_column":
+                    col_entities.append(e)
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["data_type"] == "unknown"
+
+    def test_lakehouse_column_missing_data_type_falls_back_to_unknown(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_lakehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/lakehouses/lh/tables/t",
+        )
+        node = _make_node(
+            columns={"id": {"name": "id", "description": "", "data_type": ""}},
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        col_entities = []
+        for c in client.bulk_create_or_update.call_args_list:
+            for e in c[0][0]:
+                if e.get("typeName") == "fabric_lakehouse_table_column":
+                    col_entities.append(e)
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["dataType"] == "unknown"
+
+
+class TestPushLineageEdgeCases:
+    def test_partial_upstream_resolution_creates_process_with_remaining(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        upstream = _make_purview_entity(guid="guid-upstream", name="known_table")
+        downstream = _make_purview_entity(guid="guid-downstream", name="my_model")
+
+        node = _make_node(
+            depends_on={"nodes": ["model.test.known_table", "model.test.unknown_table"]},
+        )
+
+        resolved = {
+            "model.test.my_model": downstream,
+            "my_db.dbo.my_model": downstream,
+            "model.test.known_table": upstream,
+        }
+
+        sync.push_lineage([node], resolved)
+
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert len(entities) == 1
+        process = entities[0]
+        assert len(process["attributes"]["inputs"]) == 1
+        assert process["attributes"]["inputs"][0]["guid"] == "guid-upstream"
+
+    def test_no_upstream_resolved_skips_model(self):
+        client = MagicMock()
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        downstream = _make_purview_entity(guid="guid-downstream", name="my_model")
+        node = _make_node(
+            depends_on={"nodes": ["model.test.unknown_a", "model.test.unknown_b"]},
+        )
+        resolved = {
+            "model.test.my_model": downstream,
+            "my_db.dbo.my_model": downstream,
+        }
+
+        sync.push_lineage([node], resolved)
+
+        client.bulk_create_or_update.assert_not_called()
+
+
+class TestResolveSourceEntityEdgeCases:
+    def test_source_database_not_resolvable_returns_none(self):
+        client = MagicMock()
+        graph = _make_graph(
+            sources={
+                "source.test.raw.orders": _make_source(database="nonexistent_db"),
+            }
+        )
+        sync = PurviewSync(
+            client,
+            _make_fabric_client(lakehouses=[], warehouses=[]),
+            graph,
+        )
+
+        result = sync._resolve_source_entity("source.test.raw.orders", {})
+
+        assert result is None
+        client.search_entities.assert_not_called()

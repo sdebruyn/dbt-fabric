@@ -1,5 +1,6 @@
 from unittest.mock import MagicMock, patch
 
+import dbt_common.exceptions
 import pytest
 
 from dbt.adapters.fabric.purview_client import (
@@ -120,6 +121,45 @@ class TestSearchEntities:
         assert len(results) == 75
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_search_no_results_returns_empty_list(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "value": [],
+            "@search.count": 0,
+        }
+        mock_request.return_value = mock_response
+
+        results = client.search_entities(name="nonexistent_table")
+        assert results == []
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_search_empty_database_identifiers_returns_all(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "value": [
+                {
+                    "id": "guid-1",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-dev/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
+                },
+                {
+                    "id": "guid-2",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-prod/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
+                },
+            ],
+            "@search.count": 2,
+        }
+        mock_request.return_value = mock_response
+
+        results = client.search_entities(name="fct_orders", database_identifiers=[])
+        assert len(results) == 2
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_search_returns_all_without_database_filter(self, mock_request, client):
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -169,6 +209,13 @@ class TestBulkCreateOrUpdate:
         assert "g1" in result["guidAssignments"].values()
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_empty_entities_makes_no_api_call(self, mock_request, client):
+        result = client.bulk_create_or_update([])
+
+        assert mock_request.call_count == 0
+        assert result == {"mutatedEntities": {}, "guidAssignments": {}}
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_batching_at_50(self, mock_request, client):
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -202,6 +249,38 @@ class TestRetry:
         results = client.search_entities(name="test")
         assert results == []
         mock_sleep.assert_called_once_with(1)
+
+    @patch("dbt.adapters.fabric.purview_client.time.sleep")
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_429_retry_exhaustion_raises_error(self, mock_request, mock_sleep, client):
+        throttled = MagicMock()
+        throttled.status_code = 429
+        throttled.headers = {"Retry-After": "1"}
+
+        mock_request.return_value = throttled
+
+        with pytest.raises(dbt_common.exceptions.DbtRuntimeError, match="rate limited"):
+            client._api_request("https://test.purview.azure.com/some/path")
+
+        assert mock_request.call_count == 11
+        assert mock_sleep.call_count == 10
+
+    @patch("dbt.adapters.fabric.purview_client.time.sleep")
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_429_invalid_retry_after_falls_back_to_5(self, mock_request, mock_sleep, client):
+        throttled = MagicMock()
+        throttled.status_code = 429
+        throttled.headers = {"Retry-After": "Thu, 01 Dec 2025 16:00:00 GMT"}
+
+        success = MagicMock()
+        success.status_code = 200
+        success.json.return_value = {}
+
+        mock_request.side_effect = [throttled, success]
+
+        client._api_request("https://test.purview.azure.com/some/path")
+
+        mock_sleep.assert_called_once_with(5)
 
 
 class TestEnsureTypeDefinitions:
@@ -361,6 +440,49 @@ class TestEnsureTypeDefinitions:
             for rel_def in body.get("relationshipDefs", []):
                 if rel_def["name"].startswith("fabric_warehouse_"):
                     assert rel_def["relationshipCategory"] == "COMPOSITION"
+
+
+class TestGetTypeDefByName:
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_both_endpoints_404_returns_none(self, mock_request, client):
+        not_found = MagicMock()
+        not_found.status_code = 404
+        not_found.text = "Not Found"
+
+        mock_request.return_value = not_found
+
+        result = client.get_type_def_by_name("nonexistent_type")
+        assert result is None
+        assert mock_request.call_count == 2
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_typedef_returns_null_but_bm_endpoint_succeeds(self, mock_request, client):
+        typedef_response = MagicMock()
+        typedef_response.status_code = 200
+        typedef_response.json.return_value = None
+
+        bm_response = MagicMock()
+        bm_response.status_code = 200
+        bm_response.json.return_value = {"name": "dbt_metadata", "category": "BUSINESS_METADATA"}
+
+        mock_request.side_effect = [typedef_response, bm_response]
+
+        result = client.get_type_def_by_name("dbt_metadata")
+        assert result == {"name": "dbt_metadata", "category": "BUSINESS_METADATA"}
+        assert mock_request.call_count == 2
+
+
+class TestDeleteTypeDefByName:
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_404_returns_false(self, mock_request, client):
+        not_found = MagicMock()
+        not_found.status_code = 404
+        not_found.text = "Not Found"
+
+        mock_request.return_value = not_found
+
+        result = client.delete_type_def_by_name("nonexistent_type")
+        assert result is False
 
 
 class TestBusinessMetadata:
