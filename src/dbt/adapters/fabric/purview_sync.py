@@ -473,11 +473,13 @@ class PurviewSync:
 
         if is_full_sync:
             created_qns = {e["attributes"]["qualifiedName"] for e in process_entities}
+            own_model_qns = {f"dbt://{_get_attr(m, 'unique_id', '')}" for m in models}
             existing = self._client.search_process_entities("dbt://")
             for proc in existing:
-                if proc.get("qualifiedName", "") not in created_qns:
+                qn = proc.get("qualifiedName", "")
+                if qn in own_model_qns and qn not in created_qns:
                     self._client.delete_entity_by_guid(proc["id"])
-                    logger.info(f"Purview: removed stale lineage {proc.get('qualifiedName', '')}")
+                    logger.info(f"Purview: removed stale lineage {qn}")
 
     def _resolve_dependency_entity(self, dep_id: str, resolved: dict) -> dict | None:
         """Resolve a dependency to a Purview entity.

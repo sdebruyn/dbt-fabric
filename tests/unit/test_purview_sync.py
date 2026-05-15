@@ -709,6 +709,47 @@ class TestPushLineage:
 
         client.bulk_create_or_update.assert_not_called()
 
+    def test_full_sync_only_deletes_own_stale_lineage(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        client.search_process_entities.return_value = [
+            {"id": "proc-1", "qualifiedName": "dbt://model.test.my_model"},
+            {"id": "proc-other", "qualifiedName": "dbt://model.other_project.their_model"},
+        ]
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        upstream = _make_purview_entity(guid="guid-upstream", name="source_table")
+        downstream = _make_purview_entity(guid="guid-downstream", name="my_model")
+        node = _make_node(depends_on={"nodes": ["model.test.source_table"]})
+        resolved = {
+            "model.test.my_model": downstream,
+            "my_db.dbo.my_model": downstream,
+            "model.test.source_table": upstream,
+        }
+
+        sync.push_lineage([node], resolved, is_full_sync=True)
+
+        client.delete_entity_by_guid.assert_not_called()
+
+    def test_full_sync_deletes_stale_lineage_for_own_models(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        client.search_process_entities.return_value = [
+            {"id": "proc-stale", "qualifiedName": "dbt://model.test.removed_model"},
+        ]
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        removed_node = _make_node(
+            unique_id="model.test.removed_model",
+            name="removed_model",
+            depends_on={"nodes": []},
+        )
+        resolved = {}
+
+        sync.push_lineage([removed_node], resolved, is_full_sync=True)
+
+        client.delete_entity_by_guid.assert_called_once_with("proc-stale")
+
 
 class TestFormatTestStatus:
     def test_all_passed(self):
