@@ -276,12 +276,15 @@ class TestResolveEntities:
 
 
 class TestPushDescriptions:
-    def test_pushes_model_description(self):
+    def test_pushes_model_description_when_persist_docs_relation(self):
         client = MagicMock()
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
-        node = _make_node(description="This model tracks user events")
+        node = _make_node(
+            description="This model tracks user events",
+            config={"materialized": "table", "persist_docs": {"relation": True, "columns": False}},
+        )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
         sync.push_descriptions([node], resolved)
@@ -293,20 +296,37 @@ class TestPushDescriptions:
             name="my_model",
             description="This model tracks user events",
         )
+        client.update_column_descriptions.assert_not_called()
 
-    def test_skips_empty_description(self):
+    def test_skips_description_when_persist_docs_not_set(self):
         client = MagicMock()
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
-        node = _make_node(description="")
+        node = _make_node(description="This model tracks user events")
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_descriptions([node], resolved)
+
+        client.update_entity_description.assert_not_called()
+        client.update_column_descriptions.assert_not_called()
+
+    def test_skips_description_when_persist_docs_relation_false(self):
+        client = MagicMock()
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(
+            description="Has description but persist_docs is off",
+            config={"materialized": "table", "persist_docs": {"relation": False}},
+        )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
         sync.push_descriptions([node], resolved)
 
         client.update_entity_description.assert_not_called()
 
-    def test_pushes_column_descriptions(self):
+    def test_pushes_column_descriptions_when_persist_docs_columns(self):
         client = MagicMock()
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
@@ -315,15 +335,40 @@ class TestPushDescriptions:
             columns={
                 "user_id": {"name": "user_id", "description": "Primary key"},
                 "email": {"name": "email", "description": ""},
-            }
+            },
+            config={
+                "materialized": "table",
+                "persist_docs": {"relation": False, "columns": True},
+            },
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
         sync.push_descriptions([node], resolved)
 
+        client.update_entity_description.assert_not_called()
         client.update_column_descriptions.assert_called_once_with(
             "guid-1", {"user_id": "Primary key"}
         )
+
+    def test_pushes_both_when_persist_docs_fully_enabled(self):
+        client = MagicMock()
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(
+            description="Full docs",
+            columns={"user_id": {"name": "user_id", "description": "Primary key"}},
+            config={
+                "materialized": "table",
+                "persist_docs": {"relation": True, "columns": True},
+            },
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_descriptions([node], resolved)
+
+        client.update_entity_description.assert_called_once()
+        client.update_column_descriptions.assert_called_once()
 
 
 class TestPushBusinessMetadata:
