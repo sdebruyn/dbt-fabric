@@ -101,6 +101,15 @@ def _requires_spark(collection_path, tests_root):
     return False
 
 
+def _spark_extra_available():
+    try:
+        import dbt.adapters.spark  # noqa: F401
+
+        return True
+    except ModuleNotFoundError:
+        return False
+
+
 def pytest_ignore_collect(collection_path, config):
     tests_root = Path(__file__).parent
     try:
@@ -120,11 +129,14 @@ def pytest_ignore_collect(collection_path, config):
     if config.getoption("--de", default=False) and top_dir == "fabric":
         return True
 
-    if _requires_spark(collection_path, tests_root):
-        try:
-            import dbt.adapters.spark  # noqa: F401
-        except ImportError:
-            return True
+    if _requires_spark(collection_path, tests_root) and not _spark_extra_available():
+        if config.getoption("--de", default=False):
+            pytest.exit(
+                "The spark extra is required for FabricSpark tests. "
+                "Install with: uv sync --extra spark",
+                returncode=4,
+            )
+        return True
 
     return None
 
