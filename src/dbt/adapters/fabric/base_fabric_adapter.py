@@ -45,6 +45,11 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
         sync_lineage: bool = True,
         sync_metadata: bool = True,
     ) -> str:
+        """Sync dbt model metadata to Microsoft Purview.
+
+        Callable from dbt macros via adapter.purview_sync(). Matches dbt models to Purview
+        entities, then pushes descriptions, business metadata, and/or lineage depending on flags.
+        """
         credentials = self.config.credentials
         if not credentials.purview_endpoint:
             logger.warning("Purview sync skipped: purview_endpoint not configured in profiles.yml")
