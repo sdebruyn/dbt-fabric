@@ -214,41 +214,95 @@ class TestResolveFileFormatMacro:
         assert output.strip() == "PARQUET"
 
 
-openrowset_inline_model = (
-    """
+external_sources_yml = """
+version: 2
+sources:
+  - name: pandemic_data
+    schema: dbo
+    tables:
+      - name: covid_parquet
+        external:
+          location: "{parquet_url}"
+          file_format: parquet
+        columns:
+          - name: id
+            data_type: int
+          - name: updated
+            data_type: date
+          - name: confirmed
+            data_type: int
+          - name: deaths
+            data_type: int
+          - name: country_region
+            data_type: "varchar(8000)"
+          - name: iso2
+            data_type: "varchar(8000)"
+          - name: iso3
+            data_type: "varchar(8000)"
+      - name: covid_csv
+        external:
+          location: "{csv_url}"
+          file_format: csv
+          options:
+            header_row: "true"
+        columns:
+          - name: id
+            data_type: int
+          - name: updated
+            data_type: date
+          - name: confirmed
+            data_type: int
+          - name: deaths
+            data_type: int
+          - name: country_region
+            data_type: "varchar(8000)"
+""".format(
+    parquet_url=PANDEMIC_PARQUET_URL,
+    csv_url=PANDEMIC_CSV_URL,
+)
+
+external_table_model_sql = """
 {{ config(materialized='table') }}
-select top 10
+select top 100
     id,
     updated,
     confirmed,
     deaths,
     country_region
-from openrowset(
-    bulk '"""
-    + PANDEMIC_PARQUET_URL
-    + """',
-    format = 'parquet'
-) as covid_data
+from {{ source('pandemic_data', 'covid_parquet') }}
 where country_region = 'Belgium'
 """
-)
 
 
-class TestOpenrowsetInlineModel:
-    """Integration test: materializes data from an inline OPENROWSET query."""
+class TestExternalTablesEndToEnd:
+    """Integration test: full dbt-external-tables flow with source YAML, stage, and table model."""
+
+    @pytest.fixture(scope="class")
+    def packages(self):
+        return {"packages": [{"package": "dbt-labs/dbt_external_tables", "version": "0.11.0"}]}
 
     @pytest.fixture(scope="class")
     def models(self):
-        return {"covid_belgium.sql": openrowset_inline_model}
+        return {
+            "sources.yml": external_sources_yml,
+            "covid_belgium.sql": external_table_model_sql,
+        }
 
     @pytest.fixture(scope="class")
     def project_config_update(self):
         return {
-            "name": "test_openrowset_inline",
-            "models": {"+materialized": "table"},
+            "dispatch": [
+                {
+                    "macro_namespace": "dbt_external_tables",
+                    "search_order": ["test", "dbt_fabric", "dbt_external_tables"],
+                }
+            ],
         }
 
-    def test_openrowset_inline_creates_table_with_rows(self, project):
+    def test_stage_and_materialize(self, project):
+        run_dbt(["deps"])
+        run_dbt(["run-operation", "stage_external_sources"])
+
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
@@ -257,50 +311,3 @@ class TestOpenrowsetInlineModel:
         result = project.run_sql(f"select count(*) from {relation}", fetch="one")
         row_count = result[0]
         assert row_count > 0, f"Expected rows in table, got {row_count}"
-
-
-macro_execute_openrowset = (
-    """
-{% macro test_execute_openrowset() %}
-    {% set openrowset_sql = fabric__build_openrowset(
-        '"""
-    + PANDEMIC_PARQUET_URL
-    + """',
-        'PARQUET',
-        {},
-        []
-    ) %}
-    {% set query = "select top 5 id, country_region from " ~ openrowset_sql %}
-    {% set results = run_query(query) %}
-    {{ log("EXEC_ROWCOUNT: " ~ results | length, info=True) }}
-    {% if results | length > 0 %}
-        {{ log("EXEC_FIRST_ROW: " ~ results.columns['country_region'].values()[0], info=True) }}
-    {% endif %}
-{% endmacro %}
-"""
-)
-
-
-class TestOpenrowsetMacroExecution:
-    """Integration test: executes the build_openrowset macro output as a real query."""
-
-    @pytest.fixture(scope="class")
-    def models(self):
-        return {"placeholder.sql": "select 1 as id"}
-
-    @pytest.fixture(scope="class")
-    def macros(self):
-        return {"test_execute_openrowset.sql": macro_execute_openrowset}
-
-    def test_build_openrowset_produces_executable_sql(self, project, capsys):
-        run_dbt(["run-operation", "test_execute_openrowset"])
-        captured = capsys.readouterr().out
-
-        output = _find_in_output(captured, "EXEC_ROWCOUNT: ")
-        assert output is not None, "Expected EXEC_ROWCOUNT in log output"
-        row_count = int(output.strip())
-        assert row_count == 5, f"Expected 5 rows, got {row_count}"
-
-        country = _find_in_output(captured, "EXEC_FIRST_ROW: ")
-        assert country is not None, "Expected EXEC_FIRST_ROW in log output"
-        assert len(country.strip()) > 0, "Expected a non-empty country_region value"
