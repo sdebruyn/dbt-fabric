@@ -61,6 +61,7 @@ class TestEphemeralNestedFabricSpark(BaseEphemeralNested):
     def test_ephemeral_nested(self, project):
         results = run_dbt(["run"])
         assert len(results) == 2
+        check_relations_equal(project.adapter, ["source_table", "root_view"])
 
 
 class TestEphemeralErrorHandlingFabricSpark(BaseEphemeralErrorHandling):
