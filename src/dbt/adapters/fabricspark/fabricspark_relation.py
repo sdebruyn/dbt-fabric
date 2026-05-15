@@ -9,6 +9,25 @@ from dbt.adapters.spark.relation import SparkIncludePolicy, SparkQuotePolicy
 from dbt.adapters.utils import classproperty
 
 
+# SparkQuotePolicy defaults database/schema to False, causing dbt to
+# lowercase those components in cache lookups — ApproximateMatchError
+# with mixed-case Fabric names. Override to True for case preservation.
+@dataclass
+class FabricSparkQuotePolicy(SparkQuotePolicy):
+    database: bool = True
+    schema: bool = True
+
+
+# SparkIncludePolicy defaults database to False because vanilla Spark
+# treats database and schema as synonyms. In Fabric Lakehouse they're
+# distinct: database = lakehouse name, schema = schema within it.
+# Include database so relations render as 3-part names, which is
+# required for cross-lakehouse writes.
+@dataclass
+class FabricSparkIncludePolicy(SparkIncludePolicy):
+    database: bool = True
+
+
 class FabricSparkRelationType(StrEnum):
     Table = "table"
     CTE = "cte"
@@ -22,8 +41,8 @@ class FabricSparkRelationType(StrEnum):
 
 @dataclass(frozen=True, eq=False, repr=False)
 class FabricSparkRelation(BaseRelation):
-    quote_policy: Policy = field(default_factory=lambda: SparkQuotePolicy())
-    include_policy: Policy = field(default_factory=lambda: SparkIncludePolicy())
+    quote_policy: Policy = field(default_factory=lambda: FabricSparkQuotePolicy())
+    include_policy: Policy = field(default_factory=lambda: FabricSparkIncludePolicy())
     quote_character: str = "`"
     require_alias: bool = False
     information: str | None = None

@@ -1,6 +1,9 @@
+import json
 import time
 from dataclasses import dataclass, field
 from typing import Any
+
+import requests
 
 from dbt.adapters.base.impl import PythonSubmissionResult
 from dbt.adapters.events.logging import AdapterLogger
@@ -39,6 +42,7 @@ class LivySessionResult:
 
 class LivySession:
     _POLLING_INTERVAL = 3  # seconds
+    _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
 
     def __init__(self, fabric_api_client: FabricApiClient) -> None:
         self._fabric_api_client = fabric_api_client
@@ -55,7 +59,31 @@ class LivySession:
                 the configured ``spark_session_timeout``.
         """
         start_time = time.time()
-        while self._fabric_api_client.get_livy_session_state() != "idle":
+        consecutive_errors = 0
+
+        while True:
+            try:
+                state = self._fabric_api_client.get_livy_session_state()
+                consecutive_errors = 0
+            except (
+                requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout,
+                requests.exceptions.ChunkedEncodingError,
+                json.JSONDecodeError,
+            ) as e:
+                consecutive_errors += 1
+                if consecutive_errors >= self._MAX_CONSECUTIVE_TRANSIENT_ERRORS:
+                    raise
+                logger.warning(
+                    f"Transient error polling Livy session state "
+                    f"({consecutive_errors}/{self._MAX_CONSECUTIVE_TRANSIENT_ERRORS}): {e}"
+                )
+                time.sleep(self._POLLING_INTERVAL)
+                continue
+
+            if state == "idle":
+                return
+
             if (
                 time.time() - start_time
                 >= self._fabric_api_client._credentials.spark_session_timeout

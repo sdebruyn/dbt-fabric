@@ -573,6 +573,8 @@ CI authenticates to Azure via OIDC (federated credentials, no secrets stored). T
 - **Lint rules**: isort (`I`) + no commented-out code (`ERA`)
 - **No comments in code** unless the _why_ is non-obvious
 - **Always run ruff before committing**: `uv run ruff format .` and `uv run ruff check --fix .` must pass before every commit
+- **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the project targets Python 3.13 and has no `from typing import Union` imports
+- **Class constants at the top**: group all class-level constants together at the top of the class body, before any methods
 
 ## Key concepts for working on this adapter
 

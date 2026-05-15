@@ -37,6 +37,12 @@ class FabricSparkConnectionManager(BaseFabricConnectionManager):
         )
 
     @classmethod
+    def data_type_code_to_name(cls, type_code: type | str) -> str:
+        if isinstance(type_code, str):
+            return type_code
+        return type_code.__name__.upper()
+
+    @classmethod
     def open(cls, connection: Connection) -> Connection:
         if connection.state == ConnectionState.OPEN:
             logger.debug("Connection is already open, skipping open.")

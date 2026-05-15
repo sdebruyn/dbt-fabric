@@ -1,3 +1,4 @@
+import logging
 import threading
 import time
 import urllib.parse
@@ -9,7 +10,17 @@ import requests
 from dbt.adapters.fabric.base_credentials import BaseFabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 
+logger = logging.getLogger(__name__)
+
 _livy_session_thread_lock = threading.Lock()
+
+
+class FabricApiError(dbt_common.exceptions.DbtRuntimeError):
+    def __init__(self, method: str, url: str, status_code: int, response_text: str) -> None:
+        self.status_code = status_code
+        super().__init__(
+            f"{method} request to {url} failed with status code {status_code}: {response_text}"
+        )
 
 
 class FabricApiClient:
@@ -73,9 +84,7 @@ class FabricApiClient:
             return self._api_request(url, method, body)
 
         if not (200 <= response.status_code < 300):
-            raise dbt_common.exceptions.DbtRuntimeError(
-                f"{method} request to {url} failed with status code {response.status_code}: {response.text}"
-            )
+            raise FabricApiError(method, url, response.status_code, response.text)
         return response
 
     def _api_get(self, url: str) -> requests.Response:
@@ -415,9 +424,33 @@ class FabricApiClient:
     def initialize_livy_session(self) -> str:
         """Create a new Livy session and wait briefly for it to start."""
         url = self.get_livy_base_api_uri() + "/sessions"
-        response = self._api_post(url, {"name": self._credentials.livy_session_name, "ttl": "30s"})
-        time.sleep(10)  # give it a moment to initialize before we try to use it
-        return response.json()["id"]
+        body = {"name": self._credentials.livy_session_name, "ttl": "30s"}
+
+        max_attempts = 3
+        backoff_seconds = 5
+        last_exception: Exception | None = None
+
+        for attempt in range(1, max_attempts + 1):
+            try:
+                response = self._api_post(url, body)
+                time.sleep(10)
+                return response.json()["id"]
+            except FabricApiError as e:
+                is_transient = e.status_code == 404 or 500 <= e.status_code < 600
+
+                if not is_transient or attempt == max_attempts:
+                    raise
+
+                last_exception = e
+                wait_time = backoff_seconds * (2 ** (attempt - 1))
+                logger.warning(
+                    f"Livy session creation returned a transient error (attempt {attempt}/{max_attempts}), "
+                    f"retrying in {wait_time}s: {e}"
+                )
+                time.sleep(wait_time)
+
+        assert last_exception is not None
+        raise last_exception
 
     def get_livy_session_id(self) -> str:
         """Return the active Livy session ID, reusing an existing session or creating one.
