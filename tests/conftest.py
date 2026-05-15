@@ -1,3 +1,4 @@
+import functools
 import os
 from pathlib import Path
 
@@ -101,6 +102,7 @@ def _requires_spark(collection_path, tests_root):
     return False
 
 
+@functools.lru_cache(maxsize=1)
 def _spark_extra_available():
     try:
         import dbt.adapters.spark  # noqa: F401
@@ -124,7 +126,7 @@ def pytest_ignore_collect(collection_path, config):
     top_dir = parts[0]
 
     if config.getoption("--dw", default=False):
-        if top_dir == "fabricspark" or "fabricspark" in collection_path.name:
+        if _requires_spark(collection_path, tests_root):
             return True
     if config.getoption("--de", default=False) and top_dir == "fabric":
         return True
