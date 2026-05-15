@@ -509,9 +509,13 @@ class FabricApiClient:
         if self._livy_session_id is None:
             return
         session_id = self._livy_session_id
-        self._livy_session_id = None
         url = self.get_livy_base_api_uri() + f"/sessions/{session_id}"
-        self._api_delete(url)
+        try:
+            self._api_delete(url)
+        except FabricApiError as e:
+            if e.status_code != 404:
+                raise
+        self._livy_session_id = None
 
     def cancel_livy_statement(self, statement_id: int) -> str:
         """Cancel a running Livy statement.

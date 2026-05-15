@@ -117,8 +117,15 @@ def pytest_collection_modifyitems(config, items):
 def livy_session_lifecycle(request):
     session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
     lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
+    workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
+    workspace_id = os.getenv("FABRIC_TEST_WORKSPACE_ID")
 
-    if not session_name or not lakehouse_name or request.config.getoption("--dw"):
+    if (
+        not session_name
+        or not lakehouse_name
+        or not (workspace_name or workspace_id)
+        or request.config.getoption("--dw")
+    ):
         yield
         return
 
@@ -131,8 +138,8 @@ def livy_session_lifecycle(request):
     creds = FabricSparkCredentials(
         database=lakehouse_name,
         schema="dbo",
-        workspace_name=os.getenv("FABRIC_TEST_WORKSPACE_NAME"),
-        workspace_id=os.getenv("FABRIC_TEST_WORKSPACE_ID"),
+        workspace_name=workspace_name,
+        workspace_id=workspace_id,
         livy_session_name=session_name,
     )
     token_provider = FabricTokenProvider(creds)
@@ -148,8 +155,8 @@ def livy_session_lifecycle(request):
 
     try:
         client.delete_livy_session()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"\nWarning: failed to delete Livy session: {e}")
 
 
 @pytest.fixture(scope="class")
