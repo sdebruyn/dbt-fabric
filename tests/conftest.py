@@ -7,7 +7,7 @@ import yaml
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
-from dbt.adapters.fabric.purview_client import PurviewClient
+from dbt.adapters.fabric.purview_client import _SEARCH_API, PurviewClient
 from dbt.tests.util import write_file
 
 pytest_plugins = ["dbt.tests.fixtures.project"]
@@ -208,6 +208,28 @@ def purview_client(
     return PurviewClient(credentials.purview_endpoint, fabric_token_provider)
 
 
+@pytest.fixture(scope="session")
+def purview_table():
+    """Find any table entity in Purview for integration tests.
+
+    Uses a standalone PurviewClient so this fixture doesn't depend on the
+    adapter/project chain (which depends on models, creating a cycle).
+    """
+    endpoint = os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT")
+    if not endpoint:
+        pytest.skip("FABRIC_TEST_PURVIEW_ENDPOINT not set")
+
+    creds = FabricCredentials(database="unused", schema="dbo")
+    token_provider = FabricTokenProvider(creds)
+    client = PurviewClient(endpoint, token_provider)
+
+    url = f"{client._endpoint}{_SEARCH_API}"
+    body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
+    resp = client._api_post(url, body)
+    results = resp.json().get("value", [])
+    if not results:
+        pytest.skip("No tables indexed in Purview")
+    return results[0]
 
 def _deep_merge(base: dict, override: dict) -> dict:
     """Deep merge override into base. Returns the merged dict (mutates base)."""
