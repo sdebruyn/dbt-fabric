@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from dbt.cli.main import dbtRunner
+from dbt.tests.util import run_dbt
 
 freshness_via_loaded_at_datetime_schema_yml = """version: 2
 sources:
@@ -58,23 +58,15 @@ class TestCollectFreshnessDatetime:
     def test_collect_freshness_datetime(self, project, set_env_vars, custom_schema):
         project.run_sql(
             f"create table {custom_schema}.test_freshness_datetime"
-            f" (id int, updated_at datetime2(3));"
+            f" (id int, updated_at datetime2(6));"
         )
         project.run_sql(
             f"insert into {custom_schema}.test_freshness_datetime values (1, current_timestamp);"
         )
 
-        warning_or_error = False
-
-        def probe(e):
-            nonlocal warning_or_error
-            if e.info.level in ("warning", "error"):
-                warning_or_error = True
-
-        runner = dbtRunner(callbacks=[probe])
-        runner.invoke(["source", "freshness"])
-
-        assert not warning_or_error
+        results = run_dbt(["source", "freshness"])
+        assert len(results) == 1
+        assert results[0].status == "pass"
 
 
 class TestCollectFreshnessVarchar:
@@ -113,14 +105,6 @@ class TestCollectFreshnessVarchar:
             f" values (1, CONVERT(varchar(100), current_timestamp, 126));"
         )
 
-        warning_or_error = False
-
-        def probe(e):
-            nonlocal warning_or_error
-            if e.info.level in ("warning", "error"):
-                warning_or_error = True
-
-        runner = dbtRunner(callbacks=[probe])
-        runner.invoke(["source", "freshness"])
-
-        assert not warning_or_error
+        results = run_dbt(["source", "freshness"])
+        assert len(results) == 1
+        assert results[0].status == "pass"

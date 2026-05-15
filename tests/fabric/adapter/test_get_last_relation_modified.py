@@ -2,7 +2,7 @@ import os
 
 import pytest
 
-from dbt.cli.main import dbtRunner
+from dbt.tests.util import run_dbt
 
 freshness_via_metadata_schema_yml = """version: 2
 sources:
@@ -46,15 +46,6 @@ class TestGetLastRelationModified:
             f"create table {custom_schema}.test_table (id int, name varchar(100) not null);"
         )
 
-        warning_or_error = False
-
-        def probe(e):
-            nonlocal warning_or_error
-            if e.info.level in ["warning", "error"]:
-                warning_or_error = True
-
-        runner = dbtRunner(callbacks=[probe])
-        runner.invoke(["source", "freshness"])
-
-        # The 'source freshness' command should succeed without warnings or errors.
-        assert not warning_or_error
+        results = run_dbt(["source", "freshness"])
+        assert len(results) == 1
+        assert results[0].status == "pass"
