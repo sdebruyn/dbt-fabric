@@ -232,39 +232,59 @@ class PurviewSync:
         return resolved.get(cache_key)
 
     def push_descriptions(self, models: list, resolved: dict) -> None:
-        """Sync model and column descriptions from dbt to Purview userDescription fields."""
+        """Sync model and column descriptions from dbt to Purview userDescription fields.
+
+        Respects the persist_docs config: only pushes model descriptions when
+        persist_docs.relation is true, and column descriptions when persist_docs.columns
+        is true.
+        """
         for model in models:
             entity = self._resolve_entity_for_node(model, resolved)
             if entity is None:
                 continue
 
-            description = _get_attr(model, "description", "")
-            if description:
-                self._client.update_entity_description(
-                    guid=entity["id"],
-                    type_name=entity["entityType"],
-                    qualified_name=entity["qualifiedName"],
-                    name=entity.get("name", _get_node_name(model)),
-                    description=description,
-                )
-
-            columns = _get_attr(model, "columns", {})
-            if hasattr(columns, "values"):
-                col_iter = columns.values()
-            elif isinstance(columns, dict):
-                col_iter = columns.values()
+            config = _get_attr(model, "config", {})
+            persist_docs = (
+                config.get("persist_docs", {})
+                if isinstance(config, dict)
+                else _get_attr(config, "persist_docs", {})
+            )
+            if isinstance(persist_docs, dict):
+                persist_relation = persist_docs.get("relation", False)
+                persist_columns = persist_docs.get("columns", False)
             else:
-                col_iter = columns if isinstance(columns, list) else []
+                persist_relation = _get_attr(persist_docs, "relation", False)
+                persist_columns = _get_attr(persist_docs, "columns", False)
 
-            col_descriptions: dict[str, str] = {}
-            for col in col_iter:
-                col_name = _get_attr(col, "name", "")
-                col_desc = _get_attr(col, "description", "")
-                if col_name and col_desc:
-                    col_descriptions[col_name] = col_desc
+            if persist_relation:
+                description = _get_attr(model, "description", "")
+                if description:
+                    self._client.update_entity_description(
+                        guid=entity["id"],
+                        type_name=entity["entityType"],
+                        qualified_name=entity["qualifiedName"],
+                        name=entity.get("name", _get_node_name(model)),
+                        description=description,
+                    )
 
-            if col_descriptions:
-                self._client.update_column_descriptions(entity["id"], col_descriptions)
+            if persist_columns:
+                columns = _get_attr(model, "columns", {})
+                if hasattr(columns, "values"):
+                    col_iter = columns.values()
+                elif isinstance(columns, dict):
+                    col_iter = columns.values()
+                else:
+                    col_iter = columns if isinstance(columns, list) else []
+
+                col_descriptions: dict[str, str] = {}
+                for col in col_iter:
+                    col_name = _get_attr(col, "name", "")
+                    col_desc = _get_attr(col, "description", "")
+                    if col_name and col_desc:
+                        col_descriptions[col_name] = col_desc
+
+                if col_descriptions:
+                    self._client.update_column_descriptions(entity["id"], col_descriptions)
 
     def push_business_metadata(
         self, models: list, resolved: dict, results: list | None = None
