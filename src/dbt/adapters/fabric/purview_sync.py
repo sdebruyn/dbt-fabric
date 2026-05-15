@@ -8,6 +8,10 @@ logger = AdapterLogger("fabric")
 
 
 def extract_syncable_models(graph: dict, results: list | None = None) -> list[dict]:
+    """Extract models, seeds, and snapshots from the dbt graph that should be synced to Purview.
+
+    When results are provided, only nodes that actually ran are included.
+    """
     syncable_types = ("model", "seed", "snapshot")
     models = []
 
@@ -43,6 +47,7 @@ def extract_syncable_models(graph: dict, results: list | None = None) -> list[di
 
 
 def _get_attr(node: object, key: str, default=None):
+    """Read an attribute from a dbt node, supporting both object and dict representations."""
     if hasattr(node, key):
         return getattr(node, key, default)
     if isinstance(node, dict):
@@ -67,11 +72,18 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
 
 
 class PurviewSync:
+    """Orchestrates syncing dbt metadata to Purview: descriptions, business metadata, and lineage."""
+
     def __init__(self, client: PurviewClient) -> None:
         self._client = client
         self._entity_cache: dict[str, dict] = {}
 
     def resolve_entities(self, models: list) -> dict[str, dict]:
+        """Match dbt models to Purview entities by searching on name, schema, and database.
+
+        Returns a dict mapping both unique_id and cache_key (database.schema.name) to
+        the Purview search result for each matched entity.
+        """
         cache: dict[str, dict] = {}
 
         for model in models:
@@ -117,6 +129,7 @@ class PurviewSync:
         return cache
 
     def _resolve_entity_for_node(self, node: object, resolved: dict) -> dict | None:
+        """Look up the Purview entity for a dbt node, first by unique_id then by cache key."""
         unique_id = _get_attr(node, "unique_id", "")
         if unique_id in resolved:
             return resolved[unique_id]
@@ -127,6 +140,7 @@ class PurviewSync:
         return resolved.get(cache_key)
 
     def push_descriptions(self, models: list, resolved: dict) -> None:
+        """Sync model and column descriptions from dbt to Purview userDescription fields."""
         for model in models:
             entity = self._resolve_entity_for_node(model, resolved)
             if entity is None:
@@ -163,6 +177,7 @@ class PurviewSync:
     def push_business_metadata(
         self, models: list, resolved: dict, results: list | None = None
     ) -> None:
+        """Sync dbt model metadata (tags, materialization, tests, etc.) as Purview business metadata."""
         test_results = self._collect_test_results(models, results)
 
         for model in models:
@@ -211,6 +226,12 @@ class PurviewSync:
             self._client.set_business_metadata(entity["id"], "dbt_metadata", attrs)
 
     def push_lineage(self, models: list, resolved: dict) -> None:
+        """Create dbt_transformation process entities in Purview to represent data lineage.
+
+        For each model with upstream dependencies (ref/source), creates a Process entity
+        with inputs (upstream tables) and outputs (the model's table) so Purview displays
+        the lineage graph.
+        """
         process_entities: list[dict] = []
 
         for model in models:
@@ -269,6 +290,7 @@ class PurviewSync:
     def _collect_test_results(
         self, models: list, results: list | None
     ) -> dict[str, dict[str, str]]:
+        """Extract test results from a dbt run, grouped by the model each test depends on."""
         if results is None:
             return {}
 
@@ -304,6 +326,7 @@ class PurviewSync:
         return []
 
     def _format_test_status(self, test_results: dict[str, str]) -> str:
+        """Format test results as a summary string, e.g. 'all_passed' or '3/5 passed'."""
         if not test_results:
             return ""
 
