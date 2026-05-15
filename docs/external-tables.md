@@ -32,29 +32,19 @@ Then run:
 dbt deps
 ```
 
-### 2. Copy the override macros
+### 2. Configure dispatch
 
-Due to how dbt's dispatch system works, adapter-internal macros cannot override macros from installed packages. You must copy the override macros into your own dbt project.
-
-Copy the file [`external_tables.sql`](https://github.com/sdebruyn/dbt-fabric/blob/main/src/dbt/include/fabric/macros/dbt_package_support/dbt_external_tables/external_tables.sql) from this adapter into your project's `macros/` directory:
-
-```
-your_project/
-  macros/
-    external_tables.sql   # <-- copy this file here
-```
-
-### 3. Configure dispatch
-
-Add the following to your `dbt_project.yml` so that dbt-external-tables uses your copied macros instead of the default Synapse-style macros bundled with the package:
+Add the following to your `dbt_project.yml` so that dbt-external-tables uses the OPENROWSET macros from this adapter instead of the Synapse-style macros bundled with the package:
 
 ```yaml
 dispatch:
   - macro_namespace: dbt_external_tables
-    search_order: ['my_project', 'dbt_external_tables']
+    search_order: ['my_project', 'dbt', 'dbt_external_tables']
 ```
 
 Replace `my_project` with your dbt project name.
+
+The `dbt` entry in the search order tells dbt to check the adapter's built-in macros before falling back to the package's defaults. This is how the adapter's OPENROWSET-based macros take priority over the package's `CREATE EXTERNAL TABLE` macros.
 
 ## Quick start
 

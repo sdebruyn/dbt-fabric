@@ -6,13 +6,12 @@
     These macros override the package's Fabric plugin so that
     stage_external_sources creates views wrapping OPENROWSET queries.
 
-    Because dbt's dispatch mechanism cannot find adapter-internal macros
-    when dispatching within a package namespace, users must copy these
-    macros into their own dbt project and configure dispatch:
+    Users must configure dispatch so that dbt checks the adapter's
+    built-in macros before the package's defaults:
 
         dispatch:
           - macro_namespace: dbt_external_tables
-            search_order: ['my_project', 'dbt_external_tables']
+            search_order: ['my_project', 'dbt', 'dbt_external_tables']
 
     The package's fabric__get_external_build_plan already dispatches each
     sub-call (dropif, create_external_table, etc.) through

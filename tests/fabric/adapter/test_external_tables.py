@@ -1,6 +1,5 @@
 import os
 import urllib.parse
-from pathlib import Path
 
 import pytest
 import requests
@@ -286,18 +285,6 @@ class TestResolveFileFormatMacro:
         assert output.strip() == "PARQUET"
 
 
-ADAPTER_MACROS_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "src"
-    / "dbt"
-    / "include"
-    / "fabric"
-    / "macros"
-    / "dbt_package_support"
-    / "dbt_external_tables"
-    / "external_tables.sql"
-)
-
 external_table_model_sql = """
 {{ config(materialized='table') }}
 select
@@ -352,16 +339,12 @@ class TestExternalTablesEndToEnd:
         }
 
     @pytest.fixture(scope="class")
-    def macros(self):
-        return {"external_tables_overrides.sql": ADAPTER_MACROS_PATH.read_text()}
-
-    @pytest.fixture(scope="class")
     def project_config_update(self):
         return {
             "dispatch": [
                 {
                     "macro_namespace": "dbt_external_tables",
-                    "search_order": ["test", "dbt_external_tables"],
+                    "search_order": ["test", "dbt", "dbt_external_tables"],
                 }
             ],
         }
