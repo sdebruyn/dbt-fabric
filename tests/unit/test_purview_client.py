@@ -99,6 +99,27 @@ class TestSearchEntities:
         assert results[0]["id"] == "guid-2"
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_search_filter_no_match_returns_empty(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "value": [
+                {
+                    "id": "guid-1",
+                    "name": "fct_orders",
+                    "qualifiedName": "https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/lh-dev/tables/fct_orders",
+                    "entityType": "fabric_lakehouse_table",
+                },
+            ],
+        }
+        mock_request.return_value = mock_response
+
+        results = client.search_entities(
+            name="fct_orders", database_identifiers=["nonexistent-guid"]
+        )
+        assert results == []
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_search_pagination(self, mock_request, client):
         page1 = MagicMock()
         page1.status_code = 200

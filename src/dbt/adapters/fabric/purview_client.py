@@ -288,8 +288,8 @@ class PurviewClient:
     ) -> list[PurviewEntityRef]:
         """Search Purview for table entities by name, filtering by database identifiers.
 
-        The database_identifiers list can contain both human-readable names and Fabric item
-        GUIDs. Results are filtered by checking if any identifier appears in the qualifiedName.
+        The database_identifiers list contains Fabric item GUIDs. Results are filtered by
+        checking if any identifier appears as a path segment in the qualifiedName.
         """
         url = f"{self._endpoint}{_SEARCH_API}"
         filters: list[dict] = [
@@ -301,11 +301,9 @@ class PurviewClient:
 
         if database_identifiers:
             lower_ids = [i.lower() for i in database_identifiers]
-            filtered = [
+            return [
                 r for r in results if _qualifiedname_matches(r.get("qualifiedName", ""), lower_ids)
             ]
-            if filtered:
-                return filtered
 
         return results
 

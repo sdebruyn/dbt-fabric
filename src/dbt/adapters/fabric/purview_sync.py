@@ -135,30 +135,31 @@ class PurviewSync:
         self._test_mapping = self._build_test_mapping()
 
     def _resolve_item(self, database: str) -> tuple[str, str] | None:
-        """Resolve a Fabric item name to its type and GUID.
+        """Resolve a Fabric item name to its type and GUID (case-insensitive).
 
         Returns ("lakehouse", item_id) or ("warehouse", item_id), or None if not found.
         """
-        if database in self._item_cache:
-            return self._item_cache[database]
+        lower_db = database.lower()
+        if lower_db in self._item_cache:
+            return self._item_cache[lower_db]
 
         if self._lakehouses is None:
             self._lakehouses = self._fabric_client.get_lakehouses()
         for lh in self._lakehouses:
-            if lh["displayName"] == database:
+            if lh["displayName"].lower() == lower_db:
                 result = ("lakehouse", lh["id"])
-                self._item_cache[database] = result
+                self._item_cache[lower_db] = result
                 return result
 
         if self._warehouses is None:
             self._warehouses = self._fabric_client.get_warehouses()
         for wh in self._warehouses:
-            if wh["displayName"] == database:
+            if wh["displayName"].lower() == lower_db:
                 result = ("warehouse", wh["id"])
-                self._item_cache[database] = result
+                self._item_cache[lower_db] = result
                 return result
 
-        self._item_cache[database] = None
+        self._item_cache[lower_db] = None
         return None
 
     def _build_test_mapping(self) -> dict[str, list[str]]:
@@ -227,7 +228,7 @@ class PurviewSync:
 
             item = self._resolve_item(database) if database else None
             if item:
-                db_ids = [database, item[1]]
+                db_ids = [item[1]]
                 results = self._client.search_entities(name=name, database_identifiers=db_ids)
             else:
                 results = []
@@ -697,7 +698,7 @@ class PurviewSync:
             logger.info(f"Purview: no entity found for source {source_id}, skipping")
             return None
 
-        db_ids = [database, item[1]]
+        db_ids = [item[1]]
         results = self._client.search_entities(name=name, database_identifiers=db_ids)
 
         if not results:

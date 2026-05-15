@@ -872,7 +872,7 @@ class TestPushLineage:
         sync.push_lineage([node], resolved)
 
         client.search_entities.assert_called_once_with(
-            name="orders", database_identifiers=["my_db", "b2c3d4e5"]
+            name="orders", database_identifiers=["b2c3d4e5"]
         )
         client.bulk_create_or_update.assert_called_once()
         entities = client.bulk_create_or_update.call_args[0][0]
@@ -1086,6 +1086,16 @@ class TestResolveItemType:
         item_type, item_id = sync._resolve_item("my_dwh")
         assert item_type == "warehouse"
         assert item_id == "wh-id"
+
+    def test_case_insensitive_match(self):
+        sync = PurviewSync(
+            MagicMock(),
+            _make_fabric_client(lakehouses=[{"displayName": "My_Lakehouse", "id": "lh-id"}]),
+            _make_graph(),
+        )
+        item_type, item_id = sync._resolve_item("my_lakehouse")
+        assert item_type == "lakehouse"
+        assert item_id == "lh-id"
 
     def test_unknown_database_returns_none(self):
         sync = PurviewSync(
