@@ -11,7 +11,10 @@ logger = AdapterLogger("fabric")
 def extract_syncable_models(graph: dict, results: list | None = None) -> list[dict]:
     """Extract models, seeds, and snapshots from the dbt graph that should be synced to Purview.
 
-    When results are provided, only nodes that actually ran are included.
+    This is the first step in the sync flow (called before PurviewSync.resolve_entities).
+    When results are provided (e.g. from an on-run-end hook), only nodes that actually
+    ran in this invocation are included. When results is None (e.g. a manual run-operation),
+    all syncable nodes in the graph are returned.
     """
     syncable_types = ("model", "seed", "snapshot")
     models = []
@@ -73,7 +76,22 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
 
 
 class PurviewSync:
-    """Orchestrates syncing dbt metadata to Purview: descriptions, business metadata, and lineage."""
+    """Orchestrates syncing dbt metadata to Purview: descriptions, business metadata, and lineage.
+
+    Entry point is BaseFabricAdapter.purview_sync(), which is called from the
+    {{ purview_sync() }} Jinja macro (typically as an on-run-end hook). The flow is:
+
+        1. extract_syncable_models() — filters the dbt graph to models/seeds/snapshots
+        2. resolve_entities() — matches each dbt node to a Purview entity by searching
+           on table name and filtering on the Fabric item GUID (resolved via FabricApiClient)
+        3. push_descriptions() — writes model and column descriptions to Purview
+        4. push_business_metadata() — attaches dbt tags, materialization, test results, etc.
+        5. push_lineage() — creates dbt_transformation process entities for upstream dependencies
+
+    The FabricApiClient is needed because Purview qualifiedNames for Lakehouse tables
+    contain the Fabric item GUID (not the human-readable name). This class resolves
+    Lakehouse/Warehouse names to GUIDs so search results can be filtered accurately.
+    """
 
     def __init__(self, client: PurviewClient, fabric_client: FabricApiClient) -> None:
         self._client = client

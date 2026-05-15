@@ -191,7 +191,7 @@ class TestRetry:
 
 class TestEnsureTypeDefinitions:
     @patch("dbt.adapters.fabric.purview_client.requests.request")
-    def test_creates_types_once(self, mock_request, client):
+    def test_registers_types_once(self, mock_request, client):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {}
@@ -200,27 +200,19 @@ class TestEnsureTypeDefinitions:
         client.ensure_type_definitions()
         client.ensure_type_definitions()
 
-        assert mock_request.call_count == 2  # one for BM def, one for entity def
+        assert mock_request.call_count == 2  # one PUT for BM def, one PUT for entity def
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
-    def test_falls_back_to_put_on_conflict(self, mock_request, client):
-        from dbt_common.exceptions import DbtRuntimeError
-
-        conflict = MagicMock()
-        conflict.status_code = 409
-        conflict.text = "conflict"
-
-        success = MagicMock()
-        success.status_code = 200
-        success.json.return_value = {}
-
-        mock_request.side_effect = [
-            conflict,  # POST BM def fails
-            success,  # PUT BM def succeeds
-            success,  # POST entity def succeeds
-        ]
+    def test_uses_put_for_idempotent_updates(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_request.return_value = mock_response
 
         client.ensure_type_definitions()
+
+        for call in mock_request.call_args_list:
+            assert call[0][0] == "put"
 
 
 class TestBusinessMetadata:
