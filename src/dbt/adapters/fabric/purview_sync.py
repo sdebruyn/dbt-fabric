@@ -59,6 +59,9 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
     return f"{database}.{schema}.{name}".lower()
 
 
+_FABRIC_BASE_URL = "https://app.fabric.microsoft.com/groups"
+
+
 class PurviewSync:
     """Orchestrates syncing dbt metadata to Purview: descriptions, business metadata, and lineage.
 
@@ -90,38 +93,44 @@ class PurviewSync:
         self._fabric_client = fabric_client
         self._graph = graph
         self._entity_cache: dict[str, dict] = {}
-        self._item_id_cache: dict[str, str] = {}
+        self._item_cache: dict[str, tuple[str, str] | None] = {}
         self._lakehouses: list[dict] | None = None
         self._warehouses: list[dict] | None = None
         self._test_mapping = self._build_test_mapping()
 
-    def _resolve_item_id(self, database: str) -> str | None:
-        """Resolve a Fabric item name (Lakehouse or Data Warehouse) to its GUID."""
-        if database in self._item_id_cache:
-            return self._item_id_cache[database]
+    def _resolve_item(self, database: str) -> tuple[str, str] | None:
+        """Resolve a Fabric item name to its type and GUID.
+
+        Returns ("lakehouse", item_id) or ("warehouse", item_id), or None if not found.
+        """
+        if database in self._item_cache:
+            return self._item_cache[database]
 
         if self._lakehouses is None:
             self._lakehouses = self._fabric_client.get_lakehouses()
         for lh in self._lakehouses:
             if lh["displayName"] == database:
-                self._item_id_cache[database] = lh["id"]
-                return lh["id"]
+                result = ("lakehouse", lh["id"])
+                self._item_cache[database] = result
+                return result
 
         if self._warehouses is None:
             self._warehouses = self._fabric_client.get_warehouses()
         for wh in self._warehouses:
             if wh["displayName"] == database:
-                self._item_id_cache[database] = wh["id"]
-                return wh["id"]
+                result = ("warehouse", wh["id"])
+                self._item_cache[database] = result
+                return result
 
+        self._item_cache[database] = None
         return None
 
     def _database_identifiers(self, database: str) -> list[str]:
         """Build a list of identifiers for a database: its name and its Fabric item GUID."""
         identifiers = [database]
-        item_id = self._resolve_item_id(database)
-        if item_id:
-            identifiers.append(item_id)
+        item = self._resolve_item(database)
+        if item:
+            identifiers.append(item[1])
         return identifiers
 
     def _build_test_mapping(self) -> dict[str, list[str]]:
@@ -163,10 +172,12 @@ class PurviewSync:
         return results[0]
 
     def resolve_entities(self, models: list[dict]) -> dict[str, dict]:
-        """Match dbt models to Purview entities by searching on name and database.
+        """Match dbt models to Purview entities, creating them if they don't exist.
 
-        Returns a dict mapping both unique_id and cache_key (database.schema.name) to
-        the Purview search result for each matched entity.
+        Searches for existing entities first. When no match is found, creates the
+        entity via the Purview API (including parent entities like warehouse/schema
+        for DW models). Returns a dict mapping both unique_id and cache_key to
+        the Purview entity for each matched or created entity.
         """
         cache: dict[str, dict] = {}
 
@@ -187,22 +198,135 @@ class PurviewSync:
             db_ids = self._database_identifiers(database) if database else None
             results = self._client.search_entities(name=name, database_identifiers=db_ids)
 
-            if not results:
-                logger.info(f"Purview: no entity found for {cache_key}, skipping")
-                continue
-
-            entity = self._pick_best_entity(results, db_ids)
-            if len(results) > 1:
-                logger.info(
-                    f"Purview: {len(results)} entities found for {cache_key}, "
-                    f"using {entity.get('qualifiedName', 'unknown')}"
-                )
+            if results:
+                entity = self._pick_best_entity(results, db_ids)
+                if len(results) > 1:
+                    logger.info(
+                        f"Purview: {len(results)} entities found for {cache_key}, "
+                        f"using {entity.get('qualifiedName', 'unknown')}"
+                    )
+            else:
+                entity = self._create_entity_for_model(model)
+                if entity is None:
+                    logger.info(f"Purview: no entity found for {cache_key}, skipping")
+                    continue
 
             cache[cache_key] = entity
             cache[unique_id] = entity
 
         self._entity_cache = cache
         return cache
+
+    def _create_entity_for_model(self, model: dict) -> dict | None:
+        """Create Purview entities for a dbt model that has no existing entity.
+
+        For warehouse models: creates warehouse, schema, and table entities.
+        For lakehouse models: creates a table entity.
+        Returns a search-result-like dict for the table entity, or None on failure.
+        """
+        database = model.get("database", "")
+        if not database:
+            return None
+
+        item = self._resolve_item(database)
+        if item is None:
+            return None
+
+        item_type, item_id = item
+        workspace_id = self._fabric_client.get_workspace_id()
+        schema = model.get("schema", "")
+        name = model.get("alias") or model.get("name", "")
+
+        if item_type == "warehouse":
+            return self._create_warehouse_entities(workspace_id, item_id, database, schema, name)
+        return self._create_lakehouse_table(workspace_id, item_id, name)
+
+    def _create_warehouse_entities(
+        self,
+        workspace_id: str,
+        warehouse_id: str,
+        warehouse_name: str,
+        schema: str,
+        table_name: str,
+    ) -> dict | None:
+        """Create fabric_warehouse, fabric_warehouse_schema, and fabric_warehouse_table entities."""
+        wh_qn = f"{_FABRIC_BASE_URL}/{workspace_id}/warehouses/{warehouse_id}"
+        schema_qn = f"{wh_qn}/schemas/{schema}"
+        table_qn = f"{schema_qn}/tables/{table_name}"
+
+        entities = [
+            {
+                "typeName": "fabric_warehouse",
+                "attributes": {
+                    "qualifiedName": wh_qn,
+                    "name": warehouse_name,
+                },
+            },
+            {
+                "typeName": "fabric_warehouse_schema",
+                "attributes": {
+                    "qualifiedName": schema_qn,
+                    "name": schema,
+                },
+                "relationshipAttributes": {
+                    "warehouse": {
+                        "typeName": "fabric_warehouse",
+                        "uniqueAttributes": {"qualifiedName": wh_qn},
+                    },
+                },
+            },
+            {
+                "typeName": "fabric_warehouse_table",
+                "attributes": {
+                    "qualifiedName": table_qn,
+                    "name": table_name,
+                },
+                "relationshipAttributes": {
+                    "dbSchema": {
+                        "typeName": "fabric_warehouse_schema",
+                        "uniqueAttributes": {"qualifiedName": schema_qn},
+                    },
+                },
+            },
+        ]
+
+        self._client.bulk_create_or_update(entities)
+        logger.info(f"Purview: created warehouse table entity {table_qn}")
+
+        return {
+            "id": table_qn,
+            "name": table_name,
+            "entityType": "fabric_warehouse_table",
+            "qualifiedName": table_qn,
+        }
+
+    def _create_lakehouse_table(
+        self, workspace_id: str, lakehouse_id: str, table_name: str
+    ) -> dict | None:
+        """Create a fabric_lakehouse_table entity."""
+        table_qn = (
+            f"{_FABRIC_BASE_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_name}"
+        )
+
+        entities = [
+            {
+                "typeName": "fabric_lakehouse_table",
+                "attributes": {
+                    "qualifiedName": table_qn,
+                    "name": table_name,
+                },
+            },
+        ]
+
+        self._client.bulk_create_or_update(entities)
+        logger.info(f"Purview: created lakehouse table entity {table_qn}")
+
+        return {
+            "id": table_qn,
+            "name": table_name,
+            "entityType": "fabric_lakehouse_table",
+            "qualifiedName": table_qn,
+        }
 
     def _resolve_entity_for_node(self, node: dict, resolved: dict) -> dict | None:
         """Look up the Purview entity for a dbt node, first by unique_id then by cache key."""
@@ -284,20 +408,65 @@ class PurviewSync:
             self._client.bulk_create_or_update(entity_updates, merge_business_attrs=has_bm)
 
         for model, entity in column_work:
-            col_descriptions = self._extract_column_descriptions(model)
-            if col_descriptions:
-                self._client.update_column_descriptions(entity["id"], col_descriptions)
+            col_entities = self._build_column_entities(model, entity)
+            if col_entities:
+                self._client.bulk_create_or_update(col_entities)
 
-    def _extract_column_descriptions(self, model: dict) -> dict[str, str]:
-        """Extract column name → description mapping from a dbt model node."""
+    def _build_column_entities(self, model: dict, table_entity: dict) -> list[dict]:
+        """Build column entity payloads for a table, creating them if they don't exist.
+
+        Uses the table's entityType to determine whether to create warehouse or lakehouse
+        column entities, with the appropriate type-specific attributes.
+        """
         columns = model.get("columns", {})
-        col_descriptions: dict[str, str] = {}
+        if not columns:
+            return []
+
+        table_qn = table_entity["qualifiedName"]
+        table_type = table_entity["entityType"]
+        is_warehouse = "warehouse" in table_type
+
+        col_entities: list[dict] = []
         for col in columns.values():
             col_name = col.get("name", "")
+            if not col_name:
+                continue
+
+            col_qn = f"{table_qn}/columns/{col_name}"
+            data_type = col.get("data_type", "")
+
+            if is_warehouse:
+                entity = {
+                    "typeName": "fabric_warehouse_table_column",
+                    "attributes": {
+                        "qualifiedName": col_qn,
+                        "name": col_name,
+                        "data_type": data_type or "unknown",
+                    },
+                    "relationshipAttributes": {
+                        "table": {
+                            "typeName": "fabric_warehouse_table",
+                            "uniqueAttributes": {"qualifiedName": table_qn},
+                        },
+                    },
+                }
+            else:
+                entity = {
+                    "typeName": "fabric_lakehouse_table_column",
+                    "attributes": {
+                        "qualifiedName": col_qn,
+                        "name": col_name,
+                        "dataType": data_type or "unknown",
+                    },
+                }
+
             col_desc = col.get("description", "")
-            if col_name and col_desc:
-                col_descriptions[col_name] = col_desc
-        return col_descriptions
+            if col_desc:
+                entity["attributes"]["userDescription"] = col_desc
+
+            col_entities.append(entity)
+
+        return col_entities
 
     def _build_business_metadata_attrs(
         self, model: dict, unique_id: str, test_results: dict[str, dict[str, str]]

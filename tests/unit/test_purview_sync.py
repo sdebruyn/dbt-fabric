@@ -287,15 +287,34 @@ class TestResolveEntities:
 
         assert resolved["model.test.my_model"]["id"] == "guid-b"
 
-    def test_skips_when_no_match(self):
+    def test_skips_when_no_match_and_database_unknown(self):
         client = MagicMock()
         client.search_entities.return_value = []
 
-        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
-        node = _make_node()
+        sync = PurviewSync(
+            client, _make_fabric_client(lakehouses=[], warehouses=[]), _make_graph()
+        )
+        node = _make_node(database="unknown_db")
         resolved = sync.resolve_entities([node])
 
         assert len(resolved) == 0
+
+    def test_creates_entity_when_no_match_but_database_known(self):
+        client = MagicMock()
+        client.search_entities.return_value = []
+        client.bulk_create_or_update.return_value = {
+            "mutatedEntities": {},
+            "guidAssignments": {},
+        }
+
+        fabric_client = _make_fabric_client()
+        fabric_client.get_workspace_id.return_value = "ws-id"
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node()
+        resolved = sync.resolve_entities([node])
+
+        assert len(resolved) == 2  # unique_id + cache_key
+        client.bulk_create_or_update.assert_called_once()
 
     def test_deduplicates_same_table(self):
         client = MagicMock()
@@ -365,15 +384,16 @@ class TestPushMetadata:
 
         client.bulk_create_or_update.assert_not_called()
 
-    def test_pushes_column_descriptions_separately(self):
+    def test_creates_column_entities_separately(self):
         client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node(
             columns={
-                "user_id": {"name": "user_id", "description": "Primary key"},
-                "email": {"name": "email", "description": ""},
+                "user_id": {"name": "user_id", "description": "Primary key", "data_type": "int"},
+                "email": {"name": "email", "description": "", "data_type": "string"},
             },
             config={
                 "materialized": "table",
@@ -384,10 +404,12 @@ class TestPushMetadata:
 
         sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
-        client.bulk_create_or_update.assert_not_called()
-        client.update_column_descriptions.assert_called_once_with(
-            "guid-1", {"user_id": "Primary key"}
-        )
+        client.bulk_create_or_update.assert_called_once()
+        col_entities = client.bulk_create_or_update.call_args[0][0]
+        assert len(col_entities) == 2
+        described = [e for e in col_entities if "userDescription" in e["attributes"]]
+        assert len(described) == 1
+        assert described[0]["attributes"]["userDescription"] == "Primary key"
 
     def test_pushes_business_metadata_via_bulk(self):
         client = MagicMock()
@@ -499,7 +521,9 @@ class TestPushMetadata:
         entity = _make_purview_entity()
         node = _make_node(
             description="Full docs",
-            columns={"user_id": {"name": "user_id", "description": "Primary key"}},
+            columns={
+                "user_id": {"name": "user_id", "description": "Primary key", "data_type": "int"}
+            },
             tags=["finance"],
             config={
                 "materialized": "table",
@@ -510,12 +534,15 @@ class TestPushMetadata:
 
         sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=True)
 
-        client.bulk_create_or_update.assert_called_once()
-        entities = client.bulk_create_or_update.call_args[0][0]
-        assert entities[0]["attributes"]["userDescription"] == "Full docs"
-        assert "dbt_metadata" in entities[0]["businessAttributes"]
-        assert entities[0]["labels"] == ["finance"]
-        client.update_column_descriptions.assert_called_once()
+        assert client.bulk_create_or_update.call_count == 2
+        table_entities = client.bulk_create_or_update.call_args_list[0][0][0]
+        assert table_entities[0]["attributes"]["userDescription"] == "Full docs"
+        assert "dbt_metadata" in table_entities[0]["businessAttributes"]
+        assert table_entities[0]["labels"] == ["finance"]
+
+        col_entities = client.bulk_create_or_update.call_args_list[1][0][0]
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["userDescription"] == "Primary key"
 
     def test_no_merge_flag_when_descriptions_only(self):
         client = MagicMock()
@@ -532,6 +559,161 @@ class TestPushMetadata:
         sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
         assert client.bulk_create_or_update.call_args[1]["merge_business_attrs"] is False
+
+
+class TestColumnEntityCreation:
+    def test_creates_warehouse_column_entities(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_warehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/warehouses/wh/schemas/dbo/tables/fct_orders",
+        )
+        node = _make_node(
+            columns={
+                "id": {"name": "id", "description": "Primary key", "data_type": "int"},
+                "name": {
+                    "name": "name",
+                    "description": "Display name",
+                    "data_type": "varchar(100)",
+                },
+            },
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        bulk_calls = client.bulk_create_or_update.call_args_list
+        column_call = [
+            c
+            for c in bulk_calls
+            if any(e.get("typeName") == "fabric_warehouse_table_column" for e in c[0][0])
+        ]
+        assert len(column_call) == 1
+        col_entities = column_call[0][0][0]
+        assert all(e["typeName"] == "fabric_warehouse_table_column" for e in col_entities)
+
+    def test_warehouse_columns_have_data_type(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_warehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/warehouses/wh/schemas/dbo/tables/t",
+        )
+        node = _make_node(
+            columns={"id": {"name": "id", "description": "", "data_type": "bigint"}},
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        bulk_calls = client.bulk_create_or_update.call_args_list
+        col_entities = []
+        for c in bulk_calls:
+            for e in c[0][0]:
+                if e.get("typeName") == "fabric_warehouse_table_column":
+                    col_entities.append(e)
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["data_type"] == "bigint"
+
+    def test_creates_lakehouse_column_entities(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_lakehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/lakehouses/lh/tables/fct_orders",
+        )
+        node = _make_node(
+            columns={
+                "id": {"name": "id", "description": "Primary key", "data_type": "int"},
+            },
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        bulk_calls = client.bulk_create_or_update.call_args_list
+        col_entities = []
+        for c in bulk_calls:
+            for e in c[0][0]:
+                if e.get("typeName") == "fabric_lakehouse_table_column":
+                    col_entities.append(e)
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["dataType"] == "int"
+
+    def test_column_descriptions_set_on_creation(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_lakehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/lakehouses/lh/tables/t",
+        )
+        node = _make_node(
+            columns={"id": {"name": "id", "description": "The primary key", "data_type": "int"}},
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        bulk_calls = client.bulk_create_or_update.call_args_list
+        col_entities = []
+        for c in bulk_calls:
+            for e in c[0][0]:
+                if "column" in e.get("typeName", ""):
+                    col_entities.append(e)
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["userDescription"] == "The primary key"
+
+    def test_column_qualified_name_pattern(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity(
+            entity_type="fabric_lakehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/lakehouses/lh/tables/t",
+        )
+        node = _make_node(
+            columns={"user_id": {"name": "user_id", "description": "", "data_type": "string"}},
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        bulk_calls = client.bulk_create_or_update.call_args_list
+        col_entities = []
+        for c in bulk_calls:
+            for e in c[0][0]:
+                if "column" in e.get("typeName", ""):
+                    col_entities.append(e)
+        assert len(col_entities) == 1
+        assert col_entities[0]["attributes"]["qualifiedName"] == (
+            "https://app.fabric.microsoft.com/groups/ws/lakehouses/lh/tables/t/columns/user_id"
+        )
+
+    def test_no_columns_skips_creation(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(columns={}, description="Has description but no columns")
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        if client.bulk_create_or_update.called:
+            for call in client.bulk_create_or_update.call_args_list:
+                for e in call[0][0]:
+                    assert "column" not in e.get("typeName", "")
 
 
 class TestPushLineage:
@@ -760,6 +942,159 @@ class TestPushLineage:
         client.bulk_create_or_update.assert_called_once()
         entities = client.bulk_create_or_update.call_args[0][0]
         assert entities[0]["attributes"]["inputs"][0]["guid"] == "guid-upstream"
+
+
+class TestResolveItemType:
+    def test_lakehouse_database(self):
+        sync = PurviewSync(
+            MagicMock(),
+            _make_fabric_client(lakehouses=[{"displayName": "my_lh", "id": "lh-id"}]),
+            _make_graph(),
+        )
+        item_type, item_id = sync._resolve_item("my_lh")
+        assert item_type == "lakehouse"
+        assert item_id == "lh-id"
+
+    def test_warehouse_database(self):
+        sync = PurviewSync(
+            MagicMock(),
+            _make_fabric_client(
+                lakehouses=[],
+                warehouses=[{"displayName": "my_dwh", "id": "wh-id"}],
+            ),
+            _make_graph(),
+        )
+        item_type, item_id = sync._resolve_item("my_dwh")
+        assert item_type == "warehouse"
+        assert item_id == "wh-id"
+
+    def test_unknown_database_returns_none(self):
+        sync = PurviewSync(
+            MagicMock(),
+            _make_fabric_client(lakehouses=[], warehouses=[]),
+            _make_graph(),
+        )
+        result = sync._resolve_item("unknown_db")
+        assert result is None
+
+    def test_caches_result(self):
+        fabric_client = _make_fabric_client(lakehouses=[{"displayName": "my_lh", "id": "lh-id"}])
+        sync = PurviewSync(MagicMock(), fabric_client, _make_graph())
+        sync._resolve_item("my_lh")
+        sync._resolve_item("my_lh")
+        fabric_client.get_lakehouses.assert_called_once()
+
+
+class TestCreateEntityForModel:
+    def test_creates_warehouse_table_entity(self):
+        client = MagicMock()
+        client.search_entities.return_value = []
+        client.bulk_create_or_update.return_value = {
+            "mutatedEntities": {"CREATE": [{"guid": "new-guid"}]},
+            "guidAssignments": {"-1": "wh-guid", "-2": "schema-guid", "-3": "table-guid"},
+        }
+
+        fabric_client = _make_fabric_client(
+            lakehouses=[], warehouses=[{"displayName": "my_dwh", "id": "wh-id"}]
+        )
+        fabric_client.get_workspace_id.return_value = "ws-id"
+
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node(database="my_dwh", schema="dbo", name="fct_orders")
+        resolved = sync.resolve_entities([node])
+
+        assert "model.test.my_model" in resolved
+        entity = resolved["model.test.my_model"]
+        assert entity["entityType"] == "fabric_warehouse_table"
+        assert "fct_orders" in entity["qualifiedName"]
+
+    def test_warehouse_entity_has_correct_qualified_name(self):
+        client = MagicMock()
+        client.search_entities.return_value = []
+        client.bulk_create_or_update.return_value = {
+            "mutatedEntities": {},
+            "guidAssignments": {"-1": "wh-guid", "-2": "schema-guid", "-3": "table-guid"},
+        }
+
+        fabric_client = _make_fabric_client(
+            lakehouses=[], warehouses=[{"displayName": "my_dwh", "id": "wh-id"}]
+        )
+        fabric_client.get_workspace_id.return_value = "ws-id"
+
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node(database="my_dwh", schema="dbo", name="fct_orders")
+        sync.resolve_entities([node])
+
+        entities = client.bulk_create_or_update.call_args[0][0]
+        type_names = [e["typeName"] for e in entities]
+        assert "fabric_warehouse" in type_names
+        assert "fabric_warehouse_schema" in type_names
+        assert "fabric_warehouse_table" in type_names
+
+        wh_entity = next(e for e in entities if e["typeName"] == "fabric_warehouse")
+        assert wh_entity["attributes"]["qualifiedName"] == (
+            "https://app.fabric.microsoft.com/groups/ws-id/warehouses/wh-id"
+        )
+
+        schema_entity = next(e for e in entities if e["typeName"] == "fabric_warehouse_schema")
+        assert "dbo" in schema_entity["attributes"]["qualifiedName"]
+
+        table_entity = next(e for e in entities if e["typeName"] == "fabric_warehouse_table")
+        assert "fct_orders" in table_entity["attributes"]["qualifiedName"]
+
+    def test_creates_lakehouse_table_entity(self):
+        client = MagicMock()
+        client.search_entities.return_value = []
+        client.bulk_create_or_update.return_value = {
+            "mutatedEntities": {},
+            "guidAssignments": {"-1": "table-guid"},
+        }
+
+        fabric_client = _make_fabric_client(lakehouses=[{"displayName": "my_lh", "id": "lh-id"}])
+        fabric_client.get_workspace_id.return_value = "ws-id"
+
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node(database="my_lh", schema="dbo", name="fct_orders")
+        resolved = sync.resolve_entities([node])
+
+        assert "model.test.my_model" in resolved
+        entity = resolved["model.test.my_model"]
+        assert entity["entityType"] == "fabric_lakehouse_table"
+
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert len(entities) == 1
+        assert entities[0]["typeName"] == "fabric_lakehouse_table"
+        assert entities[0]["attributes"]["qualifiedName"] == (
+            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/lh-id/tables/fct_orders"
+        )
+
+    def test_skips_when_database_not_found(self):
+        client = MagicMock()
+        client.search_entities.return_value = []
+
+        fabric_client = _make_fabric_client(lakehouses=[], warehouses=[])
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node(database="unknown", schema="dbo", name="fct_orders")
+        resolved = sync.resolve_entities([node])
+
+        assert len(resolved) == 0
+        client.bulk_create_or_update.assert_not_called()
+
+    def test_existing_entity_not_recreated(self):
+        """When search finds an existing entity, don't create a new one."""
+        client = MagicMock()
+        existing = _make_purview_entity(guid="existing-guid")
+        client.search_entities.return_value = [existing]
+
+        fabric_client = _make_fabric_client(
+            lakehouses=[{"displayName": "my_db", "id": "b2c3d4e5"}]
+        )
+        sync = PurviewSync(client, fabric_client, _make_graph())
+        node = _make_node()
+        resolved = sync.resolve_entities([node])
+
+        assert resolved["model.test.my_model"]["id"] == "existing-guid"
+        client.bulk_create_or_update.assert_not_called()
 
 
 class TestFormatTestStatus:
