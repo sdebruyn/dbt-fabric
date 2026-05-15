@@ -90,7 +90,6 @@ After workers complete:
 - **Read CLAUDE.md first** — it contains everything you need about the project, architecture, and patterns.
 - **Read the base test class** — understand what the test expects before fixing. The fix often becomes obvious from reading the base class SQL.
 - **Minimal fixes only** — fix the root cause, don't refactor. If a macro works, don't also clean up unrelated macros.
-- **Do not use `--isolated` by default** — the `--isolated` flag creates a temporary DW/Lakehouse per session, but Fabric API rate limiting applies to the service principal, not per item. Creating extra items just adds provisioning overhead without avoiding contention. Only use `--isolated` when explicitly instructed.
 - **Only run your own specific tests** — never run the full test suite. Fabric infrastructure is slow (Livy sessions, rate-limited APIs). Run only the test class you are fixing: `uv run pytest -k "TestClassName" --dw -v` (or `--de -v`). The coordinator handles regression checks after merging.
 - **Validate and commit before finishing** — after your fix works, run `uv run ruff format .` and `uv run ruff check --fix .`, then commit only your own changes (not unrelated changes in the repo). Use a descriptive commit message.
 - **Report clearly** — list: files changed, tests that now pass, tests that still fail (if any), and any lessons learned.

@@ -254,8 +254,6 @@ This controls which connection profile and dbt_project.yml defaults are used.
 
 ### Isolated test infrastructure (`--isolated`)
 
-**Do not use `--isolated` by default.** Fabric API rate limiting applies to the service principal, not per item — creating extra items adds provisioning overhead without avoiding contention. Only use `--isolated` when explicitly instructed.
-
 The `--isolated` flag creates temporary Fabric items for each test session to avoid DDL collisions when multiple agents share a workspace.
 
 **How it works:**
