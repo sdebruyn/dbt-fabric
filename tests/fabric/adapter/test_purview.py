@@ -542,21 +542,16 @@ def _cleanup_lakehouse_entities(
         table_qn = _build_lakehouse_table_qn(workspace_id, lakehouse_id, schema, name)
         table_result = client.get_entity_by_qualified_name("fabric_lakehouse_table", table_qn)
         if table_result and "entity" in table_result:
-            for col_guid in table_result.get("referredEntities", {}):
-                try:
-                    client.delete_entity_by_guid(col_guid)
-                except Exception:
-                    pass
+            for ref in table_result.get("referredEntities", {}).values():
+                if ref.get("typeName") == "fabric_lakehouse_table_column":
+                    try:
+                        client.delete_entity_by_guid(ref["guid"])
+                    except Exception:
+                        pass
 
     for name in table_names:
         table_qn = _build_lakehouse_table_qn(workspace_id, lakehouse_id, schema, name)
         _delete_entity_if_exists(client, "fabric_lakehouse_table", table_qn)
-
-    for proc in client.search_process_entities("dbt://model.test."):
-        try:
-            client.delete_entity_by_guid(proc["id"])
-        except Exception:
-            pass
 
 
 _LH_BASE_MODEL_SQL = """
@@ -599,7 +594,8 @@ class TestPurviewSyncLakehouse:
     @pytest.fixture(scope="class")
     def dbt_profile_target_update(self):
         lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
-        assert lakehouse_name, "FABRIC_TEST_LAKEHOUSE_NAME must be set for lakehouse Purview tests"
+        if not lakehouse_name:
+            pytest.skip("FABRIC_TEST_LAKEHOUSE_NAME must be set for lakehouse Purview tests")
         return {"database": lakehouse_name}
 
     @pytest.fixture(scope="class")
