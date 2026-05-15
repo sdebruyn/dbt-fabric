@@ -195,7 +195,7 @@ from {{ source('test_external', 'sample_jsonl') }}
 """
 
 
-class TestExternalTableCSV(BaseDbtPackageTests):
+class BaseExternalTableTest(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
     def package_name(self) -> str:
         return "dbt_external_tables"
@@ -212,6 +212,19 @@ class TestExternalTableCSV(BaseDbtPackageTests):
     def packages(self, package_repo: str, package_revision: str):
         return {"packages": [{"package": package_repo, "version": package_revision}]}
 
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+        run_dbt(["run-operation", "stage_external_sources"])
+        results = run_dbt(["run"])
+        for r in results:
+            assert r.status == "success"
+        self.verify_data(project)
+
+    def verify_data(self, project):
+        raise NotImplementedError
+
+
+class TestExternalTableCSV(BaseExternalTableTest):
     @pytest.fixture(scope="class")
     def models(self):
         urls = _skip_without_lakehouse()
@@ -221,14 +234,7 @@ class TestExternalTableCSV(BaseDbtPackageTests):
             "csv_auto_data.sql": csv_auto_model_sql,
         }
 
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["run-operation", "stage_external_sources"])
-        results = run_dbt(["run"])
-        assert len(results) == 2
-        for r in results:
-            assert r.status == "success"
-
+    def verify_data(self, project):
         relation = relation_from_name(project.adapter, "csv_data")
         result = project.run_sql(f"select count(*) from {relation}", fetch="one")
         assert result[0] == 5
@@ -245,23 +251,7 @@ class TestExternalTableCSV(BaseDbtPackageTests):
         assert result[0] == 5
 
 
-class TestExternalTableJSONL(BaseDbtPackageTests):
-    @pytest.fixture(scope="class")
-    def package_name(self) -> str:
-        return "dbt_external_tables"
-
-    @pytest.fixture(scope="class")
-    def package_repo(self) -> str:
-        return "dbt-labs/dbt_external_tables"
-
-    @pytest.fixture(scope="class")
-    def package_revision(self) -> str:
-        return "0.11.0"
-
-    @pytest.fixture(scope="class")
-    def packages(self, package_repo: str, package_revision: str):
-        return {"packages": [{"package": package_repo, "version": package_revision}]}
-
+class TestExternalTableJSONL(BaseExternalTableTest):
     @pytest.fixture(scope="class")
     def models(self):
         urls = _skip_without_lakehouse()
@@ -270,13 +260,7 @@ class TestExternalTableJSONL(BaseDbtPackageTests):
             "jsonl_data.sql": jsonl_model_sql,
         }
 
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["run-operation", "stage_external_sources"])
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
-
+    def verify_data(self, project):
         relation = relation_from_name(project.adapter, "jsonl_data")
         result = project.run_sql(f"select count(*) from {relation}", fetch="one")
         assert result[0] == 5
