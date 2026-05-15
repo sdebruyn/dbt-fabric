@@ -4,6 +4,9 @@ import pytest
 from dbt.artifacts.schemas.catalog import CatalogArtifact
 from dbt.tests.adapter.catalog import files
 from dbt.tests.adapter.catalog.relation_types import CatalogRelationTypes
+from dbt.tests.adapter.catalog_integrations.test_catalog_integration import (
+    BaseCatalogIntegrationValidation,
+)
 
 
 class TestCatalogRelationTypes(CatalogRelationTypes):
@@ -26,3 +29,7 @@ class TestCatalogRelationTypes(CatalogRelationTypes):
         self, docs: CatalogArtifact, node_name: str, relation_type: str
     ):
         super().test_relation_types_populate_correctly(docs, node_name, relation_type)
+
+
+class TestCatalogIntegrationValidationFabric(BaseCatalogIntegrationValidation):
+    pass

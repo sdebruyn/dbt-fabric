@@ -130,6 +130,60 @@ uv run ruff format .
 uv run ruff check --fix .
 ```
 
+## Upgrading dbt-core support
+
+When a new dbt-core minor version is released (e.g. 1.11 → 1.12), the adapter needs to be updated to support it. This is a systematic process:
+
+### 1. Research what changed
+
+Check these sources for changes that affect adapters:
+
+* **[dbt-core release notes](https://github.com/dbt-labs/dbt-core/releases)** — new features, breaking changes, behavior flags
+* **[dbt-adapters commits](https://github.com/dbt-labs/dbt-adapters/commits/main/dbt-adapters)** — new macros, adapter methods, dispatch changes
+* **[dbt-tests-adapter commits](https://github.com/dbt-labs/dbt-adapters/commits/main/dbt-tests-adapter)** — new test classes to adopt
+* **Reference adapters** — check what [Snowflake](https://github.com/dbt-labs/dbt-adapters/commits/main/dbt-snowflake), [Postgres](https://github.com/dbt-labs/dbt-adapters/commits/main/dbt-postgres), and [Spark](https://github.com/dbt-labs/dbt-adapters/commits/main/dbt-spark) implemented for the new version
+
+Focus on:
+
+* New dispatchable macros (search for `adapter.dispatch` in the diff)
+* New base adapter methods or changed signatures
+* New behavior flags (search for `behavior` in `dbt/adapters/base/impl.py`)
+* New test classes in `dbt/tests/adapter/`
+
+### 2. Bump version pins
+
+In `pyproject.toml`, update the `dbt-core` upper bound in the dev dependency group. Also check if `dbt-adapters`, `dbt-tests-adapter`, or `dbt-common` need bumping.
+
+### 3. Inventory new test classes
+
+List all new `Base*` test classes in `dbt-tests-adapter`. For each one:
+
+* **Already covered?** — check if we already have a subclass in `tests/fabric/` or `tests/fabricspark/`
+* **Add it** — create a subclass with `pass` body in the appropriate test directory
+* **Override fixtures** — if the default SQL uses syntax incompatible with T-SQL or Spark SQL, override the relevant fixture (see existing tests for patterns)
+* **Skip if impossible** — if Fabric genuinely cannot support the feature, skip with a reason: `@pytest.mark.skip("reason")`
+
+### 4. Implement missing macros and adapter methods
+
+If the global project added new dispatchable macros with a `default__` that raises "not implemented", check if our adapter needs them. Look at what the reference adapters implemented.
+
+### 5. Verify
+
+Run the full test suite against the new dbt-core version:
+
+```shell
+uv sync
+uv run pytest --dw -v   # Fabric (T-SQL)
+uv run pytest --de -v   # FabricSpark
+```
+
+Fix failures using the standard TDD loop described in `CLAUDE.md`.
+
+### 6. Update documentation
+
+* Add the new dbt-core version to `docs/compatibility.md`
+* Update any feature guides if new adapter features were added
+
 ## CI/CD
 
 GitHub Actions workflows in `.github/workflows/`:

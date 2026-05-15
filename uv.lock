@@ -404,7 +404,7 @@ provides-extras = ["spark"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "dbt-core", specifier = ">=1.9.6,<1.12.0" },
+    { name = "dbt-core", specifier = ">=1.9.6,<1.13.0" },
     { name = "dbt-tests-adapter", specifier = ">=1.19.6,<2.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-dotenv", specifier = ">=0.5.2" },
