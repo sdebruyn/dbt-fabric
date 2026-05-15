@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
@@ -146,6 +148,10 @@ _DERIVED_MODEL_SQL = """
 {{ config(materialized='table') }}
 SELECT id, name, created_at FROM {{ ref('base_model') }}
 """
+_SOURCE_CONSUMER_SQL = """
+{{ config(materialized='table') }}
+SELECT id, name FROM {{ source('raw', 'base_model') }}
+"""
 _NO_DOCS_MODEL_SQL = """
 {{ config(materialized='table') }}
 SELECT 42 AS value
@@ -167,6 +173,8 @@ models:
         data_type: varchar
   - name: derived_model
     description: "Derived model referencing base"
+  - name: source_consumer
+    description: "Model consuming a source"
   - name: no_docs_model
     description: "This description should NOT be synced to Purview"
     config:
@@ -176,6 +184,11 @@ models:
     columns:
       - name: value
         description: "This column description should NOT be synced"
+
+sources:
+  - name: raw
+    tables:
+      - name: base_model
 """
 
 _SCHEMA_V2 = """\
@@ -209,7 +222,7 @@ models:
         columns: false
 """
 
-_TABLE_NAMES = ["base_model", "derived_model", "no_docs_model"]
+_TABLE_NAMES = ["base_model", "derived_model", "source_consumer", "no_docs_model"]
 
 
 @requires_purview
@@ -226,6 +239,7 @@ class TestPurviewSync:
         return {
             "base_model.sql": _BASE_MODEL_SQL,
             "derived_model.sql": _DERIVED_MODEL_SQL,
+            "source_consumer.sql": _SOURCE_CONSUMER_SQL,
             "no_docs_model.sql": _NO_DOCS_MODEL_SQL,
             "schema.yml": _SCHEMA_V1,
         }
@@ -397,3 +411,64 @@ class TestPurviewSync:
 
         assert desc == "Updated base model (v2)"
         assert "unique" in bm.get("dbt_tests", "")
+
+    def test_search_finds_entity_by_guid_filter(
+        self, purview_client, warehouse_info, synced_entities
+    ):
+        """Verify search_entities() with database_identifiers finds the right entity."""
+        _, warehouse_id = warehouse_info
+        results = purview_client.search_entities(
+            name="base_model", database_identifiers=[warehouse_id]
+        )
+        assert len(results) >= 1
+        matched_qns = [r.get("qualifiedName", "") for r in results]
+        assert any(warehouse_id in qn for qn in matched_qns)
+
+    def test_enrich_existing_entities(self, project, purview_client, synced_entities):
+        """Re-running sync on already-existing entities should update, not duplicate."""
+        run_dbt(["run-operation", "purview_sync"])
+
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
+        bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
+        assert bm.get("dbt_model_id") == "model.test.base_model"
+
+    def test_source_lineage_created(self, purview_client, synced_entities):
+        """Lineage from source() dependencies should create a transformation entity."""
+        result = purview_client.get_entity_by_qualified_name(
+            "dbt_transformation", "dbt://model.test.source_consumer"
+        )
+        assert result is not None and "entity" in result
+        inputs = result["entity"]["attributes"].get("inputs", [])
+        assert len(inputs) >= 1, "source_consumer should have at least one input (the source)"
+
+    def test_full_sync_removes_stale_lineage(self, project, purview_client, warehouse_info):
+        """Full sync should remove lineage for models that no longer exist."""
+        result = purview_client.get_entity_by_qualified_name(
+            "dbt_transformation", "dbt://model.test.source_consumer"
+        )
+        had_lineage = result is not None and "entity" in result
+
+        write_file(
+            _SCHEMA_V1.replace(
+                '  - name: source_consumer\n    description: "Model consuming a source"\n',
+                "",
+            ),
+            project.project_root,
+            "models",
+            "schema.yml",
+        )
+        source_consumer_path = os.path.join(project.project_root, "models", "source_consumer.sql")
+        if os.path.exists(source_consumer_path):
+            os.remove(source_consumer_path)
+
+        run_dbt(["run"])
+        run_dbt(["run-operation", "purview_sync"])
+
+        result = purview_client.get_entity_by_qualified_name(
+            "dbt_transformation", "dbt://model.test.source_consumer"
+        )
+        if had_lineage:
+            assert result is None or "entity" not in result, (
+                "Stale lineage for removed model should be cleaned up by full sync"
+            )
