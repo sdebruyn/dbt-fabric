@@ -4,12 +4,9 @@ from dbt.tests.adapter.constraints.fixtures import (
     constrained_model_schema_yml,
     foreign_key_model_sql,
     model_fk_constraint_schema_yml,
-    model_schema_yml,
-    my_incremental_model_sql,
     my_model_incremental_wrong_name_sql,
     my_model_incremental_wrong_order_depends_on_fk_sql,
     my_model_incremental_wrong_order_sql,
-    my_model_sql,
     my_model_wrong_name_sql,
     my_model_wrong_order_depends_on_fk_sql,
     my_model_wrong_order_sql,
@@ -107,7 +104,6 @@ models:
         data_type: string
 """
 
-fabricspark_constraints_yml = model_schema_yml.replace("text", "string").replace("primary key", "")
 fabricspark_model_fk_constraint_schema_yml = model_fk_constraint_schema_yml.replace(
     "text", "string"
 ).replace("primary key", "")
@@ -260,52 +256,17 @@ class TestModelConstraintsRuntimeEnforcementFabricSpark(
         }
 
 
-class FabricSparkConstraintsRollbackSetup:
-    @pytest.fixture(scope="class")
-    def project_config_update(self):
-        return {
-            "models": {
-                "+file_format": "delta",
-            }
-        }
-
-    @pytest.fixture(scope="class")
-    def expected_error_messages(self):
-        return [
-            "violate the new CHECK constraint",
-            "DELTA_NEW_CHECK_CONSTRAINT_VIOLATION",
-            "DELTA_NEW_NOT_NULL_VIOLATION",
-            "violate the new NOT NULL constraint",
-            "(id > 0) violated by row with values:",
-            "DELTA_VIOLATE_CONSTRAINT_WITH_VALUES",
-            "NOT NULL constraint violated for col",
-        ]
-
-    def assert_expected_error_messages(self, error_message, expected_error_messages):
-        assert any(msg in error_message for msg in expected_error_messages)
+@pytest.mark.skip(
+    "Fabric Lakehouse does not support ALTER TABLE CHANGE COLUMN SET NOT NULL on Delta tables,"
+    " so constraint violations are not triggered for null data"
+)
+class TestTableConstraintsRollbackFabricSpark(BaseConstraintsRollback):
+    pass
 
 
-class TestTableConstraintsRollbackFabricSpark(
-    FabricSparkConstraintsRollbackSetup, BaseConstraintsRollback
-):
-    @pytest.fixture(scope="class")
-    def models(self):
-        return {
-            "my_model.sql": my_model_sql,
-            "constraints_schema.yml": fabricspark_constraints_yml,
-        }
-
-    @pytest.fixture(scope="class")
-    def expected_color(self):
-        return "red"
-
-
-class TestIncrementalConstraintsRollbackFabricSpark(
-    FabricSparkConstraintsRollbackSetup, BaseIncrementalConstraintsRollback
-):
-    @pytest.fixture(scope="class")
-    def models(self):
-        return {
-            "my_model.sql": my_incremental_model_sql,
-            "constraints_schema.yml": fabricspark_constraints_yml,
-        }
+@pytest.mark.skip(
+    "Fabric Lakehouse does not support ALTER TABLE CHANGE COLUMN SET NOT NULL on Delta tables,"
+    " so constraint violations are not triggered for null data"
+)
+class TestIncrementalConstraintsRollbackFabricSpark(BaseIncrementalConstraintsRollback):
+    pass
