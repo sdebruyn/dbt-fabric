@@ -9,20 +9,38 @@
   <img alt="Fabric logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png">
 </picture>
 
-This is a maintained and extended fork of the [dbt-fabric](https://github.com/microsoft/dbt-fabric) adapter. This fork has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to the original adapter.
+A maintained and extended fork of the [dbt-fabric](https://github.com/microsoft/dbt-fabric) adapter, supporting **both** Microsoft Fabric compute engines:
 
-The adapter was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft.
-Given Microsoft's limited investments in the adapter, this fork aims to continue its development and maintenance.
+- **Fabric Data Warehouse** — T-SQL, uses the mssql-python driver (`type: fabric`)
+- **Fabric Lakehouse** — Spark SQL via Livy sessions (`type: fabricspark`)
+
+This fork has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to the original adapter, which was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft. Given Microsoft's limited investments in the adapter, this fork aims to continue its development and maintenance.
 
 [![PyPI - Version](https://img.shields.io/pypi/v/dbt-fabric-samdebruyn)](https://pypi.org/project/dbt-fabric-samdebruyn/)
 
+## Quick start
+
+### Data Warehouse (T-SQL)
+
+Drop-in replacement for the original `dbt-fabric` adapter:
+
+```bash
+pip install dbt-fabric-samdebruyn dbt-core
+```
+
+If you are migrating from the original adapter, all you need is `pip uninstall dbt-fabric` first.
+
+### Lakehouse (Spark SQL)
+
+```bash
+pip install dbt-fabric-samdebruyn[spark] dbt-core
+```
+
+This installs [dbt-spark](https://github.com/dbt-labs/dbt-spark) as a dependency. See the [Lakehouse guide](https://dbt-fabric.debruyn.dev/lakehouse/) for configuration and usage.
+
 ## Documentation
 
-A website with all documentation with regards to using dbt with Microsoft Fabric can be found at [http://dbt-fabric.debruyn.dev/](http://dbt-fabric.debruyn.dev/).
-
-## Drop-in replacement
-
-This adapter is a drop-in replacement for the original `dbt-fabric` adapter. To start using this adapter, all you have to do is a `pip uninstall dbt-fabric` and a `pip install dbt-fabric-samdebruyn`.
+Full documentation for using dbt with Microsoft Fabric is available at [dbt-fabric.debruyn.dev](https://dbt-fabric.debruyn.dev/).
 
 ## Code of Conduct
 

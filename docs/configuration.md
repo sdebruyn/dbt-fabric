@@ -1,21 +1,38 @@
 # Configuration
 
+!!! info "This page covers both adapter types"
+
+    This adapter supports two Microsoft Fabric compute engines: **Data Warehouse** (`type: fabric`) and **Lakehouse** (`type: fabricspark`). Configuration options that are specific to one adapter type are marked accordingly. For a comprehensive guide on using the Lakehouse adapter, see the [Lakehouse guide](lakehouse.md).
+
 You'll need to create a profile in the [profiles.yml](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml) file to connect to Microsoft Fabric. The adapter offers several ways to configure your connection so that it can be flexible to your needs.
 
 ## Example profiles.yml
 
-Here's an example `profiles.yml` file that connects to a Microsoft Fabric instance using automatic authentication:
+=== "Data Warehouse (T-SQL)"
 
-```yaml
-default:
-  target: dev
-    outputs:
-    dev:
-      type: fabric
-      workspace: your workspace name
-      database: name_of_your_data_warehouse
-      schema: schema_to_build_models_in
-```
+    ```yaml
+    default:
+      target: dev
+      outputs:
+        dev:
+          type: fabric
+          workspace: your workspace name
+          database: name_of_your_data_warehouse
+          schema: schema_to_build_models_in
+    ```
+
+=== "Lakehouse (Spark SQL)"
+
+    ```yaml
+    default:
+      target: dev
+      outputs:
+        dev:
+          type: fabricspark
+          workspace: your workspace name
+          database: name_of_your_lakehouse
+          schema: schema_in_your_lakehouse
+    ```
 
 ??? tip "Use environment variables anywhere"
 
@@ -40,9 +57,12 @@ default:
 
 **Required configuration option.**
 
-Only possible value: `fabric`
+Possible values: `fabric`, `fabricspark`
 
-The type of the adapter. This must be set to `fabric` to use this adapter.
+| Value | Compute engine | SQL dialect |
+| --- | --- | --- |
+| `fabric` | Fabric Data Warehouse | T-SQL |
+| `fabricspark` | Fabric Lakehouse | Spark SQL |
 
 ### `host`
 
@@ -53,13 +73,22 @@ The server part of your connection string. This is unique per Workspace in Fabri
 
 You can leave this empty and let the adapter find it automatically by providing information about your Workspace. See [`workspace_name`](#workspace_name) and [`workspace_id`](#workspace_id).
 
+!!! info "Not used for FabricSpark"
+
+    This option is not used when `type` is `fabricspark`. The Lakehouse adapter connects via the Fabric Livy API, not TDS. The Livy endpoint is resolved automatically from [`workspace_name`](#workspace_name) or [`workspace_id`](#workspace_id).
+
 ### `database`
 
 **Required configuration option.**
 
 Example value: `gold_dwh`
 
-The name of your data warehouse in Fabric. It's recommended to avoid using spaces in the name of your data warehouse, although it's supported.
+The name of the target item in Fabric:
+
+- For `type: fabric`: the name of your **Data Warehouse**.
+- For `type: fabricspark`: the name of your **Lakehouse**. The adapter uses this as the Lakehouse name for the Livy API connection.
+
+It's recommended to avoid using spaces in the name, although it's supported.
 
 ### `schema`
 
@@ -67,7 +96,7 @@ The name of your data warehouse in Fabric. It's recommended to avoid using space
 
 Example value: `dbt`
 
-The schema in your data warehouse where dbt will build models. You must have write access to this schema. It's recommended to avoid using spaces in the schema name, although it's supported.
+The schema where dbt will build models. You must have write access to this schema. It's recommended to avoid using spaces in the schema name, although it's supported.
 
 ??? tip "Override per model"
 
@@ -77,19 +106,21 @@ The schema in your data warehouse where dbt will build models. You must have wri
 
     You can even completely customize how dbt generates the schema name using the [`generate_schema_name`](https://docs.getdbt.com/docs/build/custom-schemas) macro.
 
-### `workspace_name` :fontawesome-brands-python:
+### `workspace_name`
 
 Alias: `workspace`<br>
 Example value: `My Workspace`
 
-The name of your Fabric Workspace. This is used to automatically find the [`host`](#host) value for you.
+The name of your Fabric Workspace.
+
+- For `type: fabric`: used to automatically find the [`host`](#host) value. Not required if `host` is provided (except for Python models).
+- For `type: fabricspark`: **required** (unless [`workspace_id`](#workspace_id) is provided). The Lakehouse adapter always needs the workspace to resolve the Livy API endpoint.
 
 Not used if [`workspace_id`](#workspace_id) is also provided.
-Not used for SQL models (so only for Python models) if `host` is provided.
 
-??? info "Python models"
+??? info "Python models (Data Warehouse)"
 
-    If you are using Python models in your project, either [`workspace_name`](#workspace_name) or [`workspace_id`](#workspace_id) must be provided.
+    If you are using Python models with `type: fabric`, either [`workspace_name`](#workspace_name) or [`workspace_id`](#workspace_id) must be provided.
 
 ??? info "auth: ActiveDirectoryServicePrincipal"
 
@@ -97,17 +128,18 @@ Not used for SQL models (so only for Python models) if `host` is provided.
 
 Behind the scenes, the adapter will do an API call to first find the Workspace ID, and then use that to find the server name.
 
-### `workspace_id` :fontawesome-brands-python:
+### `workspace_id`
 
 Example value: `7275c94d-9280-438b-bd67-ffeb8c305c9b`
 
-The ID of your Fabric Workspace. This is used to automatically find the `host` value for you.
+The ID of your Fabric Workspace. Can be used instead of [`workspace_name`](#workspace_name).
 
-Not used for SQL models (so only for Python models) if `host` is provided.
+- For `type: fabric`: used to automatically find the `host` value. Not required if `host` is provided (except for Python models).
+- For `type: fabricspark`: **required** (unless `workspace_name` is provided). The Lakehouse adapter always needs the workspace.
 
-??? info "Python models"
+??? info "Python models (Data Warehouse)"
 
-    If you are using Python models in your project, either [`workspace_name`](#workspace_name) or [`workspace_id`](#workspace_id) must be provided.
+    If you are using Python models with `type: fabric`, either [`workspace_name`](#workspace_name) or [`workspace_id`](#workspace_id) must be provided.
 
 ??? info "auth: ActiveDirectoryServicePrincipal"
 
@@ -264,16 +296,16 @@ Example value: `some_group_or_user`
 
 If your dbt project is using a schema which does not exist yet, dbt will create it for you. Use this configuration option to set the owner of the schema after creation. This can be a user or a group.
 
-### `lakehouse` :fontawesome-brands-python:
+### `lakehouse`
 
 Alias: `lakehouse_name`<br>
 Example value: `My Lakehouse`
 
 The name of the Lakehouse in Fabric you wish to use for running Python models.
 
-This is not used for SQL models.
+!!! info "Only needed for `type: fabric`"
 
-If you are using Python models in your project, this option must be provided.
+    This option is only needed when using `type: fabric` (Data Warehouse) with [Python models](python-models.md). For `type: fabricspark`, the [`database`](#database) field already specifies the Lakehouse — no separate `lakehouse` option is needed.
 
 When using this option together with [`authentication`](#authentication) set to `ActiveDirectoryServicePrincipal`, you also need to provide the [`tenant_id`](#tenant_id) option.
 
@@ -284,6 +316,10 @@ Default: `true`
 
 Whether to use encryption for the connection. It's recommended to leave this enabled. This could be disabled for advanced networking scenarios.
 
+!!! info "Data Warehouse only"
+
+    This option only applies to `type: fabric`. The FabricSpark adapter connects via HTTPS (Livy API), which is always encrypted.
+
 ### `trust_cert`
 
 Alias: `TrustServerCertificate`<br>
@@ -291,6 +327,10 @@ Possible values: `true`, `false`<br>
 Default: `false`
 
 Whether to trust the server certificate without validation. It's recommended to leave this disabled. This could be enabled for advanced networking scenarios.
+
+!!! info "Data Warehouse only"
+
+    This option only applies to `type: fabric`. The FabricSpark adapter connects via HTTPS (Livy API).
 
 ### `retries`
 
@@ -305,8 +345,36 @@ Possible values: any integer (seconds) :timer:
 
 The timeout for establishing a connection to the server. This can be useful if you are receiving the `Login timeout expired` error. A value of 30 seconds could improve the connection resiliency. The adapter has no default value and will use the driver's default if not set.
 
+!!! info "Data Warehouse only"
+
+    This option only applies to `type: fabric`. For FabricSpark, see [`spark_session_timeout`](#spark_session_timeout).
+
 ### `query_timeout`
 
 Possible values: any integer (seconds) :timer:
 
-The timeout for executing a query. This can be useful if you are receiving the `Query timeout expired` error. The default is no timeout.
+The timeout for executing a query.
+
+- For `type: fabric`: this can be useful if you are receiving the `Query timeout expired` error. Default: **86400 seconds (24 hours)**.
+- For `type: fabricspark`: controls how long the adapter waits for a Livy statement to complete. Default: **86400 seconds (24 hours)**.
+
+### `spark_session_timeout`
+
+Possible values: any integer (seconds) :timer:<br>
+Default: `900` (15 minutes)
+
+The maximum time to wait for the Livy Spark session to become idle (ready to accept statements). This is relevant during the first statement of a dbt run, when a new session may need to be created.
+
+!!! info "FabricSpark and Python models"
+
+    This option applies to `type: fabricspark` for all Livy session management, and to `type: fabric` when running [Python models](python-models.md) (which also use Livy sessions). For Data Warehouse SQL connection timeouts, see [`login_timeout`](#login_timeout).
+
+### `livy_session_name`
+
+Default: `dbt-fabric-samdebruyn`
+
+The name of the Livy session. Sessions are reused across statements within a dbt run. If an existing session with this name is found in an `idle`, `starting`, `running`, or `busy` state, it will be reused instead of creating a new one.
+
+!!! info "Used by both adapter types"
+
+    This option is used by `type: fabricspark` for all SQL execution, and by `type: fabric` for Python model execution.
