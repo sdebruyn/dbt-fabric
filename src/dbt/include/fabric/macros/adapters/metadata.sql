@@ -51,6 +51,7 @@
           SCHEMA_NAME(t.schema_id) as [schema],
           'table' as table_type
       from sys.tables as t {{ information_schema_hints() }}
+      where SCHEMA_NAME(t.schema_id) like '{{ schema_relation.schema }}'
       union all
       select
           DB_NAME() as [database],
@@ -58,6 +59,7 @@
           SCHEMA_NAME(v.schema_id) as [schema],
           'view' as table_type
       from sys.views as v {{ information_schema_hints() }}
+      where SCHEMA_NAME(v.schema_id) like '{{ schema_relation.schema }}'
       union all
       select
           DB_NAME() as [database],
@@ -66,9 +68,9 @@
           'function' as table_type
       from sys.objects as f {{ information_schema_hints() }}
       where f.type_desc like '%function%'
+        and SCHEMA_NAME(f.schema_id) like '{{ schema_relation.schema }}'
     )
     select * from base
-    where [schema] like '{{ schema_relation.schema }}'
     {{ apply_label() }}
   {% endcall %}
   {{ return(load_result('list_relations_without_caching').table) }}
