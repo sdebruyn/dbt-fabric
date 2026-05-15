@@ -1179,7 +1179,8 @@ class TestCreateEntityForModel:
 
     def test_creates_lakehouse_table_entity(self):
         table_qn = (
-            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/lh-id/tables/fct_orders"
+            "https://app.fabric.microsoft.com/groups/ws-id/lakehouses/lh-id"
+            "/tables/dbo%252Ffct_orders"
         )
         client = MagicMock()
         client.search_entities.return_value = []

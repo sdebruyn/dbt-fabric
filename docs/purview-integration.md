@@ -183,6 +183,9 @@ How dbt models are matched to Purview entities depends on the adapter type:
 
 Ephemeral models are skipped in both cases since they don't produce physical tables.
 
+!!! warning "Unique item names within a workspace"
+    Lakehouses and Warehouses in the same workspace must have distinct display names. The sync resolves database names to Fabric items via the [Fabric REST API](https://learn.microsoft.com/en-us/rest/api/fabric/core/items/list-items?WT.mc_id=MVP_310840) and checks Lakehouses first. If a Lakehouse and a Warehouse share the same name, the sync always matches the Lakehouse, which causes wrong entity types in Purview.
+
 ## Column entities
 
 Neither Purview's live view nor its scanner creates column entities for Fabric items. The dbt sync creates column entities for **all physical columns** by querying the database catalog at sync time. This means every column in the table gets a Purview entity — not just columns documented in dbt YAML files.

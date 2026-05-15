@@ -274,7 +274,7 @@ class PurviewSync:
 
         if item_type == "warehouse":
             return self._create_warehouse_entities(workspace_id, item_id, database, schema, name)
-        return self._create_lakehouse_table(workspace_id, item_id, name)
+        return self._create_lakehouse_table(workspace_id, item_id, schema, name)
 
     def _create_warehouse_entities(
         self,
@@ -345,11 +345,16 @@ class PurviewSync:
         }
 
     def _create_lakehouse_table(
-        self, workspace_id: str, lakehouse_id: str, table_name: str
+        self, workspace_id: str, lakehouse_id: str, schema: str, table_name: str
     ) -> PurviewEntityRef | None:
-        """Create a fabric_lakehouse_table entity."""
+        """Create a fabric_lakehouse_table entity.
+
+        Purview encodes schema-enabled Lakehouse tables with schema and table name
+        joined by %252F (double-URL-encoded slash) in the tables/ segment.
+        """
+        table_segment = f"{schema}%252F{table_name}" if schema else table_name
         table_qn = (
-            f"{_FABRIC_GROUPS_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_name}"
+            f"{_FABRIC_GROUPS_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_segment}"
         )
 
         result = self._client.bulk_create_or_update(
