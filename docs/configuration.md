@@ -161,6 +161,7 @@ Possible values (case insensitive):
 - [`CLI`](#cli)
 - [`environment`](#environment)
 - [`FabricSpark` / `SynapseSpark`](#fabricspark)
+- [`token_credential`](#token_credential)
 
 The adapter supports an authentication method for every use case. The default is `auto`, which will try to use the best available method depending on your environment.
 
@@ -228,6 +229,12 @@ Alias: `SynapseSpark`
 
 This authentication methods works inside a Fabric or Synapse notebook. It uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to get an access token for the current user.
 
+#### `token_credential`
+
+Load any [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840) implementation by its dotted import path. This is useful when the built-in methods don't cover your scenario -- for example, when using a custom OAuth flow, a token broker, or Workload Identity Federation with a non-standard setup. See the [authentication guide](authentication.md#custom-token-credential) for a full walkthrough.
+
+Requires [`credential_class`](#credential_class). Optionally accepts [`credential_kwargs`](#credential_kwargs).
+
 ### `username` :fontawesome-solid-lock:
 
 Aliases: `UID`, `user`<br>
@@ -288,6 +295,26 @@ Example values:
 - `DW`
 
 Depending on the [`authentication`](#authentication) method you are using, the adapter will request an access token for a specific scope. This scope will be automatically determined based on your configuration. However, if you need to override the scope for some reason, you can use this option to set a custom scope.
+
+### `credential_class`
+
+Example value: `my_pkg.auth.MyCredential`
+
+The fully qualified dotted import path to a Python class that implements [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840). This is required when [`authentication`](#authentication) is set to `token_credential`, and must not be set for any other authentication method.
+
+The path must be a valid dotted Python identifier (e.g. `my_pkg.sub.MyCredential`). The class must be importable from the Python environment where dbt runs.
+
+### `credential_kwargs`
+
+Example value:
+
+```yaml
+credential_kwargs:
+  token_url: "{{ env_var('TOKEN_URL') }}"
+  audience: "https://my-api.example.com"
+```
+
+A dictionary of keyword arguments passed to the constructor of the class specified in [`credential_class`](#credential_class). This is optional and can only be used when [`authentication`](#authentication) is set to `token_credential`.
 
 ### `schema_auth`
 

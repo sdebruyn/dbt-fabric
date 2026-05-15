@@ -1,5 +1,5 @@
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from dbt.adapters.contracts.connection import Credentials
@@ -24,6 +24,8 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
     powerbi_base_api_uri: str = "https://api.powerbi.com/v1.0"
     livy_session_name: str = "dbt-fabric-samdebruyn"
     purview_endpoint: str | None = None
+    credential_class: str | None = None
+    credential_kwargs: dict[str, Any] = field(default_factory=dict)
 
     _ALIASES = {
         "trusted_connection": "windows_login",
@@ -40,6 +42,19 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
         if des.get("authentication", "").lower().strip() == "serviceprincipal":
             des["authentication"] = "ActiveDirectoryServicePrincipal"
 
+        auth = des.get("authentication", "").lower().strip()
+        if auth == "token_credential" and not des.get("credential_class"):
+            raise ValueError(
+                "credential_class is required when authentication is 'token_credential'"
+            )
+        if auth != "token_credential" and (
+            des.get("credential_class") or des.get("credential_kwargs")
+        ):
+            raise ValueError(
+                "credential_class and credential_kwargs can only be used "
+                "with authentication: token_credential"
+            )
+
         return des
 
     @property
@@ -54,6 +69,7 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
             "schema",
             "tenant_id",
             "client_id",
+            "credential_class",
             "token_scope",
             "authentication",
             "retries",
