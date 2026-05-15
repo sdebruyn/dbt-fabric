@@ -55,18 +55,6 @@ def _has_persist_docs_enabled(node: dict) -> bool:
     return persist_docs.get("relation", True) or persist_docs.get("columns", True)
 
 
-def _get_node_name(node: dict) -> str:
-    return node.get("alias") or node.get("name", "")
-
-
-def _get_node_schema(node: dict) -> str:
-    return node.get("schema", "")
-
-
-def _get_node_database(node: dict) -> str:
-    return node.get("database", "")
-
-
 def _make_cache_key(database: str, schema: str, name: str) -> str:
     return f"{database}.{schema}.{name}".lower()
 
@@ -183,9 +171,9 @@ class PurviewSync:
         cache: dict[str, dict] = {}
 
         for model in models:
-            name = _get_node_name(model)
-            schema = _get_node_schema(model)
-            database = _get_node_database(model)
+            name = model.get("alias") or model.get("name", "")
+            schema = model.get("schema", "")
+            database = model.get("database", "")
             unique_id = model.get("unique_id", "")
 
             if not name:
@@ -223,7 +211,9 @@ class PurviewSync:
             return resolved[unique_id]
 
         cache_key = _make_cache_key(
-            _get_node_database(node), _get_node_schema(node), _get_node_name(node)
+            node.get("database", ""),
+            node.get("schema", ""),
+            node.get("alias") or node.get("name", ""),
         )
         return resolved.get(cache_key)
 
@@ -260,7 +250,7 @@ class PurviewSync:
                 "guid": entity["id"],
                 "attributes": {
                     "qualifiedName": entity["qualifiedName"],
-                    "name": entity.get("name", _get_node_name(model)),
+                    "name": entity.get("name", model.get("alias") or model.get("name", "")),
                 },
             }
 
@@ -378,7 +368,7 @@ class PurviewSync:
                 "typeName": "dbt_transformation",
                 "attributes": {
                     "qualifiedName": process_qn,
-                    "name": _get_node_name(model),
+                    "name": model.get("alias") or model.get("name", ""),
                     "dbt_model_id": unique_id,
                     "dbt_materialization": str(materialization) if materialization else "",
                     "inputs": [
@@ -422,9 +412,9 @@ class PurviewSync:
         dep_node = self._graph.get("nodes", {}).get(dep_id)
         if dep_node:
             cache_key = _make_cache_key(
-                _get_node_database(dep_node),
-                _get_node_schema(dep_node),
-                _get_node_name(dep_node),
+                dep_node.get("database", ""),
+                dep_node.get("schema", ""),
+                dep_node.get("alias") or dep_node.get("name", ""),
             )
             return resolved.get(cache_key)
 
