@@ -1,9 +1,19 @@
 import pytest
 
-from dbt.tests.adapter.basic import files
+from dbt.tests.adapter.basic import expected_catalog, files
 from dbt.tests.adapter.basic.test_adapter_methods import BaseAdapterMethod
 from dbt.tests.adapter.basic.test_base import BaseSimpleMaterializations
-from dbt.tests.adapter.basic.test_docs_generate import BaseDocsGenerate, BaseDocsGenReferences
+from dbt.tests.adapter.basic.test_docs_generate import (
+    BaseDocsGenerate,
+    BaseDocsGenReferences,
+    models__readme_md,
+    models__schema_yml,
+    ref_models__docs_md,
+    ref_models__ephemeral_copy_sql,
+    ref_models__ephemeral_summary_sql,
+    ref_models__schema_yml,
+    ref_sources__schema_yml,
+)
 from dbt.tests.adapter.basic.test_empty import BaseEmpty
 from dbt.tests.adapter.basic.test_ephemeral import BaseEphemeral
 from dbt.tests.adapter.basic.test_generic_tests import BaseGenericTests
@@ -24,6 +34,7 @@ from dbt.tests.adapter.basic.test_snapshot_timestamp import BaseSnapshotTimestam
 from dbt.tests.adapter.basic.test_table_materialization import BaseTableMaterialization
 from dbt.tests.adapter.basic.test_validate_connection import BaseValidateConnection
 from dbt.tests.util import (
+    AnyInteger,
     check_relation_types,
     check_relations_equal,
     check_result_nodes_by_name,
@@ -206,18 +217,85 @@ class TestValidateConnectionSpark(BaseValidateConnection):
     pass
 
 
-@pytest.mark.skip(
-    "TODO: FabricSpark catalog types differ from defaults, needs expected_catalog override"
-)
 class TestDocsGenerateSpark(BaseDocsGenerate):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "schema.yml": models__schema_yml,
+            "second_model.sql": """
+{{
+    config(
+        materialized='materialized_view',
+        schema='test',
+    )
+}}
+
+select * from {{ ref('seed') }}
+""",
+            "readme.md": models__readme_md,
+            "model.sql": """
+{{
+    config(
+        materialized='materialized_view',
+    )
+}}
+
+select * from {{ ref('seed') }}
+""",
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_catalog(self, project, profile_user):
+        return expected_catalog.base_expected_catalog(
+            project,
+            role=None,
+            id_type="bigint",
+            text_type="string",
+            time_type="timestamp",
+            view_type="materialized_view",
+            table_type="table",
+            model_stats=expected_catalog.no_stats(),
+        )
 
 
-@pytest.mark.skip(
-    "TODO: FabricSpark catalog types differ from defaults, needs expected_catalog override"
-)
 class TestDocsGenReferencesSpark(BaseDocsGenReferences):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "schema.yml": ref_models__schema_yml,
+            "sources.yml": ref_sources__schema_yml,
+            "view_summary.sql": """
+{{
+  config(
+    materialized = "materialized_view"
+  )
+}}
+
+select first_name, ct from {{ref('ephemeral_summary')}}
+""",
+            "ephemeral_summary.sql": ref_models__ephemeral_summary_sql,
+            "ephemeral_copy.sql": ref_models__ephemeral_copy_sql,
+            "docs.md": ref_models__docs_md,
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_catalog(self, project, profile_user):
+        catalog = expected_catalog.expected_references_catalog(
+            project,
+            role=None,
+            id_type="bigint",
+            text_type="string",
+            time_type="timestamp",
+            bigint_type="bigint",
+            view_type="materialized_view",
+            table_type="table",
+            model_stats=expected_catalog.no_stats(),
+        )
+        for section in catalog.values():
+            for node in section.values():
+                for col in node.get("columns", {}).values():
+                    col["index"] = AnyInteger()
+        return catalog
 
 
 class TestTableMaterializationSpark(BaseTableMaterialization):
