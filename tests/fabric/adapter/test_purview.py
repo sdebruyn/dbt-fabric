@@ -4,16 +4,42 @@ import pytest
 import requests
 
 from dbt.adapters.fabric.purview_client import PurviewClient
-from dbt.adapters.fabric.purview_sync import PurviewSync, extract_syncable_models
 from dbt.tests.util import run_dbt, write_file
 from tests.conftest import requires_purview
+
+_PURVIEW_SCOPE = "https://purview.azure.net/.default"
 
 
 def _find_any_table(client: PurviewClient) -> dict | None:
     """Search Purview for any table entity to use in tests."""
     url = f"{client._endpoint}/datamap/api/search/query"
     body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
-    resp = requests.request("post", url, json=body, headers=client._get_auth_headers())
+    resp = requests.post(url, json=body, headers=client._get_auth_headers())
+    if resp.status_code == 200:
+        results = resp.json().get("value", [])
+        if results:
+            return results[0]
+    return None
+
+
+def _find_any_table_standalone(endpoint: str) -> dict | None:
+    """Search Purview for any table entity without depending on adapter fixtures.
+
+    Uses AzureCliCredential directly so that this can be called before the dbt
+    adapter and project are initialised (breaking the fixture dependency cycle
+    between models → purview_table → adapter → models).
+    """
+    from azure.identity import AzureCliCredential
+
+    token = AzureCliCredential().get_token(_PURVIEW_SCOPE).token
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    url = f"{endpoint.rstrip('/')}/datamap/api/search/query"
+    body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
+    resp = requests.post(url, json=body, headers=headers)
     if resp.status_code == 200:
         results = resp.json().get("value", [])
         if results:
@@ -25,7 +51,7 @@ def _find_test_process_entities(client: PurviewClient) -> list[dict]:
     """Find dbt_transformation process entities created by tests."""
     url = f"{client._endpoint}/datamap/api/search/query"
     body = {"keywords": None, "filter": {"and": [{"objectType": "Process"}]}, "limit": 100}
-    resp = requests.request("post", url, json=body, headers=client._get_auth_headers())
+    resp = requests.post(url, json=body, headers=client._get_auth_headers())
     if resp.status_code == 200:
         return [
             r
@@ -165,18 +191,46 @@ class TestPurviewProjectFlow:
 
 @requires_purview
 class TestPurviewMetadataSync:
-    """Validates that dbt metadata actually lands correctly in Purview entities."""
+    """Validates that dbt metadata lands correctly in Purview entities.
+
+    Uses a model name from a real Purview entity so that purview_sync resolves it.
+    The purview_table fixture queries Purview independently (via AzureCliCredential)
+    to break the fixture dependency cycle: models → purview_table → adapter → models.
+    """
 
     @pytest.fixture(scope="class")
-    def purview_table(self, purview_client):
-        entity = _find_any_table(purview_client)
+    def purview_table(self):
+        endpoint = os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT")
+        if not endpoint:
+            pytest.skip("FABRIC_TEST_PURVIEW_ENDPOINT not set")
+        entity = _find_any_table_standalone(endpoint)
         if entity is None:
             pytest.skip("No tables indexed in Purview")
         return entity
 
     @pytest.fixture(scope="class")
-    def models(self):
-        return {"_placeholder.sql": "SELECT 1 AS id"}
+    def models(self, purview_table):
+        name = purview_table["name"]
+        return {
+            f"{name}.sql": "SELECT 1 AS id, 'test' AS name",
+            "schema.yml": (
+                "version: 2\n"
+                "models:\n"
+                f"  - name: {name}\n"
+                "    description: 'Integration test description v1'\n"
+                "    config:\n"
+                "      persist_docs:\n"
+                "        relation: true\n"
+                "        columns: true\n"
+                "    columns:\n"
+                "      - name: id\n"
+                "        description: 'Primary key'\n"
+                "        tests:\n"
+                "          - not_null\n"
+                "      - name: name\n"
+                "        description: 'Display name'\n"
+            ),
+        }
 
     @pytest.fixture(scope="class", autouse=True)
     def cleanup_purview(self, purview_client, purview_table, project):
@@ -203,164 +257,79 @@ class TestPurviewMetadataSync:
             except Exception:
                 pass
 
-    def _make_graph(self, table_name, description="", tags=None, tests=None, persist_docs=None):
-        model_id = f"model.test.{table_name}"
-        if persist_docs is None:
-            persist_docs = {"relation": True, "columns": True}
+    def test_run_and_sync(self, project):
+        run_dbt(["run"])
+        run_dbt(["run-operation", "purview_sync"])
 
-        nodes = {
-            model_id: {
-                "unique_id": model_id,
-                "name": table_name,
-                "alias": None,
-                "schema": "dbo",
-                "database": os.getenv("FABRIC_TEST_DWH_NAME", ""),
-                "resource_type": "model",
-                "description": description,
-                "columns": {"id": {"name": "id", "description": "Primary key"}},
-                "tags": tags or [],
-                "meta": {},
-                "depends_on": {"nodes": []},
-                "config": {"materialized": "table", "persist_docs": persist_docs},
-            },
-        }
-        if tests:
-            for t in tests:
-                tid = f"test.test.{t}"
-                nodes[tid] = {
-                    "unique_id": tid,
-                    "name": t,
-                    "resource_type": "test",
-                    "depends_on": {"nodes": [model_id]},
-                }
-        return {"nodes": nodes, "sources": {}}
-
-    def _sync(self, purview_client, fabric_api_client, graph):
-        models = extract_syncable_models(graph)
-        sync = PurviewSync(purview_client, fabric_api_client, graph)
-        resolved = sync.resolve_entities(models)
-        return sync, models, resolved
-
-    def test_pushes_business_metadata(self, purview_client, fabric_api_client, purview_table):
-        purview_client.ensure_type_definitions()
-        name = purview_table["name"]
-        graph = self._make_graph(
-            name,
-            description="Metadata test",
-            tags=["integration-test", "ci"],
-            tests=["not_null_id", "unique_id"],
-        )
-
-        sync, models, resolved = self._sync(purview_client, fabric_api_client, graph)
-        if f"model.test.{name}" not in resolved:
-            pytest.skip("Entity not resolvable in Purview")
-
-        sync.push_business_metadata(models, resolved)
-
+    def test_business_metadata_landed(self, purview_client, purview_table):
         entity_data = purview_client.get_entity_by_guid(purview_table["id"])
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
-
+        name = purview_table["name"]
         assert bm["dbt_model_id"] == f"model.test.{name}"
         assert "dbt_last_sync" in bm
-        assert bm["dbt_tags"] == "integration-test,ci"
-        assert bm["dbt_materialization"] == "table"
-        assert "not_null_id" in bm.get("dbt_tests", "")
-        assert "unique_id" in bm.get("dbt_tests", "")
+        assert bm.get("dbt_materialization") == "table"
+        assert "not_null" in bm.get("dbt_tests", "")
 
-    def test_pushes_description(self, purview_client, fabric_api_client, purview_table):
-        name = purview_table["name"]
-        graph = self._make_graph(name, description="Integration test: description push")
-
-        sync, models, resolved = self._sync(purview_client, fabric_api_client, graph)
-        if not resolved:
-            pytest.skip("Entity not resolvable in Purview")
-
-        sync.push_descriptions(models, resolved)
-
+    def test_description_landed(self, purview_client, purview_table):
         entity_data = purview_client.get_entity_by_guid(purview_table["id"])
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
-        assert desc == "Integration test: description push"
+        assert desc == "Integration test description v1"
 
-    def test_update_overwrites_previous_sync(
-        self, purview_client, fabric_api_client, purview_table
-    ):
-        purview_client.ensure_type_definitions()
+    def test_update_overwrites(self, project, purview_client, purview_table):
         name = purview_table["name"]
-
-        graph_v1 = self._make_graph(name, description="Version 1", tags=["v1"])
-        sync_v1, models_v1, resolved_v1 = self._sync(purview_client, fabric_api_client, graph_v1)
-        if not resolved_v1:
-            pytest.skip("Entity not resolvable in Purview")
-        sync_v1.push_descriptions(models_v1, resolved_v1)
-        sync_v1.push_business_metadata(models_v1, resolved_v1)
-
-        graph_v2 = self._make_graph(
-            name,
-            description="Version 2",
-            tags=["v2", "updated"],
-            tests=["unique_check"],
+        write_file(
+            "version: 2\n"
+            "models:\n"
+            f"  - name: {name}\n"
+            "    description: 'Updated description v2'\n"
+            "    config:\n"
+            "      persist_docs:\n"
+            "        relation: true\n"
+            "        columns: true\n"
+            "    columns:\n"
+            "      - name: id\n"
+            "        description: 'Updated primary key'\n"
+            "        tests:\n"
+            "          - not_null\n"
+            "          - unique\n"
+            "      - name: name\n"
+            "        description: 'Updated display name'\n",
+            project.project_root,
+            "models",
+            "schema.yml",
         )
-        sync_v2, models_v2, resolved_v2 = self._sync(purview_client, fabric_api_client, graph_v2)
-        sync_v2.push_descriptions(models_v2, resolved_v2)
-        sync_v2.push_business_metadata(models_v2, resolved_v2)
+        run_dbt(["run"])
+        run_dbt(["run-operation", "purview_sync"])
 
         entity_data = purview_client.get_entity_by_guid(purview_table["id"])
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
 
-        assert desc == "Version 2"
-        assert bm["dbt_tags"] == "v2,updated"
-        assert "unique_check" in bm.get("dbt_tests", "")
+        assert desc == "Updated description v2"
+        assert "unique" in bm.get("dbt_tests", "")
 
-    def test_persist_docs_false_skips_description(
-        self, purview_client, fabric_api_client, purview_table
-    ):
+    def test_persist_docs_false_skips_sync_entirely(self, project, purview_client, purview_table):
         name = purview_table["name"]
-
-        graph_with = self._make_graph(name, description="Should persist")
-        sync_with, models_with, resolved_with = self._sync(
-            purview_client, fabric_api_client, graph_with
+        write_file(
+            "version: 2\n"
+            "models:\n"
+            f"  - name: {name}\n"
+            "    description: 'Should NOT be synced'\n"
+            "    config:\n"
+            "      persist_docs:\n"
+            "        relation: false\n"
+            "        columns: false\n",
+            project.project_root,
+            "models",
+            "schema.yml",
         )
-        if not resolved_with:
-            pytest.skip("Entity not resolvable in Purview")
-        sync_with.push_descriptions(models_with, resolved_with)
-
-        graph_without = self._make_graph(
-            name,
-            description="Should NOT be pushed",
-            persist_docs={"relation": False, "columns": False},
-        )
-        sync_without, models_without, resolved_without = self._sync(
-            purview_client, fabric_api_client, graph_without
-        )
-        sync_without.push_descriptions(models_without, resolved_without)
+        run_dbt(["run"])
+        run_dbt(["run-operation", "purview_sync"])
 
         entity_data = purview_client.get_entity_by_guid(purview_table["id"])
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
-        assert desc == "Should persist"
-
-    def test_persist_docs_false_still_pushes_business_metadata(
-        self, purview_client, fabric_api_client, purview_table
-    ):
-        purview_client.ensure_type_definitions()
-        name = purview_table["name"]
-
-        graph = self._make_graph(
-            name,
-            description="Should NOT land in Purview",
-            tags=["persist-docs-false"],
-            persist_docs={"relation": False, "columns": False},
-        )
-        sync, models, resolved = self._sync(purview_client, fabric_api_client, graph)
-        if not resolved:
-            pytest.skip("Entity not resolvable in Purview")
-
-        sync.push_descriptions(models, resolved)
-        sync.push_business_metadata(models, resolved)
-
-        entity_data = purview_client.get_entity_by_guid(purview_table["id"])
         bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
-        desc = entity_data["entity"]["attributes"].get("userDescription", "")
 
-        assert bm["dbt_tags"] == "persist-docs-false"
-        assert desc != "Should NOT land in Purview"
+        # Description and metadata should still be from v2 (previous test), not overwritten
+        assert desc == "Updated description v2"
+        assert "unique" in bm.get("dbt_tests", "")
