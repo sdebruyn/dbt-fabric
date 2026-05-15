@@ -287,7 +287,13 @@ CREATE TABLE {project.test_schema}.on_run_hook (
 )""")
         project.run_sql(f"DROP TABLE IF EXISTS {project.test_schema}.schemas")
         project.run_sql(f"DROP TABLE IF EXISTS {project.test_schema}.db_schemas")
+        old_value = os.environ.get("TERM_TEST")
         os.environ["TERM_TEST"] = "TESTING"
+        yield
+        if old_value is None:
+            os.environ.pop("TERM_TEST", None)
+        else:
+            os.environ["TERM_TEST"] = old_value
 
     @pytest.fixture(scope="class")
     def project_config_update(self):
