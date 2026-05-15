@@ -47,6 +47,7 @@ class BaseFabricConnectionManager(SQLConnectionManager, metaclass=abc.ABCMeta):
 
     @classmethod
     def get_purview_client(cls, credentials: BaseFabricCredentials) -> PurviewClient:
+        """Return a shared PurviewClient instance, creating it on first call."""
         if cls._purview_client is None:
             if not credentials.purview_endpoint:
                 raise dbt_common.exceptions.DbtConfigError(

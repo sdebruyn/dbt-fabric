@@ -76,6 +76,8 @@ _DBT_TRANSFORMATION_TYPE_DEF = {
 
 
 class PurviewClient:
+    """Low-level client for the Microsoft Purview Data Map REST API."""
+
     def __init__(self, endpoint: str, token_provider: FabricTokenProvider) -> None:
         self._endpoint = endpoint.rstrip("/")
         self._token_provider = token_provider
@@ -92,6 +94,7 @@ class PurviewClient:
     def _api_request(
         self, url: str, method: str = "get", body: dict | list | None = None
     ) -> requests.Response:
+        """Send an HTTP request with auth headers, automatic 429 retry, and error handling."""
         response = requests.request(method, url, json=body, headers=self._get_auth_headers())
 
         if response.status_code == 429:
@@ -130,6 +133,12 @@ class PurviewClient:
         schema: str | None = None,
         database: str | None = None,
     ) -> list[dict]:
+        """Search Purview for table entities by name, optionally filtering by schema and database.
+
+        Tries progressively broader searches: name+schema, then name+database, then name only.
+        This handles both SQL-style qualifiedNames (containing schema) and Fabric Lakehouse
+        entities (which use GUIDs in qualifiedNames and may not contain the schema name).
+        """
         url = f"{self._endpoint}{_SEARCH_API}"
         base_filters: list[dict] = [
             {"attributeName": "name", "operator": "eq", "attributeValue": name},
@@ -163,6 +172,7 @@ class PurviewClient:
         return results
 
     def _run_search(self, url: str, base_filters: list[dict], schema: str | None) -> list[dict]:
+        """Execute a paginated search request against the Purview Data Map search API."""
         filters = list(base_filters)
         if schema:
             filters.append(
@@ -192,11 +202,13 @@ class PurviewClient:
         return results
 
     def get_entity_by_guid(self, guid: str) -> dict:
+        """Fetch a single entity and its referred entities (e.g. columns) by GUID."""
         url = f"{self._endpoint}{_ENTITY_API}/guid/{guid}"
         response = self._api_get(url)
         return response.json()
 
     def bulk_create_or_update(self, entities: list[dict]) -> dict:
+        """Create or update entities in batches of 50 (Purview API limit)."""
         url = f"{self._endpoint}{_ENTITY_BULK_API}"
         all_results: dict = {"mutatedEntities": {}, "guidAssignments": {}}
 
@@ -211,15 +223,22 @@ class PurviewClient:
         return all_results
 
     def create_relationship(self, relationship: dict) -> dict:
+        """Create a relationship between two Purview entities."""
         url = f"{self._endpoint}{_RELATIONSHIP_API}"
         response = self._api_post(url, relationship)
         return response.json()
 
     def set_business_metadata(self, guid: str, bm_name: str, attrs: dict) -> None:
+        """Set business metadata attributes on an entity (e.g. dbt_metadata)."""
         url = f"{self._endpoint}{_BUSINESS_METADATA_API.format(guid=guid, bm_name=bm_name)}"
         self._api_post(url, attrs)
 
     def ensure_type_definitions(self) -> None:
+        """Register the dbt_metadata business metadata type and dbt_transformation entity type.
+
+        Tries POST first, falls back to PUT if the type already exists (409 conflict).
+        Only runs once per client instance.
+        """
         if self._types_ensured:
             return
 
@@ -254,6 +273,7 @@ class PurviewClient:
     def update_entity_description(
         self, guid: str, type_name: str, qualified_name: str, name: str, description: str
     ) -> None:
+        """Set the userDescription field on a Purview entity."""
         entity = {
             "typeName": type_name,
             "guid": guid,
@@ -268,6 +288,11 @@ class PurviewClient:
     def update_column_descriptions(
         self, table_guid: str, column_descriptions: dict[str, str]
     ) -> None:
+        """Set userDescription on column entities that belong to a table.
+
+        Fetches the table's referred entities (columns), matches them case-insensitively
+        against the provided descriptions, and updates matching columns in a single bulk call.
+        """
         if not column_descriptions:
             return
 
