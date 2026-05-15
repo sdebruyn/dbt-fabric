@@ -80,7 +80,7 @@
         select
             o.name as [identifier]
             , s.name as [schema]
-            , CAST(o.modify_date AS datetime2(3)) as last_modified
+            , CAST(o.modify_date AS datetime2(6)) as last_modified
             , current_timestamp as snapshotted_at
         from sys.objects o
         inner join sys.schemas s on o.schema_id = s.schema_id and [type] = 'U'
