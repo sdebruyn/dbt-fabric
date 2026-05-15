@@ -131,13 +131,15 @@ class PurviewClient:
         self,
         name: str,
         schema: str | None = None,
-        database: str | None = None,
+        database_identifiers: list[str] | None = None,
     ) -> list[dict]:
-        """Search Purview for table entities by name, optionally filtering by schema and database.
+        """Search Purview for table entities by name, filtering by database identifiers.
 
-        Tries progressively broader searches: name+schema, then name+database, then name only.
-        This handles both SQL-style qualifiedNames (containing schema) and Fabric Lakehouse
-        entities (which use GUIDs in qualifiedNames and may not contain the schema name).
+        The database_identifiers list can contain both human-readable names and Fabric item
+        GUIDs. Results are filtered by checking if any identifier appears in the qualifiedName.
+
+        When schema is provided, first tries a server-side filter on qualifiedName. Falls back
+        to searching without schema since Lakehouse qualifiedNames don't contain schema names.
         """
         url = f"{self._endpoint}{_SEARCH_API}"
         base_filters: list[dict] = [
@@ -145,15 +147,9 @@ class PurviewClient:
             {"objectType": "Tables"},
         ]
 
-        # Try progressively broader searches until we find results:
-        # 1. name + schema in QN + database in QN (works for azure_sql_table)
-        # 2. name + database in QN (schema not in QN)
-        # 3. name only (Fabric Lakehouse entities use GUIDs in QN)
         results = self._run_search(url, base_filters, schema)
-        if database:
-            filtered = [
-                r for r in results if database.lower() in r.get("qualifiedName", "").lower()
-            ]
+        if database_identifiers:
+            filtered = self._filter_by_database(results, database_identifiers)
             if filtered:
                 return filtered
 
@@ -162,14 +158,20 @@ class PurviewClient:
 
         if schema:
             results = self._run_search(url, base_filters, None)
-            if database:
-                filtered = [
-                    r for r in results if database.lower() in r.get("qualifiedName", "").lower()
-                ]
+            if database_identifiers:
+                filtered = self._filter_by_database(results, database_identifiers)
                 if filtered:
                     return filtered
 
         return results
+
+    @staticmethod
+    def _filter_by_database(results: list[dict], identifiers: list[str]) -> list[dict]:
+        """Filter search results to those whose qualifiedName contains any of the identifiers."""
+        lower_ids = [i.lower() for i in identifiers]
+        return [
+            r for r in results if any(i in r.get("qualifiedName", "").lower() for i in lower_ids)
+        ]
 
     def _run_search(self, url: str, base_filters: list[dict], schema: str | None) -> list[dict]:
         """Execute a paginated search request against the Purview Data Map search API."""

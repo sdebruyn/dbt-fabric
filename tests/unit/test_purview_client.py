@@ -78,7 +78,7 @@ class TestSearchEntities:
         }
         mock_request.return_value = mock_response
 
-        results = client.search_entities(name="fct_orders", database="lh-prod")
+        results = client.search_entities(name="fct_orders", database_identifiers=["lh-prod"])
         assert len(results) == 1
         assert results[0]["id"] == "guid-2"
 

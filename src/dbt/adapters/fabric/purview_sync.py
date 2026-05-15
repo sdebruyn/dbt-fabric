@@ -2,6 +2,7 @@ import json
 from datetime import datetime, timezone
 
 from dbt.adapters.events.logging import AdapterLogger
+from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.purview_client import PurviewClient
 
 logger = AdapterLogger("fabric")
@@ -74,9 +75,36 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
 class PurviewSync:
     """Orchestrates syncing dbt metadata to Purview: descriptions, business metadata, and lineage."""
 
-    def __init__(self, client: PurviewClient) -> None:
+    def __init__(self, client: PurviewClient, fabric_client: FabricApiClient) -> None:
         self._client = client
+        self._fabric_client = fabric_client
         self._entity_cache: dict[str, dict] = {}
+        self._item_id_cache: dict[str, str] = {}
+
+    def _resolve_item_id(self, database: str) -> str | None:
+        """Resolve a Fabric item name (Lakehouse or Data Warehouse) to its GUID."""
+        if database in self._item_id_cache:
+            return self._item_id_cache[database]
+
+        for lh in self._fabric_client.get_lakehouses():
+            if lh["displayName"] == database:
+                self._item_id_cache[database] = lh["id"]
+                return lh["id"]
+
+        for wh in self._fabric_client.get_warehouses():
+            if wh["displayName"] == database:
+                self._item_id_cache[database] = wh["id"]
+                return wh["id"]
+
+        return None
+
+    def _database_identifiers(self, database: str) -> list[str]:
+        """Build a list of identifiers for a database: its name and its Fabric item GUID."""
+        identifiers = [database]
+        item_id = self._resolve_item_id(database)
+        if item_id:
+            identifiers.append(item_id)
+        return identifiers
 
     def resolve_entities(self, models: list) -> dict[str, dict]:
         """Match dbt models to Purview entities by searching on name, schema, and database.
@@ -100,7 +128,10 @@ class PurviewSync:
                 cache[unique_id] = cache[cache_key]
                 continue
 
-            results = self._client.search_entities(name=name, schema=schema, database=database)
+            db_ids = self._database_identifiers(database) if database else None
+            results = self._client.search_entities(
+                name=name, schema=schema, database_identifiers=db_ids
+            )
 
             if not results:
                 logger.info(f"Purview: no entity found for {cache_key}, skipping")
@@ -110,13 +141,13 @@ class PurviewSync:
                 entity = results[0]
             else:
                 entity = results[0]
-                for r in results:
-                    qn = r.get("qualifiedName", "").lower()
-                    schema_match = not schema or schema.lower() in qn
-                    db_match = not database or database.lower() in qn
-                    if schema_match and db_match and (schema or database):
-                        entity = r
-                        break
+                if db_ids:
+                    lower_ids = [i.lower() for i in db_ids]
+                    for r in results:
+                        qn = r.get("qualifiedName", "").lower()
+                        if any(i in qn for i in lower_ids):
+                            entity = r
+                            break
                 logger.info(
                     f"Purview: {len(results)} entities found for {cache_key}, "
                     f"using {entity.get('qualifiedName', 'unknown')}"
