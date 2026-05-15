@@ -11,7 +11,7 @@
 
         dispatch:
           - macro_namespace: dbt_external_tables
-            search_order: ['my_project', 'dbt', 'dbt_external_tables']
+            search_order: ['dbt', 'dbt_external_tables']
 
     The package's fabric__get_external_build_plan already dispatches each
     sub-call (dropif, create_external_table, etc.) through

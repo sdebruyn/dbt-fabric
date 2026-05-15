@@ -39,10 +39,8 @@ Add the following to your `dbt_project.yml` so that dbt-external-tables uses the
 ```yaml
 dispatch:
   - macro_namespace: dbt_external_tables
-    search_order: ['my_project', 'dbt', 'dbt_external_tables']
+    search_order: ['dbt', 'dbt_external_tables']
 ```
-
-Replace `my_project` with your dbt project name.
 
 The `dbt` entry in the search order tells dbt to check the adapter's built-in macros before falling back to the package's defaults. This is how the adapter's OPENROWSET-based macros take priority over the package's `CREATE EXTERNAL TABLE` macros.
 

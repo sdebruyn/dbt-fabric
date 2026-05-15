@@ -344,7 +344,7 @@ class TestExternalTablesEndToEnd:
             "dispatch": [
                 {
                     "macro_namespace": "dbt_external_tables",
-                    "search_order": ["test", "dbt", "dbt_external_tables"],
+                    "search_order": ["dbt", "dbt_external_tables"],
                 }
             ],
         }
