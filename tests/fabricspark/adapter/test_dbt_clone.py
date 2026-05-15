@@ -3,6 +3,8 @@ import pytest
 from dbt.tests.adapter.dbt_clone import fixtures
 from dbt.tests.adapter.dbt_clone.test_dbt_clone import (
     BaseCloneNotPossible,
+    BaseClonePossible,
+    BaseCloneSameSourceAndTarget,
     BaseCloneSameTargetAndState,
 )
 from dbt.tests.util import run_dbt
@@ -78,6 +80,7 @@ class TestFabricSparkCloneNotPossible(BaseCloneNotPossible):
         schema_relations = project.adapter.list_relations(
             database=project.database, schema=other_schema
         )
+        assert len(schema_relations) > 0
         assert all(r.type == "materialized_view" for r in schema_relations)
 
         results = run_dbt(clone_args)
@@ -107,12 +110,12 @@ class TestFabricSparkCloneSameTargetAndState(BaseCloneSameTargetAndState):
 @pytest.mark.skip(
     "Fabric Lakehouse does not support SHALLOW CLONE (Databricks-specific Delta feature)"
 )
-class TestFabricSparkClonePossible(BaseCloneNotPossible):
+class TestFabricSparkClonePossible(BaseClonePossible):
     pass
 
 
 @pytest.mark.skip(
     "Fabric Lakehouse does not support SHALLOW CLONE (Databricks-specific Delta feature)"
 )
-class TestFabricSparkCloneSameSourceAndTarget(BaseCloneNotPossible):
+class TestFabricSparkCloneSameSourceAndTarget(BaseCloneSameSourceAndTarget):
     pass
