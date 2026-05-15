@@ -21,6 +21,13 @@ _BUSINESS_METADATA_API = (
     "/datamap/api/atlas/v2/entity/guid/{guid}/businessmetadata/{bm_name}?isOverwrite=true"
 )
 
+
+def _qualifiedname_matches(qualified_name: str, identifiers: list[str]) -> bool:
+    """Check if any identifier matches a path segment in the qualifiedName."""
+    segments = [s.lower() for s in qualified_name.split("/") if s]
+    return any(i in segments for i in identifiers)
+
+
 _BM_APPLICABLE_TYPES = {"DataSet"}
 
 _BM_ATTRIBUTES = [
@@ -170,9 +177,7 @@ class PurviewClient:
         if database_identifiers:
             lower_ids = [i.lower() for i in database_identifiers]
             filtered = [
-                r
-                for r in results
-                if any(i in r.get("qualifiedName", "").lower() for i in lower_ids)
+                r for r in results if _qualifiedname_matches(r.get("qualifiedName", ""), lower_ids)
             ]
             if filtered:
                 return filtered
@@ -199,6 +204,13 @@ class PurviewClient:
             body["continuationToken"] = data["continuationToken"]
 
         return results
+
+    def search_process_entities(self, qualified_name_prefix: str) -> list[dict]:
+        """Search for process entities with a given qualifiedName prefix."""
+        url = f"{self._endpoint}{_SEARCH_API}"
+        filters = [{"objectType": "Process"}]
+        results = self._run_search(url, filters)
+        return [r for r in results if r.get("qualifiedName", "").startswith(qualified_name_prefix)]
 
     def get_entity_by_guid(self, guid: str) -> dict:
         """Fetch a single entity and its referred entities (e.g. columns) by GUID."""
