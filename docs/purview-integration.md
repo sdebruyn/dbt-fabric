@@ -194,15 +194,24 @@ Column descriptions from dbt are set as `userDescription` on the column entities
 
 ## Custom Purview types
 
-The adapter registers custom type definitions in Purview to represent Data Warehouse tables. These types are created automatically the first time the sync runs:
+The adapter registers custom type definitions in Purview. These types are created automatically the first time the sync runs.
 
-| Type | Supertypes | Relationship to parent |
-|---|---|---|
-| `fabric_warehouse_schema` | `Asset` | `warehouse` → `fabric_warehouse` |
-| `fabric_warehouse_table` | `DataSet`, `Purview_Table` | `dbSchema` → `fabric_warehouse_schema` |
-| `fabric_warehouse_table_column` | `DataSet` | `table` → `fabric_warehouse_table` |
+### dbt types
 
-The hierarchy mirrors the native `azure_sql_dw` types (warehouse → schema → table → column) but uses Fabric-specific naming so the entities appear correctly in the Purview catalog alongside other Fabric items.
+| Type | Kind | Supertypes | Purpose |
+|---|---|---|---|
+| `dbt_metadata` | Business metadata | — | Attaches dbt model metadata (tags, materialization, tests, meta, sync timestamp) to table entities |
+| `dbt_transformation` | Entity | `Process` | Represents a dbt transformation in the lineage graph, linking upstream tables to the output table |
+
+### Data Warehouse types
+
+| Type | Kind | Supertypes | Relationship to parent |
+|---|---|---|---|
+| `fabric_warehouse_schema` | Entity | `Asset` | `warehouse` → `fabric_warehouse` |
+| `fabric_warehouse_table` | Entity | `DataSet`, `Purview_Table` | `dbSchema` → `fabric_warehouse_schema` |
+| `fabric_warehouse_table_column` | Entity | `DataSet` | `table` → `fabric_warehouse_table` |
+
+The Data Warehouse hierarchy mirrors the native `azure_sql_dw` types (warehouse → schema → table → column) but uses Fabric-specific naming so the entities appear correctly in the Purview catalog alongside other Fabric items.
 
 For Lakehouse tables, no custom types are needed — the adapter uses the native `fabric_lakehouse_table_column` type that Purview already defines.
 
