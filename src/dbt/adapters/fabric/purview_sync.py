@@ -107,7 +107,7 @@ class PurviewSync:
         return identifiers
 
     def resolve_entities(self, models: list) -> dict[str, dict]:
-        """Match dbt models to Purview entities by searching on name, schema, and database.
+        """Match dbt models to Purview entities by searching on name and database.
 
         Returns a dict mapping both unique_id and cache_key (database.schema.name) to
         the Purview search result for each matched entity.
@@ -129,9 +129,7 @@ class PurviewSync:
                 continue
 
             db_ids = self._database_identifiers(database) if database else None
-            results = self._client.search_entities(
-                name=name, schema=schema, database_identifiers=db_ids
-            )
+            results = self._client.search_entities(name=name, database_identifiers=db_ids)
 
             if not results:
                 logger.info(f"Purview: no entity found for {cache_key}, skipping")
