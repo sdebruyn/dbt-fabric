@@ -575,7 +575,7 @@ GitHub Actions workflows in `.github/workflows/`:
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
 | `integration-tests.yml` | PR, push, weekly (Sun 01:00 UTC) | Matrix: Python 3.11/3.12/3.13 x {DW, DE} |
-| `publish-docker.yml` | Manual | Build CI Docker images → ghcr.io |
+| `publish-docker.yml` | Manual | Build CI Docker image (`.github/CI.Dockerfile`) → ghcr.io |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
 
 CI authenticates to Azure via OIDC (federated credentials, no secrets stored). Tests run inside Docker containers with pre-installed `mssql-python` dependencies.
