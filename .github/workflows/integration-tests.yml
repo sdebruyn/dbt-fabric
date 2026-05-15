@@ -7,9 +7,25 @@ on:
   pull_request:
     branches:
       - main
+    paths:
+      - 'src/dbt/adapters/fabric/**'
+      - 'src/dbt/include/fabric/**'
+      - 'tests/fabric/**'
+      - 'tests/conftest.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/integration-tests.yml'
   push:
     branches:
       - main
+    paths:
+      - 'src/dbt/adapters/fabric/**'
+      - 'src/dbt/include/fabric/**'
+      - 'tests/fabric/**'
+      - 'tests/conftest.py'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/integration-tests.yml'
 
 permissions:
   contents: read
