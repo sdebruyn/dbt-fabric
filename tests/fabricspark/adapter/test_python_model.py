@@ -1,3 +1,5 @@
+import pytest
+
 from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonEmptyTests,
     BasePythonIncrementalTests,
@@ -6,6 +8,8 @@ from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonSampleTests,
 )
 from dbt.tests.adapter.python_model.test_spark import BasePySparkTests
+
+pytestmark = pytest.mark.python_model
 
 
 class TestPythonModelTestsFabricSpark(BasePythonModelTests):
