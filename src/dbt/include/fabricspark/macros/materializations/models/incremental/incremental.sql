@@ -1,8 +1,10 @@
 {% materialization incremental, adapter='fabricspark', supported_languages=['sql', 'python'] -%}
 
   {%- set full_refresh_mode = should_full_refresh() -%}
+  {#-- dbt-spark defaults to 'parquet'; Fabric Lakehouse is always Delta --#}
   {%- set raw_file_format = config.get('file_format', default='delta') -%}
   {%- set unique_key = config.get('unique_key', none) -%}
+  {#-- dbt-spark always defaults to 'append'; we default to 'merge' when unique_key is set --#}
   {%- set raw_strategy = config.get('incremental_strategy') or ('merge' if unique_key else 'append') -%}
   {%- set grant_config = config.get('grants') -%}
 
@@ -15,6 +17,7 @@
   {%- set incremental_predicates = config.get('predicates', none) or config.get('incremental_predicates', none) -%}
   {%- set target_relation = this.incorporate(type='table') -%}
   {%- set existing_relation = load_relation(this) -%}
+  {#-- dbt-spark strips database+schema for SQL (temp view); we keep them because Fabric has no temp views --#}
   {% set tmp_relation = this.incorporate(path={"identifier": this.identifier ~ '__dbt_tmp'}, type='table') -%}
 
   {%- if strategy in ['insert_overwrite', 'microbatch'] and partition_by -%}
@@ -31,6 +34,7 @@
       {{ create_table_as(False, target_relation, compiled_code, language) }}
     {%- endcall -%}
     {% do persist_constraints(target_relation, model) %}
+  {#-- dbt-spark only checks is_view; we also check is_materialized_view (Fabric has no plain views) --#}
   {%- elif existing_relation.is_view or existing_relation.is_materialized_view or full_refresh_mode -%}
     {# Drop and recreate: Fabric Lakehouse does not support atomic rename for tables #}
     {% do adapter.drop_relation(existing_relation) %}
@@ -39,6 +43,7 @@
     {%- endcall -%}
     {% do persist_constraints(target_relation, model) %}
   {%- else -%}
+    {#-- dbt-spark uses create_table_as(True, ...) for a temp view; we use False (real table) --#}
     {%- call statement('create_tmp_relation', language=language) -%}
       {{ create_table_as(False, tmp_relation, compiled_code, language) }}
     {%- endcall -%}
@@ -46,6 +51,7 @@
     {%- call statement('main') -%}
       {{ fabricspark_get_incremental_sql(strategy, tmp_relation, target_relation, existing_relation, unique_key, incremental_predicates) }}
     {%- endcall -%}
+    {#-- dbt-spark only drops tmp for Python (temp views auto-expire); we always drop (real tables) --#}
     {% call statement('drop_tmp_relation') -%}
       drop table if exists {{ tmp_relation }}
     {%- endcall %}
@@ -62,51 +68,3 @@
   {{ return({'relations': [target_relation]}) }}
 
 {%- endmaterialization %}
-
-
-{% macro fabricspark_get_incremental_sql(strategy, source, target, existing, unique_key, incremental_predicates) %}
-  {%- if strategy == 'append' -%}
-    {{ fabricspark__get_insert_into_sql(source, target) }}
-  {%- elif strategy == 'insert_overwrite' -%}
-    {{ fabricspark__get_insert_overwrite_sql(source, target) }}
-  {%- elif strategy == 'microbatch' -%}
-    {% set missing_partition_key_microbatch_msg -%}
-      The 'microbatch' incremental strategy requires a `partition_by` config.
-      Ensure you are using a `partition_by` column that is of grain {{ config.get('batch_size') }}.
-    {%- endset %}
-    {%- if not config.get('partition_by') -%}
-      {{ exceptions.raise_compiler_error(missing_partition_key_microbatch_msg) }}
-    {%- endif -%}
-    {{ fabricspark__get_insert_overwrite_sql(source, target) }}
-  {%- elif strategy == 'merge' -%}
-    {{ get_merge_sql(target, source, unique_key, dest_columns=none, incremental_predicates=incremental_predicates) }}
-  {%- else -%}
-    {% set no_sql_for_strategy_msg -%}
-      No known SQL for the incremental strategy provided: {{ strategy }}
-    {%- endset %}
-    {{ exceptions.raise_compiler_error(no_sql_for_strategy_msg) }}
-  {%- endif -%}
-{% endmacro %}
-
-
-{# Fabric Lakehouse INSERT INTO ... SELECT fails with REQUIRES_SINGLE_PART_NAMESPACE.
-   Use MERGE with always-false condition to append all rows instead. #}
-{% macro fabricspark__get_insert_into_sql(source_relation, target_relation) %}
-
-    merge into {{ target_relation }} as DBT_INTERNAL_DEST
-    using {{ source_relation }} as DBT_INTERNAL_SOURCE
-    on false
-    when not matched then insert *
-
-{% endmacro %}
-
-
-{% macro fabricspark__get_insert_overwrite_sql(source_relation, target_relation) %}
-
-    {%- set dest_columns = adapter.get_columns_in_relation(target_relation) -%}
-    {%- set dest_cols_csv = dest_columns | map(attribute='quoted') | join(', ') -%}
-    insert overwrite table {{ target_relation.include(database=false) }}
-    {{ partition_cols(label="partition") }}
-    select {{ dest_cols_csv }} from {{ source_relation }}
-
-{% endmacro %}
