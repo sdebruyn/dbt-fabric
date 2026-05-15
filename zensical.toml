@@ -31,9 +31,12 @@ nav = [
   { "Feature guides" = [
     { "Authentication" = "authentication.md" },
     { "Lakehouse (Spark SQL)" = "lakehouse.md" },
+    { "Microsoft Purview integration" = "purview-integration.md" },
     { "CLUSTER BY" = "cluster-by.md" },
     { "Python models" = "python-models.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
+    { "External tables" = "external-tables.md" },
+    { "Catalog statistics" = "catalog-stats.md" },
   ] },
 ]
 
