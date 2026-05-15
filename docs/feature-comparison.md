@@ -2,7 +2,9 @@
 
 The dbt-fabric adapter was originally built by community contributors, including [Sam Debruyn](https://debruyn.dev), who continues its development and maintenance through this fork. This adapter builds on [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric) with additional features, improvements, and bugfixes. Some of these have since been contributed back upstream.
 
-## No ODBC driver required
+## Platform & compatibility
+
+### No ODBC driver required
 
 This adapter uses Microsoft's official [`mssql-python`](https://github.com/microsoft/mssql-python) driver instead of pyODBC. This is a pure Python driver for SQL Server and Microsoft Fabric that communicates over the TDS protocol natively, without requiring any system-level ODBC components.
 
@@ -14,50 +16,45 @@ Microsoft's upstream dbt-fabric adapter depends on pyODBC, which requires:
 
 With dbt-fabric-samdebruyn, none of this is needed. Installation is a single `pip install` or `uv add` command, with no platform-specific setup. This eliminates a common source of installation issues and makes the adapter work consistently across all platforms, including containerized environments.
 
-## Fabric Lakehouse (Spark SQL) support
+### dbt Core 1.11 support
+
+This adapter is compatible with dbt Core 1.11, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.
+
+### Functions in dbt
+
+This adapter supports creating scalar functions as introduced in dbt Core 1.11, while Microsoft's dbt-fabric does not.
+
+## Dual engine support
+
+### Fabric Lakehouse (Spark SQL) support
 
 This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft's dbt-fabric only supports Data Warehouse.
 
 The Lakehouse adapter (`type: fabricspark`) uses Spark SQL via Livy sessions and supports tables, materialized lake views, and Python models natively. See the [Lakehouse guide](lakehouse.md) for details.
 
-## dbt Core 1.11 support
-
-This adapter is compatible with dbt Core 1.11, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.
-
-## Functions in dbt
-
-This adapter supports creating scalar functions as introduced in dbt Core 1.11, while Microsoft's dbt-fabric does not.
-
-## Support for Python models
+### Support for Python models
 
 This adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models). To use this, just add information about your [Fabric Workspace](configuration.md#workspace_name) and [Lakehouse](configuration.md#lakehouse) to the `profiles.yml` file.
 
-## Automatically find the host name of your Fabric Workspace
+## Data governance & observability
 
-It can be tedious to find the correct host name for your Fabric Workspace, especially if you have separate Workspaces for development and production environments.
+### [Microsoft Purview integration](purview-integration.md)
 
-This adapter will automatically retrieve the host name for your Fabric Workspace, based on the [`workspace_name`](configuration.md#workspace_name) or [`workspace_id`](configuration.md#workspace_id) provided in the configuration.
+This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:
 
-This allows you to write a configuration like this:
+- **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
+- **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
+- **Table-level lineage**: a full lineage graph based on dbt's `ref()` and `source()` dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and [does not support sub-item lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric).
 
-```yaml
-default:
-  target: dev
-    outputs:
-    dev:
-      type: fabric
-      workspace: "gold_{{ env_var('FABRIC_ENV', 'dev') }}"
-      database: dwh
-      schema: dbt
-```
+The sync runs via `{{ purview_sync() }}` as an `on-run-end` hook or as a manual `dbt run-operation`.
 
-Then, to run dbt against your production environment/Workspace, you can simply set the `FABRIC_ENV` environment variable to `prod` (if your Workspaces are named accordingly).
+### [Catalog statistics](catalog-stats.md)
 
-## Extended support for [authentication methods](configuration.md#authentication)
+When you run `dbt docs generate`, this adapter includes **approximate row counts** for every table in the catalog output. Microsoft's upstream adapter does not include any statistics — the dbt docs site shows no table size information. With this adapter, table sizes are visible out of the box, with no extra configuration.
 
-While most authentication methods have been contributed back to dbt-fabric, some newer options are only available in this adapter.
+## Modeling features
 
-## MERGE in incremental and microbatch models
+### MERGE in incremental and microbatch models
 
 !!! info
 
@@ -100,7 +97,7 @@ select * from source('my_source', 'my_table')
 {% endif %}
 ```
 
-## [CLUSTER BY](cluster-by.md) support
+### [CLUSTER BY](cluster-by.md) support
 
 Fabric Data Warehouse supports automatic data clustering via the `CLUSTER BY` clause, which organizes data physically on disk for better query performance. Microsoft's dbt-fabric adapter does not expose this feature. This adapter lets you configure clustering directly from your model config:
 
@@ -113,33 +110,46 @@ Fabric Data Warehouse supports automatic data clustering via the `CLUSTER BY` cl
 
 This works with regular tables, incremental models, and models with contract enforcement.
 
-## Better support for [warehouse snapshots](warehouse-snapshots.md)
+### Better support for [warehouse snapshots](warehouse-snapshots.md)
 
 Both adapters support Fabric [warehouse snapshots](https://learn.microsoft.com/fabric/data-warehouse/warehouse-snapshot?WT.mc_id=MVP_310840), but Microsoft's implementation hijacks Python runtime components and does not respect the proper dbt lifecycle. This adapter exposes a macro you can call from `on-run-start`, `on-run-end`, `post-hook`, or any other Jinja context — giving you full control over when and how often snapshots are taken.
 
-## [Catalog statistics](catalog-stats.md)
-
-When you run `dbt docs generate`, this adapter includes **approximate row counts** for every table in the catalog output. Microsoft's upstream adapter does not include any statistics — the dbt docs site shows no table size information. With this adapter, table sizes are visible out of the box, with no extra configuration.
-
-## Support for [dbt-external-tables](external-tables.md)
+### Support for [dbt-external-tables](external-tables.md)
 
 This adapter provides [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) compatibility macros that use Fabric's `OPENROWSET(BULK ...)` function to query Parquet, CSV, and JSONL files stored in Azure Blob Storage, ADLS, or OneLake. External sources are created as views wrapping OPENROWSET queries, so data is always fresh. See the [external tables guide](external-tables.md) for details.
 
-## [Microsoft Purview integration](purview-integration.md)
+## Developer experience
 
-This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:
+### Automatically find the host name of your Fabric Workspace
 
-- **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
-- **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
-- **Table-level lineage**: a full lineage graph based on dbt's `ref()` and `source()` dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and [does not support sub-item lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric).
+It can be tedious to find the correct host name for your Fabric Workspace, especially if you have separate Workspaces for development and production environments.
 
-The sync runs via `{{ purview_sync() }}` as an `on-run-end` hook or as a manual `dbt run-operation`.
+This adapter will automatically retrieve the host name for your Fabric Workspace, based on the [`workspace_name`](configuration.md#workspace_name) or [`workspace_id`](configuration.md#workspace_id) provided in the configuration.
 
-## Better support for popular packages
+This allows you to write a configuration like this:
+
+```yaml
+default:
+  target: dev
+    outputs:
+    dev:
+      type: fabric
+      workspace: "gold_{{ env_var('FABRIC_ENV', 'dev') }}"
+      database: dwh
+      schema: dbt
+```
+
+Then, to run dbt against your production environment/Workspace, you can simply set the `FABRIC_ENV` environment variable to `prod` (if your Workspaces are named accordingly).
+
+### Extended support for [authentication methods](configuration.md#authentication)
+
+While most authentication methods have been contributed back to dbt-fabric, some newer options are only available in this adapter.
+
+### Better support for popular packages
 
 [dbt-utils](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) is already fully supported and more packages are being tested and added.
 
-## Plenty of bugfixes
+### Plenty of bugfixes
 
 The quality of this adapter is guaranteed by an extensive test suite of integration tests, which run on every change. Through this process, quite a few bugs have been found and fixed.
 
