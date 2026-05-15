@@ -1,3 +1,12 @@
+{# Based on dbt-spark's snapshot materialization with these differences:
+   - database=model.database instead of none (FabricSpark supports 3-part names)
+   - No file_format config/validation (Fabric Lakehouse only supports Delta)
+   - create_schema receives a relation, not a string
+   - Uses fabricspark__build_snapshot_staging_table which creates a real table, not a view
+     (Fabric Lakehouse does not support Spark SQL views)
+   - Column filtering uses 'in' with a list instead of repeated 'equalto' filters,
+     and handles composite unique keys
+#}
 {% materialization snapshot, adapter='fabricspark' %}
 
   {%- set target_table = model.get('alias', model.get('name')) -%}
