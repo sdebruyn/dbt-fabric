@@ -504,6 +504,19 @@ class FabricApiClient:
         response = self._api_post(url, {"code": code, "kind": "sql"})
         return response.json()["id"]
 
+    def delete_livy_session(self) -> None:
+        """Delete the current Livy session and clear the cached session ID."""
+        if self._livy_session_id is None:
+            return
+        session_id = self._livy_session_id
+        url = self.get_livy_base_api_uri() + f"/sessions/{session_id}"
+        try:
+            self._api_delete(url)
+        except FabricApiError as e:
+            if e.status_code != 404:
+                raise
+        self._livy_session_id = None
+
     def cancel_livy_statement(self, statement_id: int) -> str:
         """Cancel a running Livy statement.
 

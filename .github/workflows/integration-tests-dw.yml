@@ -4,6 +4,17 @@ on:
   schedule:
     - cron: "0 2 * * 0"
   workflow_dispatch:
+    inputs:
+      pytest_filter:
+        description: "Pytest -k filter expression (leave empty to run all DW tests)"
+        required: false
+        type: string
+        default: ""
+      with_python:
+        description: "Include Python model tests (requires Livy session)"
+        required: false
+        type: boolean
+        default: false
   pull_request:
     branches:
       - main
@@ -86,9 +97,17 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ${{ matrix.dwh_name }}
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-        run: >-
-          uv run pytest -ra -v --dw
-          ${{ github.event_name == 'schedule' && '--with-python' || '' }}
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ (github.event_name == 'schedule' || inputs.with_python) && github.run_id || '' }}
+          PYTEST_FILTER: ${{ inputs.pytest_filter || '' }}
+        run: |
+          ARGS="-ra -v --dw"
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.with_python }}" == "true" ]]; then
+            ARGS="$ARGS --with-python"
+          fi
+          if [ -n "$PYTEST_FILTER" ]; then
+            ARGS="$ARGS -k $PYTEST_FILTER"
+          fi
+          uv run pytest $ARGS
 
       - name: Upload test logs
         if: always()
