@@ -80,6 +80,19 @@ FabricSpark:
 
 `BaseFabricAdapter` provides shared functionality for Python model execution via Fabric Livy sessions. `FabricSparkAdapter` inherits from both this base and dbt-spark's `SparkAdapter`.
 
+### `@available` decorator
+
+Adapter methods decorated with `@available` become callable from Jinja macros via `adapter.method_name()`. Use this when adding a new Python method that macros need to call. Example: `create_or_update_warehouse_snapshot` in `FabricAdapter` is `@available` so the snapshot macro can invoke it. There's also `@available.parse(lambda *a, **k: ...)` for methods that need a parse-time stub (e.g., `get_column_schema_from_query` returns `[]` during parsing).
+
+### Capability declaration
+
+Each adapter declares which dbt features it supports via `_capabilities: CapabilityDict`. dbt checks these to decide whether to use optimized code paths. Current declarations:
+
+- **Fabric**: `SchemaMetadataByRelations` (Full), `TableLastModifiedMetadata` (Full)
+- **FabricSpark**: `TableLastModifiedMetadata` (Full), `SchemaMetadataByRelations` (Full)
+
+When adding support for a new dbt capability (e.g., `FastRelationLookup`), add it to the adapter's `_capabilities` dict with the appropriate `Support` level (`Full`, `Partial`, or `NotImplemented`).
+
 ### Plugin registration
 
 Each adapter has an `__init__.py` that registers the plugin:
@@ -158,9 +171,19 @@ tests/
     adapter/                          # ~15 test modules
 ```
 
-## Development workflow (TDD)
+## Branching and worktrees
 
-**Always work in a git worktree.** When working on a PR, feature, or bugfix, always create and use a separate git worktree (or use `isolation: "worktree"` when spawning agents). This avoids conflicts with other people or agents working in the same repository at the same time. The main working directory should stay on its current branch — all development happens in worktrees.
+**Every change to the codebase — no matter how small — must happen on a feature branch, never directly on `main`.** Use a git worktree (or `isolation: "worktree"` when spawning agents) so the main working directory stays clean and on `main`. This applies to all changes: code, macros, tests, documentation, and CLAUDE.md itself.
+
+```shell
+git worktree add ../dbt-fabric-<short-name> -b <branch-name>
+# work in the worktree, commit, push, create PR
+git worktree remove ../dbt-fabric-<short-name>
+```
+
+This avoids conflicts with other people or agents working in the same repository at the same time.
+
+## Development workflow (TDD)
 
 Development follows a strict test-driven loop using `dbt-tests-adapter` base classes:
 
@@ -397,6 +420,8 @@ Integration tests connect to actual Microsoft Fabric workspaces. They cannot run
 1. A `test.env` file (copy from `test.env.sample`)
 2. Azure credentials (CLI login or service principal)
 3. A Fabric workspace with a Data Warehouse and/or Lakehouse
+
+**Security**: `test.env` contains real Azure credentials and connection strings. It is in `.gitignore` — never commit it. Treat `test.env.sample` as the authoritative template for which variables are needed. Never hardcode credentials in code or tests.
 
 Key environment variables:
 - `FABRIC_TEST_WORKSPACE_NAME` — Fabric workspace name
