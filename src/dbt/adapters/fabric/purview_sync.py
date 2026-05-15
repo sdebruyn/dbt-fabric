@@ -145,14 +145,6 @@ class PurviewSync:
         self._item_cache[database] = None
         return None
 
-    def _database_identifiers(self, database: str) -> list[str]:
-        """Build a list of identifiers for a database: its name and its Fabric item GUID."""
-        identifiers = [database]
-        item = self._resolve_item(database)
-        if item:
-            identifiers.append(item[1])
-        return identifiers
-
     def _build_test_mapping(self) -> dict[str, list[str]]:
         """Build a mapping of model/seed/snapshot unique_id to test names from the graph.
 
@@ -217,8 +209,12 @@ class PurviewSync:
                 cache[unique_id] = cache[cache_key]
                 continue
 
-            db_ids = self._database_identifiers(database) if database else None
-            results = self._client.search_entities(name=name, database_identifiers=db_ids)
+            item = self._resolve_item(database) if database else None
+            if item:
+                db_ids = [database, item[1]]
+                results = self._client.search_entities(name=name, database_identifiers=db_ids)
+            else:
+                results = []
 
             if results:
                 entity = self._pick_best_entity(results, db_ids)
@@ -645,7 +641,8 @@ class PurviewSync:
             resolved[source_id] = resolved[cache_key]
             return resolved[cache_key]
 
-        db_ids = self._database_identifiers(database) if database else None
+        item = self._resolve_item(database) if database else None
+        db_ids = [database, item[1]] if item else None
         results = self._client.search_entities(name=name, database_identifiers=db_ids)
 
         if not results:

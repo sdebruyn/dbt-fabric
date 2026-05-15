@@ -241,7 +241,10 @@ class PurviewClient:
 
         retries = 0
         while response.status_code == 429 and retries < 10:
-            retry_after = int(response.headers.get("Retry-After", 5))
+            try:
+                retry_after = int(response.headers.get("Retry-After", 5))
+            except (ValueError, TypeError):
+                retry_after = 5
             time.sleep(retry_after)
             response = requests.request(method, url, json=body, headers=self._get_auth_headers())
             retries += 1
