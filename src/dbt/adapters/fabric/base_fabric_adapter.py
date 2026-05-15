@@ -60,7 +60,13 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
         sync = PurviewSync(client, fabric_client, graph)
 
         if sync_metadata or sync_lineage:
-            client.ensure_type_definitions()
+            if not client.ensure_type_definitions():
+                logger.warning(
+                    "Purview sync: type definitions could not be registered, "
+                    "skipping metadata and lineage"
+                )
+                sync_metadata = False
+                sync_lineage = False
 
         models = extract_syncable_models(graph, results)
         if not models:
