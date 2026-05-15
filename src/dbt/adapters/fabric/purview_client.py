@@ -20,6 +20,7 @@ _TYPEDEF_API = "/datamap/api/atlas/v2/types/typedefs"
 _BUSINESS_METADATA_API = (
     "/datamap/api/atlas/v2/entity/guid/{guid}/businessmetadata/{bm_name}?isOverwrite=true"
 )
+_LABELS_API = "/datamap/api/atlas/v2/entity/guid/{guid}/labels"
 
 
 def _qualifiedname_matches(qualified_name: str, identifiers: list[str]) -> bool:
@@ -218,9 +219,17 @@ class PurviewClient:
         response = self._api_get(url)
         return response.json()
 
-    def bulk_create_or_update(self, entities: list[dict]) -> dict:
-        """Create or update entities in batches of 50 (Purview API limit)."""
+    def bulk_create_or_update(
+        self, entities: list[dict], merge_business_attrs: bool = False
+    ) -> dict:
+        """Create or update entities in batches of 50 (Purview API limit).
+
+        When merge_business_attrs is True, includes businessAttributeUpdateBehavior=merge
+        so that businessAttributes on entities are merged into existing values.
+        """
         url = f"{self._endpoint}{_ENTITY_BULK_API}"
+        if merge_business_attrs:
+            url += "?businessAttributeUpdateBehavior=merge"
         all_results: dict = {"mutatedEntities": {}, "guidAssignments": {}}
 
         for i in range(0, len(entities), 50):
@@ -243,6 +252,11 @@ class PurviewClient:
         """Set business metadata attributes on an entity (e.g. dbt_metadata)."""
         url = f"{self._endpoint}{_BUSINESS_METADATA_API.format(guid=guid, bm_name=bm_name)}"
         self._api_post(url, attrs)
+
+    def set_labels(self, guid: str, labels: list[str]) -> None:
+        """Set labels (free-text tags) on a Purview entity, replacing existing labels."""
+        url = f"{self._endpoint}{_LABELS_API.format(guid=guid)}"
+        self._api_post(url, labels)
 
     def ensure_type_definitions(self) -> bool:
         """Register or update the dbt_metadata business metadata type and dbt_transformation
