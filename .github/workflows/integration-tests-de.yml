@@ -1,6 +1,8 @@
 ---
-name: "DE integration tests (on-demand)"
+name: "DE integration tests"
 on:
+  schedule:
+    - cron: '0 1 * * 0'
   issue_comment:
     types: [created]
   workflow_dispatch:
@@ -11,9 +13,10 @@ on:
         type: string
         default: ""
       pr_number:
-        description: "PR number to test"
-        required: true
+        description: "PR number to test (leave empty for current branch)"
+        required: false
         type: string
+        default: ""
 
 permissions:
   contents: read
@@ -22,14 +25,55 @@ permissions:
   id-token: write
 
 concurrency:
-  group: de-on-demand-${{ github.event.issue.number || github.event.inputs.pr_number }}
+  group: de-${{ github.event.issue.number || github.event.inputs.pr_number || 'main' }}
   cancel-in-progress: true
 
 jobs:
-  run-de-tests:
-    name: DE tests
+  scheduled-de-tests:
+    name: DE tests (scheduled)
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    environment: azure
+    container:
+      image: ghcr.io/${{ github.repository }}:CI-3.13-mssql-python
+    timeout-minutes: 60
+    steps:
+      - name: Azure CLI Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Run DE integration tests
+        env:
+          FABRIC_TEST_WORKSPACE_NAME: adapter-ci
+          FABRIC_TEST_LAKEHOUSE_NAME: cilh
+          FABRIC_TEST_THREADS: 2
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+        run: uv run pytest -ra -v --de
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-de-scheduled
+          path: logs/
+
+  on-demand-de-tests:
+    name: DE tests (on-demand)
     if: >-
-      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number != '') ||
       (github.event_name == 'issue_comment'
        && github.event.issue.pull_request
        && (github.event.comment.body == '/test-de' || startsWith(github.event.comment.body, '/test-de '))
@@ -176,3 +220,50 @@ jobs:
               issue_number: prNumber,
               body,
             });
+
+  dispatch-de-tests:
+    name: DE tests (dispatch, no PR)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number == ''
+    runs-on: ubuntu-latest
+    environment: azure
+    container:
+      image: ghcr.io/${{ github.repository }}:CI-3.13-mssql-python
+    timeout-minutes: 60
+    steps:
+      - name: Azure CLI Login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Run DE integration tests
+        env:
+          FABRIC_TEST_WORKSPACE_NAME: adapter-ci
+          FABRIC_TEST_LAKEHOUSE_NAME: cilh
+          FABRIC_TEST_THREADS: 2
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+          PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
+        run: |
+          if [ -n "$PYTEST_FILTER" ]; then
+            uv run pytest -ra -v --de -k "$PYTEST_FILTER"
+          else
+            uv run pytest -ra -v --de
+          fi
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-de-dispatch
+          path: logs/

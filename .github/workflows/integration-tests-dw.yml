@@ -1,9 +1,7 @@
 ---
-name: Integration tests on Fabric
+name: "DW integration tests"
 on:
   workflow_dispatch:
-  schedule:
-    - cron: '0 1 * * 0'
   pull_request:
     branches:
       - main
@@ -14,7 +12,7 @@ on:
       - 'tests/conftest.py'
       - 'pyproject.toml'
       - 'uv.lock'
-      - '.github/workflows/integration-tests.yml'
+      - '.github/workflows/integration-tests-dw.yml'
   push:
     branches:
       - main
@@ -25,7 +23,7 @@ on:
       - 'tests/conftest.py'
       - 'pyproject.toml'
       - 'uv.lock'
-      - '.github/workflows/integration-tests.yml'
+      - '.github/workflows/integration-tests-dw.yml'
 
 permissions:
   contents: read
@@ -38,7 +36,7 @@ concurrency:
 
 jobs:
   integration-tests-fabric-dw:
-    name: Integration tests on Fabric DW
+    name: DW tests (Python ${{ matrix.python_version }})
     strategy:
       fail-fast: false
       matrix:
@@ -52,7 +50,7 @@ jobs:
 
     runs-on: ubuntu-latest
     environment: azure
-    container: 
+    container:
       image: ghcr.io/${{ github.repository }}:CI-${{ matrix.python_version }}-mssql-python
     steps:
       - name: Azure CLI Login
@@ -61,7 +59,7 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           allow-no-subscriptions: true
-      
+
       - uses: actions/checkout@v6
 
       - name: Install uv
@@ -72,56 +70,16 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras --all-groups
 
-      - name: Run integration tests
+      - name: Run DW integration tests
         env:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ${{ matrix.dwh_name }}
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
         run: uv run pytest -ra -v --dw
-      
-      - name: Upload test logs
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: logs-${{ matrix.python_version }}-${{ matrix.dwh_name }}
-          path: logs/
-
-  integration-tests-fabric-de:
-    name: Integration tests on Fabric DE
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    environment: azure
-    container:
-      image: ghcr.io/${{ github.repository }}:CI-3.13-mssql-python
-    steps:
-      - name: Azure CLI Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
-      - uses: actions/checkout@v6
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: uv sync --all-extras --all-groups
-
-      - name: Run integration tests
-        env:
-          FABRIC_TEST_WORKSPACE_NAME: adapter-ci
-          FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_THREADS: 2
-          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
-        run: uv run pytest -ra -v --de
 
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: logs-fs
+          name: logs-dw-${{ matrix.python_version }}-${{ matrix.dwh_name }}
           path: logs/
