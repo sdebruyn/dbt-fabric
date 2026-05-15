@@ -20,8 +20,7 @@
   {%- endif -%}
 
   {% if not adapter.check_schema_exists(model.database, model.schema) %}
-    {# dbt-spark: create_schema(model.schema) passes a string; relation is more correct #}
-    {% do create_schema(target_relation.without_identifier()) %}
+    {% do create_schema(target_relation) %}
   {% endif %}
 
   {% set full_refresh_mode = should_full_refresh() %}
