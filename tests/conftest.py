@@ -231,6 +231,7 @@ def purview_table():
         pytest.skip("No tables indexed in Purview")
     return results[0]
 
+
 def _deep_merge(base: dict, override: dict) -> dict:
     """Deep merge override into base. Returns the merged dict (mutates base)."""
     for key, value in override.items():

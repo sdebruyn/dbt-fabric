@@ -989,13 +989,9 @@ class TestPushLineage:
 
         client.bulk_create_or_update.assert_not_called()
 
-    def test_full_sync_only_deletes_own_stale_lineage(self):
+    def test_full_sync_does_not_delete_lineage_for_models_with_deps(self):
         client = MagicMock()
         client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
-        client.search_process_entities.return_value = [
-            {"id": "proc-1", "qualifiedName": "dbt://model.test.my_model"},
-            {"id": "proc-other", "qualifiedName": "dbt://model.other_project.their_model"},
-        ]
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         upstream = _make_purview_entity(guid="guid-upstream", name="source_table")
@@ -1009,14 +1005,15 @@ class TestPushLineage:
 
         sync.push_lineage([node], resolved, is_full_sync=True)
 
+        client.get_entity_by_qualified_name.assert_not_called()
         client.delete_entity_by_guid.assert_not_called()
 
-    def test_full_sync_deletes_stale_lineage_for_own_models(self):
+    def test_full_sync_deletes_stale_lineage_for_models_without_deps(self):
         client = MagicMock()
         client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
-        client.search_process_entities.return_value = [
-            {"id": "proc-stale", "qualifiedName": "dbt://model.test.removed_model"},
-        ]
+        client.get_entity_by_qualified_name.return_value = {
+            "entity": {"guid": "proc-stale", "typeName": "dbt_transformation"}
+        }
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         removed_node = _make_node(
@@ -1028,6 +1025,9 @@ class TestPushLineage:
 
         sync.push_lineage([removed_node], resolved, is_full_sync=True)
 
+        client.get_entity_by_qualified_name.assert_called_once_with(
+            "dbt_transformation", "dbt://model.test.removed_model"
+        )
         client.delete_entity_by_guid.assert_called_once_with("proc-stale")
 
     def test_resolves_dependency_via_graph_node(self):
