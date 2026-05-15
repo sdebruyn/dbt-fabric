@@ -66,6 +66,23 @@ Macros call dispatch explicitly:
 {% endmacro %}
 ```
 
+### Overriding community package macros via dispatch
+
+Community packages like dbt-external-tables ship their own `fabric__*` macros (e.g., Synapse-style `CREATE EXTERNAL TABLE`). To override these with adapter-internal macros (e.g., our OPENROWSET-based implementation), users configure dispatch in `dbt_project.yml`:
+
+```yaml
+dispatch:
+  - macro_namespace: dbt_external_tables
+    search_order: ['dbt', 'dbt_external_tables']
+```
+
+The key insight is that `'dbt'` is the `GLOBAL_PROJECT_NAME` constant in dbt-core. When `get_from_package("dbt", macro_name)` is called during dispatch, it searches the `global_project_namespace` — which contains all adapter-internal macros (everything under `src/dbt/include/fabric/macros/`). This means putting `'dbt'` first in the `search_order` makes dbt find our `fabric__create_external_table` before the package's version.
+
+When adding override macros for a community package:
+1. Place the override macros in `src/dbt/include/fabric/macros/dbt_package_support/<package_name>/`
+2. Only override leaf macros that the package dispatches to — don't override orchestration macros that already use dispatched calls
+3. Document the required `dispatch` config in the docs page for that feature
+
 ### Class hierarchy
 
 ```
@@ -439,6 +456,80 @@ When Fabric doesn't support a feature, skip with a reason:
 @pytest.mark.skip("Catalog for single relation does not give any benefits in Fabric")
 class TestGetCatalogForSingleRelation(BaseGetCatalogForSingleRelation):
     pass
+```
+
+### Community package integration tests
+
+Integration tests for community dbt packages live in `tests/fabric/packages/`. They use the `BaseDbtPackageTests` base class from `base_package_test.py`, which provides shared fixture wiring and dispatch configuration.
+
+**Base class fixtures:**
+
+| Fixture | Purpose |
+|---|---|
+| `package_name` | dbt macro namespace (e.g., `dbt_utils`, `dbt_external_tables`) |
+| `package_repo` | Git URL to the package repository (e.g., `https://github.com/dbt-labs/dbt-utils`) |
+| `package_revision` | Git revision or tag (e.g., `1.3.0`) |
+| `packages` | Installs via git + `integration_tests` subdirectory, using `package_repo`/`package_revision` |
+| `project_config_update` | Sets up dispatch with `search_order: [test_dbt_package, dbt, <package_name>]` |
+| `test_package` | Default flow: `dbt deps` → `dbt seed` → `dbt run` |
+
+Subclasses must provide `package_name`, `package_repo`, and `package_revision`.
+
+**Git packages** (have integration_tests subdirectory, e.g., dbt-utils) — inherit directly from `BaseDbtPackageTests`:
+
+```python
+class TestDbtUtils(BaseDbtPackageTests):
+    @pytest.fixture(scope="class")
+    def package_name(self) -> str:
+        return "dbt_utils"
+
+    @pytest.fixture(scope="class")
+    def package_repo(self) -> str:
+        return "https://github.com/dbt-labs/dbt-utils"
+
+    @pytest.fixture(scope="class")
+    def package_revision(self) -> str:
+        return "1.3.0"
+```
+
+**PyPI packages** (e.g., dbt-external-tables) — create an intermediate base class that overrides `packages` (for PyPI format) and `test_package` (for the package-specific workflow). Concrete test classes then only provide `models` and `verify_data`:
+
+```python
+class BaseExternalTableTest(BaseDbtPackageTests):
+    @pytest.fixture(scope="class")
+    def package_name(self) -> str:
+        return "dbt_external_tables"
+
+    @pytest.fixture(scope="class")
+    def package_repo(self) -> str:
+        return "dbt-labs/dbt_external_tables"
+
+    @pytest.fixture(scope="class")
+    def package_revision(self) -> str:
+        return "0.11.0"
+
+    @pytest.fixture(scope="class")
+    def packages(self, package_repo: str, package_revision: str):
+        return {"packages": [{"package": package_repo, "version": package_revision}]}
+
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+        run_dbt(["run-operation", "stage_external_sources"])
+        results = run_dbt(["run"])
+        for r in results:
+            assert r.status == "success"
+        self.verify_data(project)
+
+    def verify_data(self, project):
+        raise NotImplementedError
+
+class TestExternalTableCSV(BaseExternalTableTest):
+    @pytest.fixture(scope="class")
+    def models(self):
+        ...  # sources.yml + model SQL for CSV
+
+    def verify_data(self, project):
+        ...  # assert row counts and data values
 ```
 
 ## CI/CD
