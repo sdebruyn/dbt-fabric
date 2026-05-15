@@ -7,9 +7,12 @@ import yaml
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
+from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import write_file
 
 pytest_plugins = ["dbt.tests.fixtures.project"]
+
+requires_purview = pytest.mark.requires_purview
 
 
 @pytest.fixture(scope="class")
@@ -35,6 +38,7 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
             "host": os.getenv("FABRIC_TEST_HOST"),
             "lakehouse": os.getenv("FABRIC_TEST_LAKEHOUSE_NAME"),
             "database": os.getenv("FABRIC_TEST_DWH_NAME"),
+            "purview_endpoint": os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT"),
             "login_timeout": 60,
             "query_timeout": 300,  # 5 minutes
         }
@@ -80,6 +84,9 @@ def pytest_addoption(parser):
 def pytest_configure(config):
     config.addinivalue_line("markers", "grants: mark test containing GRANT statements")
     config.addinivalue_line("markers", "python_model: mark test requiring Python model execution")
+    config.addinivalue_line(
+        "markers", "requires_purview: skip unless FABRIC_TEST_PURVIEW_ENDPOINT is set"
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -94,6 +101,8 @@ def pytest_collection_modifyitems(config, items):
 
     skip_grants = pytest.mark.skip(reason="need --with-grants option to run")
     skip_python = pytest.mark.skip(reason="need --with-python option to run")
+    skip_purview = pytest.mark.skip(reason="FABRIC_TEST_PURVIEW_ENDPOINT not set")
+    has_purview = bool(os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT"))
     tests_root = Path(__file__).parent
 
     for item in items:
@@ -104,6 +113,9 @@ def pytest_collection_modifyitems(config, items):
 
         if "python_model" in item.keywords and not config.getoption("--with-python"):
             item.add_marker(skip_python)
+
+        if "requires_purview" in item.keywords and not has_purview:
+            item.add_marker(skip_purview)
 
         if adapter_type is not None and tests_child_path != adapter_type:
             item.add_marker(
@@ -186,6 +198,15 @@ def fabric_api_client(
     fabric_token_provider: FabricTokenProvider, credentials: FabricCredentials
 ) -> FabricApiClient:
     return FabricApiClient.create(credentials, fabric_token_provider)
+
+
+@pytest.fixture(scope="class")
+def purview_client(
+    fabric_token_provider: FabricTokenProvider, credentials: FabricCredentials
+) -> PurviewClient:
+    assert credentials.purview_endpoint, "purview_endpoint must be set in profile"
+    return PurviewClient(credentials.purview_endpoint, fabric_token_provider)
+
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
