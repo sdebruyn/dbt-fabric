@@ -138,11 +138,11 @@ def livy_session_lifecycle():
 
     from dbt.adapters.fabric.base_connection_manager import BaseFabricConnectionManager
     from dbt.adapters.fabric.fabric_livy_session import LivySession
-    from dbt.adapters.fabricspark.fabricspark_credentials import FabricSparkCredentials
 
-    creds = FabricSparkCredentials(
+    creds = FabricCredentials(
         database=lakehouse_name,
         schema="dbo",
+        lakehouse=lakehouse_name,
         workspace_name=workspace_name,
         workspace_id=workspace_id,
         livy_session_name=session_name,
