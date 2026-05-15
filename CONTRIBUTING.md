@@ -191,11 +191,34 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
-| `integration-tests.yml` | PR, push, weekly | Matrix: Python 3.11/3.12/3.13 x {DW, DE} |
+| `integration-tests.yml` | PR, push, weekly | DW: Python 3.11/3.12/3.13 on every trigger. DE: Python 3.13 on schedule + manual dispatch only |
+| `test-de-on-demand.yml` | PR comment, manual | On-demand DE tests — see below |
 | `publish-docker.yml` | Manual | Build CI Docker image (`.github/CI.Dockerfile`) → ghcr.io |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
 
 CI authenticates to Azure via OIDC (federated credentials, no secrets stored). Tests run inside Docker containers with pre-installed `mssql-python` dependencies.
+
+### On-demand DE tests
+
+FabricSpark (DE) tests use Livy sessions and are too slow/expensive to run on every PR. Instead, they run weekly and can be triggered on-demand for specific PRs.
+
+**From a PR comment:**
+
+```
+/test-de TestDebugFabricSpark           # Run a single test class
+/test-de Seed and FabricSpark           # Run all seed tests
+/test-de                                # Run all DE tests (slow, 30-60 min)
+```
+
+The workflow checks out the PR branch, runs the matching tests, and comments back with results. Only repository members and collaborators can trigger tests.
+
+**From the CLI:**
+
+```shell
+gh workflow run test-de-on-demand.yml -f pytest_filter="TestDebugFabricSpark" -f pr_number="94"
+```
+
+**Via Copilot:** mention `@test-runner` in a PR comment with a natural language description of which tests to run. The agent translates it to the right pytest filter and triggers the workflow.
 
 ## Releasing
 
