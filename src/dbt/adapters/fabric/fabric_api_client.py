@@ -35,6 +35,7 @@ class FabricApiClient:
     def create(
         cls, credentials: BaseFabricCredentials, token_provider: FabricTokenProvider
     ) -> Self:
+        """Return a shared singleton instance, creating one on first call."""
         if cls._instance is None:
             cls._instance = FabricApiClient(credentials, token_provider)
         return cls._instance
@@ -49,6 +50,7 @@ class FabricApiClient:
     def _api_request(
         self, url: str, method: str = "get", body: dict | None = None
     ) -> requests.Response:
+        """Send an authenticated HTTP request, retrying automatically on 429."""
         response = requests.request(method, url, json=body, headers=self._get_auth_headers())
 
         if response.status_code == 429:
@@ -75,6 +77,7 @@ class FabricApiClient:
         return self._api_request(url, method="delete")
 
     def get_workspace_id(self) -> str:
+        """Resolve the Fabric workspace ID from config or by looking up the workspace name."""
         if self._workspace_id is not None:
             return self._workspace_id
         if self._credentials.workspace_id:
@@ -101,6 +104,7 @@ class FabricApiClient:
         return self._workspace_id
 
     def get_warehouses(self, fetch_all: bool = True) -> list[dict]:
+        """List all Data Warehouses in the workspace, with pagination and caching."""
         if self._cached_warehouses is not None:
             return self._cached_warehouses
 
@@ -119,6 +123,7 @@ class FabricApiClient:
         return warehouses
 
     def get_lakehouses(self, fetch_all: bool = True) -> list[dict]:
+        """List all Lakehouses in the workspace, with pagination and caching."""
         if self._cached_lakehouses is not None:
             return self._cached_lakehouses
 
@@ -137,6 +142,7 @@ class FabricApiClient:
         return lakehouses
 
     def get_warehouse_connection_string(self) -> str:
+        """Return the SQL endpoint connection string from any warehouse or lakehouse."""
         if self._warehouse_connection_string is not None:
             return self._warehouse_connection_string
 
@@ -161,6 +167,7 @@ class FabricApiClient:
         )
 
     def get_lakehouse_id(self) -> str:
+        """Resolve the Lakehouse ID by matching the configured lakehouse name."""
         if self._lakehouse_id is not None:
             return self._lakehouse_id
         if not self._credentials.lakehouse_name:
@@ -177,6 +184,7 @@ class FabricApiClient:
         )
 
     def get_warehouse_id(self) -> str:
+        """Resolve the Data Warehouse ID by matching the configured database name."""
         if self._warehouse_id is not None:
             return self._warehouse_id
 
@@ -191,6 +199,7 @@ class FabricApiClient:
         )
 
     def get_warehouse_snapshots(self) -> list[dict]:
+        """List all warehouse snapshots belonging to the current Data Warehouse."""
         warehouse_id = self.get_warehouse_id()
         workspace_id = self.get_workspace_id()
 
@@ -213,6 +222,7 @@ class FabricApiClient:
     def create_warehouse_snapshot(
         self, snapshot_name: str, description: str | None = None
     ) -> None:
+        """Create a new warehouse snapshot and track its long-running operation."""
         url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots"
         body = {
             "displayName": snapshot_name,
@@ -233,6 +243,7 @@ class FabricApiClient:
     def update_warehouse_snapshot(
         self, snapshot_id: str, snapshot_name: str, description: str | None = None
     ) -> None:
+        """Update the description of an existing warehouse snapshot."""
         url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots/{snapshot_id}"
         body: dict[str, Any] = {"properties": {}}
         if description is not None:
@@ -244,6 +255,7 @@ class FabricApiClient:
             self._warehouse_snapshot_operations[snapshot_name] = location_uri
 
     def wait_and_get_snapshot_id_from_operation(self, operation_uri: str) -> str:
+        """Poll a long-running operation until it completes and return the snapshot ID."""
         timer = time.time()
         while True:
             if time.time() - timer > self._WAREHOUSE_SNAPSHOT_TIMEOUT_SECONDS:
@@ -270,6 +282,7 @@ class FabricApiClient:
     def create_or_update_warehouse_snapshot(
         self, snapshot_name: str, description: str | None = None
     ) -> None:
+        """Create a snapshot if none exists with this name, otherwise update it."""
         existing_snapshot_id = None
 
         snapshot_operation_uri = self._warehouse_snapshot_operations.get(snapshot_name)
@@ -290,6 +303,7 @@ class FabricApiClient:
             self.create_warehouse_snapshot(snapshot_name, description)
 
     def delete_warehouse_snapshot(self, snapshot_name: str) -> None:
+        """Delete a warehouse snapshot by its display name."""
         for snapshot in self.get_warehouse_snapshots():
             if snapshot["displayName"] == snapshot_name:
                 self._api_delete(
@@ -297,11 +311,13 @@ class FabricApiClient:
                 )
 
     def get_livy_base_api_uri(self) -> str:
+        """Build the Livy API base URI for the configured lakehouse."""
         workspace_id = self.get_workspace_id()
         lakehouse_id = self.get_lakehouse_id()
         return f"{self._credentials.fabric_base_api_uri}/workspaces/{workspace_id}/lakehouses/{lakehouse_id}/livyapi/versions/{self._LIVY_API_VERSION}"
 
     def get_existing_livy_session(self) -> str | None:
+        """Find an active Livy session matching the configured name, or return None."""
         url = self.get_livy_base_api_uri() + "/sessions"
         response = self._api_get(url)
         sessions = response.json().get("items", [])
@@ -316,12 +332,14 @@ class FabricApiClient:
         return None
 
     def initialize_livy_session(self) -> str:
+        """Create a new Livy session and wait briefly for it to start."""
         url = self.get_livy_base_api_uri() + "/sessions"
         response = self._api_post(url, {"name": self._credentials.livy_session_name, "ttl": "30s"})
         time.sleep(10)  # give it a moment to initialize before we try to use it
         return response.json()["id"]
 
     def get_livy_session_id(self) -> str:
+        """Return the active Livy session ID, reusing an existing session or creating one."""
         if self._livy_session_id is None:
             with _livy_session_thread_lock:
                 self._livy_session_id = (
@@ -330,28 +348,34 @@ class FabricApiClient:
         return self._livy_session_id
 
     def get_livy_session_base_uri(self) -> str:
+        """Build the API URI for the current Livy session."""
         return self.get_livy_base_api_uri() + f"/sessions/{self.get_livy_session_id()}"
 
     def get_livy_session_state(self) -> str:
+        """Query the current state of the Livy session (idle, busy, starting, etc.)."""
         response = self._api_get(self.get_livy_session_base_uri())
         return response.json().get("state", "unknown")
 
     def get_livy_statement(self, statement_id: int) -> dict[str, Any]:
+        """Fetch the current status and output of a Livy statement."""
         url = self.get_livy_session_base_uri() + f"/statements/{statement_id}"
         response = self._api_get(url)
         return response.json()
 
     def submit_livy_python_statement(self, code: str) -> int:
+        """Submit Python code to the Livy session and return the statement ID."""
         url = self.get_livy_session_base_uri() + "/statements"
         response = self._api_post(url, {"code": code, "kind": "pyspark"})
         return response.json()["id"]
 
     def submit_livy_sql_statement(self, code: str) -> int:
+        """Submit SQL code to the Livy session and return the statement ID."""
         url = self.get_livy_session_base_uri() + "/statements"
         response = self._api_post(url, {"code": code, "kind": "sql"})
         return response.json()["id"]
 
     def cancel_livy_statement(self, statement_id: int) -> str:
+        """Cancel a running Livy statement."""
         url = self.get_livy_session_base_uri() + f"/statements/{statement_id}/cancel"
         response = self._api_post(url, {})
         return response.json()["msg"]

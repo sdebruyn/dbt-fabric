@@ -24,6 +24,7 @@ class LivySessionResult:
     json_data: dict[str, Any] | None = field(default_factory=dict)
 
     def to_submission_result(self, code: str) -> LivySubmissionResult:
+        """Convert this result to a LivySubmissionResult for the dbt adapter response."""
         return LivySubmissionResult(
             run_id=str(self.statement_id),
             compiled_code=code,
@@ -39,9 +40,11 @@ class LivySession:
         self._fabric_api_client = fabric_api_client
 
     def get_logs_url(self) -> str:
+        """Build the Fabric Portal URL to the Spark monitor logs for this session."""
         return f"https://app.fabric.microsoft.com/workloads/de-ds/sparkmonitor/{self._fabric_api_client.get_lakehouse_id()}/{self._fabric_api_client.get_livy_session_id()}"
 
     def wait_for_session_ready(self) -> None:
+        """Poll until the Livy session reaches the idle state, or raise TimeoutError."""
         start_time = time.time()
         while self._fabric_api_client.get_livy_session_state() != "idle":
             if (
@@ -52,6 +55,7 @@ class LivySession:
             time.sleep(self._POLLING_INTERVAL)
 
     def wait_for_statement_ready(self, statement_id: int) -> dict[str, Any]:
+        """Poll a Livy statement until it reaches a terminal state, or raise TimeoutError."""
         start_time = time.time()
         while True:
             statement_response = self._fabric_api_client.get_livy_statement(statement_id)
@@ -63,6 +67,7 @@ class LivySession:
             time.sleep(self._POLLING_INTERVAL)
 
     def wait_and_get_statement_result(self, statement_id: int) -> LivySessionResult:
+        """Wait for a statement to complete and return its result, catching timeouts."""
         try:
             response = self.wait_for_statement_ready(statement_id)
             return LivySessionResult(
@@ -93,6 +98,7 @@ class LivySession:
     def run_statement(
         self, statement_code: str, statement_language: str, wait_for_result: bool = True
     ) -> LivySessionResult | int:
+        """Submit a Python or SQL statement and optionally wait for its result."""
         try:
             self.wait_for_session_ready()
             func = (

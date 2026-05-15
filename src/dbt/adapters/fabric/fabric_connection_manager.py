@@ -122,6 +122,7 @@ class FabricConnectionManager(BaseFabricConnectionManager):
 
     @classmethod
     def get_host(cls, credentials: FabricCredentials) -> str:
+        """Resolve the SQL endpoint hostname from config or via the Fabric API."""
         if cls._host is None:
             if credentials.host:
                 cls._host = credentials.host
@@ -257,6 +258,7 @@ class FabricConnectionManager(BaseFabricConnectionManager):
 
     @classmethod
     def data_type_code_to_name(cls, type_code: int | str) -> str:
+        """Map an mssql-python type code to its SQL Server data type name."""
         data_type = str(type_code)[str(type_code).index("'") + 1 : str(type_code).rindex("'")]
         return datatypes[data_type]
 

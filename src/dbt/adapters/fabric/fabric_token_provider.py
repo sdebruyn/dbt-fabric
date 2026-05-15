@@ -18,6 +18,7 @@ from dbt.adapters.fabric.base_credentials import BaseFabricCredentials
 
 
 def get_notebookutils_access_token(scope: str) -> AccessToken:
+    """Acquire an access token via Fabric notebookutils (for use inside Fabric notebooks)."""
     from notebookutils import credentials
 
     aad_token = credentials.getToken(scope)
@@ -40,6 +41,7 @@ class FabricTokenProvider:
         self.credentials = credentials
 
     def get_access_token(self, scope: str | None = None) -> str:
+        """Return a valid access token for the given scope, refreshing if near expiry."""
         MAX_REMAINING_TIME = 300
 
         if self.credentials.access_token:
@@ -100,6 +102,7 @@ class FabricTokenProvider:
         return token.token
 
     def get_sql_attrs_before(self) -> dict[int, bytes] | None:
+        """Build the SQL connection attrs_before dict with an encoded access token."""
         if "ActiveDirectory" in self.credentials.authentication:
             return None
 
