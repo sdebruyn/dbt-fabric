@@ -86,6 +86,7 @@ _DBT_TRANSFORMATION_TYPE_DEF = {
     ]
 }
 
+# Purview's built-in fabric_warehouse type uses this serviceType (Synapse legacy)
 _WAREHOUSE_SERVICE_TYPE = "Azure Synapse Analytics"
 
 _WAREHOUSE_TYPE_DEFS = {
