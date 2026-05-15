@@ -201,8 +201,8 @@ def isolated_fabric_items(request):
     run_dw = request.config.getoption("--dw") or not request.config.getoption("--de")
     run_de = request.config.getoption("--de") or not request.config.getoption("--dw")
 
-    dw_name = f"dbt-test-dw-{suffix}" if run_dw else None
-    lh_name = f"dbt-test-lh-{suffix}" if run_de else None
+    dw_name = f"dbt_test_dw_{suffix}" if run_dw else None
+    lh_name = f"dbt_test_lh_{suffix}" if run_de else None
 
     try:
         if dw_name:
