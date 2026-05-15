@@ -1,19 +1,24 @@
 {#
-    Fabric-specific macros for dbt-external-tables compatibility.
+    Fabric Data Warehouse overrides for dbt-external-tables.
 
-    Unlike Synapse, Fabric Data Warehouse does not support CREATE EXTERNAL TABLE.
-    Instead, external data access uses OPENROWSET(BULK ...). These macros create
-    views wrapping OPENROWSET queries, so external sources are queryable as
-    regular relations. OPENROWSET reads live data on each query, so no refresh
-    is needed.
+    Fabric Data Warehouse does not support CREATE EXTERNAL TABLE (that is
+    Azure Synapse). Instead, external data access uses OPENROWSET(BULK ...).
+    These macros override the package's Fabric plugin so that
+    stage_external_sources creates views wrapping OPENROWSET queries.
 
-    Supported formats: PARQUET, CSV, JSONL.
-
-    Users must add dbt_fabric to their dispatch search order:
+    Because dbt's dispatch mechanism cannot find adapter-internal macros
+    when dispatching within a package namespace, users must copy these
+    macros into their own dbt project and configure dispatch:
 
         dispatch:
           - macro_namespace: dbt_external_tables
-            search_order: ['my_project', 'dbt_fabric', 'dbt_external_tables']
+            search_order: ['my_project', 'dbt_external_tables']
+
+    The package's fabric__get_external_build_plan already dispatches each
+    sub-call (dropif, create_external_table, etc.) through
+    dbt_external_tables.*, so only the leaf macros need to be overridden.
+
+    Supported formats: PARQUET, CSV, JSONL.
 
     Source configuration example:
 
@@ -174,45 +179,6 @@ EXEC('DROP VIEW IF EXISTS {{ view_relation | replace("'", "''") }};');
 
     {{ return(ddl) }}
 
-{% endmacro %}
-
-
-{% macro fabric__get_external_build_plan(source_node) %}
-
-    {% set build_plan = [] %}
-
-    {% set old_relation = adapter.get_relation(
-        database = source_node.database,
-        schema = source_node.schema,
-        identifier = source_node.identifier
-    ) %}
-
-    {% set create_or_replace = (old_relation is none or var('ext_full_refresh', false)) %}
-
-    {% if create_or_replace %}
-        {% set build_plan = build_plan + [
-            dbt_external_tables.dropif(source_node),
-            dbt_external_tables.create_external_table(source_node)
-        ] %}
-    {% else %}
-        {% set build_plan = build_plan + dbt_external_tables.refresh_external_table(source_node) %}
-    {% endif %}
-
-    {% do return(build_plan) %}
-
-{% endmacro %}
-
-
-{% macro fabric__create_external_schema(source_node) %}
-    {%- set ddl %}
-{{ get_use_database_sql(source_node.database) }}
-IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '{{ source_node.schema }}')
-BEGIN
-EXEC('CREATE SCHEMA [{{ source_node.schema }}]')
-END
-    {% endset -%}
-
-    {{ return(ddl) }}
 {% endmacro %}
 
 

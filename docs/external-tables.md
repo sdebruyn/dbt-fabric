@@ -4,9 +4,9 @@ This adapter provides compatibility macros for the [dbt-external-tables](https:/
 
 ## How it works
 
-Unlike Azure Synapse, Fabric Data Warehouse does not support `CREATE EXTERNAL TABLE`. Instead, external data access uses the T-SQL [`OPENROWSET(BULK ...)`](https://learn.microsoft.com/sql/t-sql/functions/openrowset-bulk-transact-sql?view=fabric) function.
+The dbt-external-tables package includes a Fabric plugin, but it uses `CREATE EXTERNAL TABLE` syntax designed for Azure Synapse, which Fabric Data Warehouse does not support. Instead, Fabric Data Warehouse uses the T-SQL [`OPENROWSET(BULK ...)`](https://learn.microsoft.com/sql/t-sql/functions/openrowset-bulk-transact-sql?view=fabric) function for external data access.
 
-When you run `dbt run-operation stage_external_sources`, the adapter creates **views** that wrap `OPENROWSET` queries. This means:
+This adapter provides override macros that replace the package's Fabric plugin. When you run `dbt run-operation stage_external_sources`, the overridden macros create **views** that wrap `OPENROWSET` queries. This means:
 
 - External sources are queryable as regular views via `{{ source('my_external', 'my_table') }}`
 - Data is always fresh -- `OPENROWSET` reads directly from the file on each query
@@ -23,7 +23,7 @@ Add the package to your `packages.yml`:
 ```yaml
 packages:
   - package: dbt-labs/dbt_external_tables
-    version: "0.8.0"  # or latest
+    version: "0.11.0"  # or latest
 ```
 
 Then run:
@@ -32,49 +32,59 @@ Then run:
 dbt deps
 ```
 
-### 2. Configure dispatch
+### 2. Copy the override macros
 
-Add the following to your `dbt_project.yml` so that dbt-external-tables uses the Fabric-specific macros from this adapter instead of the default Synapse-style macros bundled with the package:
+Due to how dbt's dispatch system works, adapter-internal macros cannot override macros from installed packages. You must copy the override macros into your own dbt project.
+
+Copy the file [`external_tables.sql`](https://github.com/sdebruyn/dbt-fabric/blob/main/src/dbt/include/fabric/macros/dbt_package_support/dbt_external_tables/external_tables.sql) from this adapter into your project's `macros/` directory:
+
+```
+your_project/
+  macros/
+    external_tables.sql   # <-- copy this file here
+```
+
+### 3. Configure dispatch
+
+Add the following to your `dbt_project.yml` so that dbt-external-tables uses your copied macros instead of the default Synapse-style macros bundled with the package:
 
 ```yaml
 dispatch:
   - macro_namespace: dbt_external_tables
-    search_order: ['my_project', 'dbt_fabric', 'dbt_external_tables']
+    search_order: ['my_project', 'dbt_external_tables']
 ```
 
 Replace `my_project` with your dbt project name.
 
 ## Quick start
 
-You can try OPENROWSET immediately using Microsoft's publicly accessible [COVID-19 sample data](https://learn.microsoft.com/en-us/fabric/data-warehouse/browse-file-content-with-openrowset), which requires no authentication.
+You can try OPENROWSET with a CSV file stored in your Fabric OneLake. First, upload a file to your lakehouse's Files section, then define a source pointing to its OneLake URL.
 
 Add this source to your `sources.yml`:
 
 ```yaml
 sources:
-  - name: pandemic_data
+  - name: my_external
     schema: dbo
     tables:
-      - name: covid_parquet
+      - name: sample_csv
         external:
-          location: "https://pandemicdatalake.blob.core.windows.net/public/curated/covid-19/bing_covid-19_data/latest/bing_covid-19_data.parquet"
-          file_format: parquet
+          location: "https://onelake.dfs.fabric.microsoft.com/<workspace-id>/<lakehouse-id>/Files/data/sample.csv"
+          file_format: csv
+          options:
+            header_row: "true"
+            fieldterminator: ","
+            parser_version: "2.0"
         columns:
           - name: id
             data_type: int
-          - name: updated
-            data_type: date
-          - name: confirmed
-            data_type: int
-          - name: deaths
-            data_type: int
-          - name: country_region
-            data_type: "varchar(8000)"
-          - name: iso2
-            data_type: "varchar(8000)"
-          - name: iso3
-            data_type: "varchar(8000)"
+          - name: name
+            data_type: "varchar(100)"
+          - name: amount
+            data_type: "decimal(10,2)"
 ```
+
+Replace `<workspace-id>` and `<lakehouse-id>` with your Fabric workspace and lakehouse GUIDs. You can find these in the OneLake URL shown in the Fabric portal.
 
 Stage the source and query it:
 
@@ -84,20 +94,10 @@ dbt run-operation stage_external_sources
 
 ```sql
 -- In a dbt model
-select top 100
-    id,
-    updated,
-    confirmed,
-    deaths,
-    country_region
-from {{ source('pandemic_data', 'covid_parquet') }}
-where country_region = 'Belgium'
+select *
+from {{ source('my_external', 'sample_csv') }}
+where amount > 20.00
 ```
-
-The same dataset is available in CSV and JSONL formats:
-
-- CSV: `https://pandemicdatalake.blob.core.windows.net/public/curated/covid-19/bing_covid-19_data/latest/bing_covid-19_data.csv`
-- JSONL: `https://pandemicdatalake.blob.core.windows.net/public/curated/covid-19/bing_covid-19_data/latest/bing_covid-19_data.jsonl`
 
 ## Source configuration
 
