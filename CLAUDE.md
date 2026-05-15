@@ -42,29 +42,9 @@ Current nav structure:
 
 ## Architecture
 
-### How dbt adapters work
-
-dbt uses a plugin system where adapters translate dbt's abstract operations into database-specific SQL. An adapter consists of:
-
-1. **Python adapter classes** — Define how to connect, execute queries, fetch metadata, and manage relations. These extend base classes from `dbt-adapters`.
-2. **Jinja SQL macros** — Define how dbt operations (CREATE TABLE, incremental merge, snapshot, etc.) are expressed in the target SQL dialect. dbt's dispatch system selects the right macro based on adapter name.
-3. **Plugin registration** — Each adapter registers itself via `AdapterPlugin` in `__init__.py`, pointing to its adapter class, credentials class, and macro directory.
-
 ### Dispatch system
 
 dbt selects macros by adapter name prefix. When dbt needs `dateadd`, it looks for `fabric__dateadd` (or `fabricspark__dateadd`). If no adapter-specific version exists, it falls back to `default__dateadd`.
-
-Macros call dispatch explicitly:
-
-```jinja
-{% macro dateadd(datepart, interval, from_date_or_timestamp) %}
-    {{ return(adapter.dispatch('dateadd', 'dbt')(datepart, interval, from_date_or_timestamp)) }}
-{% endmacro %}
-
-{% macro fabric__dateadd(datepart, interval, from_date_or_timestamp) %}
-    dateadd({{ datepart }}, {{ interval }}, cast({{ from_date_or_timestamp }} as datetime2(6)))
-{% endmacro %}
-```
 
 ### Overriding community package macros via dispatch
 
@@ -82,111 +62,6 @@ When adding override macros for a community package:
 1. Place the override macros in `src/dbt/include/fabric/macros/dbt_package_support/<package_name>/`
 2. Only override leaf macros that the package dispatches to — don't override orchestration macros that already use dispatched calls
 3. Document the required `dispatch` config in the docs page for that feature
-
-### Class hierarchy
-
-```
-Fabric (T-SQL):
-  FabricAdapter → BaseFabricAdapter → SQLAdapter (from dbt-adapters)
-  FabricConnectionManager → BaseFabricConnectionManager → SQLConnectionManager
-
-FabricSpark:
-  FabricSparkAdapter → (BaseFabricAdapter, SparkAdapter)
-  FabricSparkConnectionManager → BaseFabricConnectionManager
-```
-
-`BaseFabricAdapter` provides shared functionality for Python model execution via Fabric Livy sessions. `FabricSparkAdapter` inherits from both this base and dbt-spark's `SparkAdapter`.
-
-### `@available` decorator
-
-Adapter methods decorated with `@available` become callable from Jinja macros via `adapter.method_name()`. Use this when adding a new Python method that macros need to call. Example: `create_or_update_warehouse_snapshot` in `FabricAdapter` is `@available` so the snapshot macro can invoke it. There's also `@available.parse(lambda *a, **k: ...)` for methods that need a parse-time stub (e.g., `get_column_schema_from_query` returns `[]` during parsing).
-
-### Capability declaration
-
-Each adapter declares which dbt features it supports via `_capabilities: CapabilityDict`. dbt checks these to decide whether to use optimized code paths. Current declarations:
-
-- **Fabric**: `SchemaMetadataByRelations` (Full), `TableLastModifiedMetadata` (Full)
-- **FabricSpark**: `TableLastModifiedMetadata` (Full), `SchemaMetadataByRelations` (Full)
-
-When adding support for a new dbt capability (e.g., `FastRelationLookup`), add it to the adapter's `_capabilities` dict with the appropriate `Support` level (`Full`, `Partial`, or `NotImplemented`).
-
-### Plugin registration
-
-Each adapter has an `__init__.py` that registers the plugin:
-
-- `src/dbt/adapters/fabric/__init__.py` — Registers `FabricAdapter` with `FabricCredentials`
-- `src/dbt/adapters/fabricspark/__init__.py` — Registers `FabricSparkAdapter` with `FabricSparkCredentials`, declares `dependencies=["spark"]`
-
-The FabricSpark adapter requires the optional `spark` dependency group: `pip install dbt-fabric-samdebruyn[spark]`.
-
-## Code organization
-
-```
-src/
-  dbt/
-    adapters/
-      fabric/                         # Fabric (T-SQL) adapter Python code
-        __init__.py                   # Plugin registration
-        __version__.py                # Version (updated by CI on release)
-        base_fabric_adapter.py        # Shared base: Python/Livy submission
-        base_connection_manager.py    # Shared base: connection management
-        base_credentials.py           # Shared base: credential fields
-        fabric_adapter.py             # T-SQL adapter implementation
-        fabric_connection_manager.py  # T-SQL connection management (mssql-python)
-        fabric_credentials.py         # T-SQL credential handling
-        fabric_relation.py            # Relation types and rendering
-        fabric_column.py              # Column type mapping (T-SQL types)
-        fabric_configs.py             # Model configuration
-        fabric_token_provider.py      # Azure token acquisition
-        fabric_api_client.py          # Fabric REST API client
-        fabric_livy_session.py        # Livy session management
-        fabric_livy_helper.py         # Livy helper utilities
-        relation_configs/             # Advanced relation configuration
-      fabricspark/                    # FabricSpark adapter Python code
-        __init__.py                   # Plugin registration
-        __version__.py                # Version (separate from fabric)
-        fabricspark_adapter.py        # Spark adapter implementation
-        fabricspark_connection_manager.py
-        fabricspark_connection.py     # Spark connection handling
-        fabricspark_cursor.py         # Spark cursor implementation
-        fabricspark_credentials.py
-        fabricspark_relation.py       # Spark relation types (incl. MaterializedView)
-        fabricspark_column.py         # Spark column types
-    include/
-      fabric/                         # Fabric (T-SQL) macros
-        dbt_project.yml               # Macro package config
-        macros/
-          adapters/                    # Core adapter operations (catalog, columns, schema, etc.)
-          materializations/            # Table, view, incremental, snapshot, seed macros
-            models/incremental/        # Merge, delete+insert, append, microbatch strategies
-            models/table/              # CREATE TABLE, clone, python models
-            models/view/               # CREATE VIEW
-            snapshots/                 # Snapshot strategies and helpers
-            seeds/                     # Seed loading helpers
-            tests/                     # Test helpers
-            functions/                 # Scalar function support
-          utils/                       # Cross-database functions (dateadd, hash, concat, etc.)
-          dbt_package_support/         # Compatibility macros for community packages
-            dbt_utils/                 # dbt-utils overrides
-            dbt_date/                  # dbt-date overrides
-            dbt_expectations/          # dbt-expectations overrides
-            dbt_audit_helper/          # dbt-audit-helper overrides
-      fabricspark/                     # FabricSpark macros (minimal, inherits from dbt-spark)
-        dbt_project.yml               # Sets default materialization to materialized_view
-        macros/
-          adapters/metadata.sql        # Spark catalog metadata
-          materializations/            # Materialized lake view
-          relations/                   # Drop, rename, materialized_view CRUD
-          get_custom_name/             # Database name generation
-tests/
-  conftest.py                         # Shared fixtures, adapter type detection, CLI flags
-  isolated_items.py                   # FabricTestItemManager for --isolated mode
-  unit/                               # Unit tests (no Fabric connection needed)
-  fabric/                             # Fabric (T-SQL) integration tests
-    adapter/                          # ~20 test modules
-  fabricspark/                        # FabricSpark integration tests
-    adapter/                          # ~15 test modules
-```
 
 ## Branching and worktrees
 
@@ -410,25 +285,7 @@ After workers complete:
 
 ### Test architecture
 
-Tests use [dbt-tests-adapter](https://github.com/dbt-labs/dbt-adapters), dbt's official adapter test harness. It provides base test classes for standard adapter behavior. Our tests inherit from these base classes and override fixtures where Fabric's SQL dialect differs.
-
-Typical test pattern:
-
-```python
-from dbt.tests.adapter.basic.test_base import BaseSimpleMaterializations
-
-class TestSimpleMaterializations(BaseSimpleMaterializations):
-    pass  # Inherits all test methods, uses Fabric adapter automatically
-```
-
-When Fabric-specific SQL is needed, override fixtures:
-
-```python
-class TestIncrementalFabric(BaseIncrementalOnSchemaChange):
-    @pytest.fixture(scope="class")
-    def models(self):
-        return {"model.sql": fabric_specific_sql}
-```
+Tests use [dbt-tests-adapter](https://github.com/dbt-labs/dbt-adapters), dbt's official adapter test harness. Our tests inherit from base test classes and override fixtures where Fabric's SQL dialect differs.
 
 Common fixture overrides:
 - `models` — SQL model files (when T-SQL syntax differs from default)
@@ -437,14 +294,6 @@ Common fixture overrides:
 - `project_config_update` — dbt_project.yml settings
 - `expected_catalog` — Expected column types in catalog tests
 - `dbt_profile_target_update` — Connection profile overrides
-
-### Adapter type detection
-
-`conftest.py` determines the adapter type from the test file's directory path:
-- `tests/fabric/**` → adapter type `fabric`
-- `tests/fabricspark/**` → adapter type `fabricspark`
-
-This controls which connection profile and dbt_project.yml defaults are used.
 
 ### Isolated test infrastructure (`--isolated`)
 
@@ -509,93 +358,10 @@ Integration tests for community dbt packages live in `tests/fabric/packages/`. T
 | `project_config_update` | Sets up dispatch with `search_order: [test_dbt_package, dbt, <package_name>]` |
 | `test_package` | Default flow: `dbt deps` → `dbt seed` → `dbt run` |
 
-Subclasses must provide `package_name`, `package_repo`, and `package_revision`.
-
-**Git packages** (have integration_tests subdirectory, e.g., dbt-utils) — inherit directly from `BaseDbtPackageTests`:
-
-```python
-class TestDbtUtils(BaseDbtPackageTests):
-    @pytest.fixture(scope="class")
-    def package_name(self) -> str:
-        return "dbt_utils"
-
-    @pytest.fixture(scope="class")
-    def package_repo(self) -> str:
-        return "https://github.com/dbt-labs/dbt-utils"
-
-    @pytest.fixture(scope="class")
-    def package_revision(self) -> str:
-        return "1.3.0"
-```
-
-**PyPI packages** (e.g., dbt-external-tables) — create an intermediate base class that overrides `packages` (for PyPI format) and `test_package` (for the package-specific workflow). Concrete test classes then only provide `models` and `verify_data`:
-
-```python
-class BaseExternalTableTest(BaseDbtPackageTests):
-    @pytest.fixture(scope="class")
-    def package_name(self) -> str:
-        return "dbt_external_tables"
-
-    @pytest.fixture(scope="class")
-    def package_repo(self) -> str:
-        return "dbt-labs/dbt_external_tables"
-
-    @pytest.fixture(scope="class")
-    def package_revision(self) -> str:
-        return "0.11.0"
-
-    @pytest.fixture(scope="class")
-    def packages(self, package_repo: str, package_revision: str):
-        return {"packages": [{"package": package_repo, "version": package_revision}]}
-
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["run-operation", "stage_external_sources"])
-        results = run_dbt(["run"])
-        for r in results:
-            assert r.status == "success"
-        self.verify_data(project)
-
-    def verify_data(self, project):
-        raise NotImplementedError
-
-class TestExternalTableCSV(BaseExternalTableTest):
-    @pytest.fixture(scope="class")
-    def models(self):
-        ...  # sources.yml + model SQL for CSV
-
-    def verify_data(self, project):
-        ...  # assert row counts and data values
-```
-
-## CI/CD
-
-GitHub Actions workflows in `.github/workflows/`:
-
-| Workflow | Trigger | What it does |
-|---|---|---|
-| `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
-| `integration-tests.yml` | PR, push, weekly (Sun 01:00 UTC) | Matrix: Python 3.11/3.12/3.13 x {DW, DE} |
-| `publish-docker.yml` | Manual | Build CI Docker image (`.github/CI.Dockerfile`) → ghcr.io |
-| `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
-
-CI authenticates to Azure via OIDC (federated credentials, no secrets stored). Tests run inside Docker containers with pre-installed `mssql-python` dependencies.
-
-## Releasing
-
-1. Create and push a git tag: `git tag v1.2.3 && git push origin v1.2.3`
-2. The `release-version.yml` workflow automatically:
-   - Updates `__version__.py` in both adapter packages
-   - Builds with `uv build`
-   - Publishes to PyPI with `uv publish`
+Subclasses must provide `package_name`, `package_repo`, and `package_revision`. Git packages (with an `integration_tests` subdirectory) inherit directly from `BaseDbtPackageTests`. PyPI packages need an intermediate base class that overrides `packages` and `test_package`. See existing test files for examples.
 
 ## Code style
 
-- **Formatter/linter**: ruff (config in `pyproject.toml`)
-- **Line length**: 99
-- **Python target**: 3.13
-- **Quote style**: double quotes
-- **Lint rules**: isort (`I`) + no commented-out code (`ERA`)
 - **No comments in code** unless the _why_ is non-obvious
 - **Always run ruff before committing**: `uv run ruff format .` and `uv run ruff check --fix .` must pass before every commit
 - **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the project targets Python 3.13 and has no `from typing import Union` imports
@@ -624,31 +390,3 @@ Microsoft Fabric Lakehouse with schemas enabled does not support Spark SQL views
 - FabricSpark's default materialization is `materialized_view` (set in `dbt_project.yml` and `conftest.py`)
 - dbt's default materialization is `view`, which will fail on FabricSpark — every test that uses the default must be configured to use `materialized_view` or `table` instead
 - The `conftest.py` fixture `dbt_project_yml` sets `+materialized: materialized_view` for FabricSpark, but this can be lost if a test's `project_config_update` replaces the `models` key (shallow merge)
-
-### Materialized lake views in FabricSpark
-
-FabricSpark's default materialization is `materialized_view`, which creates Fabric "lake views". These support:
-- `PARTITIONED BY` clauses
-- `TBLPROPERTIES` (Spark table properties)
-- `CHECK` constraints with `ON MISMATCH` behavior
-- `CREATE OR REPLACE` semantics
-
-### mssql-python driver
-
-The Fabric adapter uses `mssql-python` (not pyodbc) for T-SQL connections. This is a native Python driver for SQL Server/Fabric that doesn't require ODBC drivers on the system.
-
-### Livy sessions
-
-Both adapters use Fabric Livy sessions for Python model execution. The `BaseFabricAdapter` handles session lifecycle, code submission, and result retrieval via the Fabric REST API.
-
-### Community package compatibility
-
-The `dbt_package_support/` directory contains macro overrides that make popular dbt community packages (dbt-utils, dbt-date, dbt-expectations, dbt-audit-helper) work with Fabric's T-SQL dialect. These override specific macros from those packages with Fabric-compatible implementations.
-
-## Upstream relationship
-
-This is a maintained fork of `microsoft/dbt-fabric`. The upstream remote is configured:
-- `origin` → `sdebruyn/dbt-fabric` (this fork)
-- `upstream` → `microsoft/dbt-fabric` (original)
-
-The fork adds features and fixes not (yet) present in Microsoft's version, including FabricSpark support.
