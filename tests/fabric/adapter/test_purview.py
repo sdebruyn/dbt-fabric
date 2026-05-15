@@ -189,8 +189,10 @@ class TestPurviewSync:
         assert "not_null" in bm.get("dbt_tests", "")
 
     def test_lineage_created(self, purview_client):
-        processes = purview_client.search_process_entities("dbt://model.test.derived_model")
-        assert len(processes) >= 1
+        result = purview_client.get_entity_by_qualified_name(
+            "dbt_transformation", "dbt://model.test.derived_model"
+        )
+        assert result is not None and "entity" in result
 
     def test_persist_docs_false_skips_model(self, purview_client, synced_entities):
         if "no_docs_model" not in synced_entities:
