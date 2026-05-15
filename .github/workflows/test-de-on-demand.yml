@@ -60,6 +60,11 @@ jobs:
               pull_number: prNumber,
             });
 
+            if (pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed('Cannot run tests on PRs from forks');
+              return;
+            }
+
             core.setOutput('number', prNumber);
             core.setOutput('head_ref', pr.head.ref);
             core.setOutput('head_sha', pr.head.sha);
@@ -105,6 +110,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr.outputs.head_sha }}
+          persist-credentials: false
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
