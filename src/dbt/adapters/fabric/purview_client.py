@@ -254,6 +254,16 @@ class PurviewClient:
 
         self._types_ensured = bm_ok and entity_ok
 
+    def delete_business_metadata(self, guid: str, bm_name: str) -> None:
+        """Remove all attributes of a business metadata type from an entity."""
+        url = f"{self._endpoint}{_BUSINESS_METADATA_API.format(guid=guid, bm_name=bm_name)}"
+        self._api_request(url, method="delete")
+
+    def delete_entity_by_guid(self, guid: str) -> None:
+        """Delete an entity by its GUID."""
+        url = f"{self._endpoint}{_ENTITY_API}/guid/{guid}"
+        self._api_request(url, method="delete")
+
     def update_entity_description(
         self, guid: str, type_name: str, qualified_name: str, name: str, description: str
     ) -> None:
