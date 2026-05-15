@@ -74,8 +74,10 @@ def _has_persist_docs_enabled(node) -> bool:
     if not persist_docs:
         return True
     if isinstance(persist_docs, dict):
-        return any(persist_docs.values())
-    return getattr(persist_docs, "relation", False) or getattr(persist_docs, "columns", False)
+        relation = persist_docs.get("relation", True)
+        columns = persist_docs.get("columns", True)
+        return relation or columns
+    return getattr(persist_docs, "relation", True) or getattr(persist_docs, "columns", True)
 
 
 def _get_attr(node: object, key: str, default=None):
@@ -134,6 +136,8 @@ class PurviewSync:
         self._graph = graph
         self._entity_cache: dict[str, dict] = {}
         self._item_id_cache: dict[str, str] = {}
+        self._lakehouses: list[dict] | None = None
+        self._warehouses: list[dict] | None = None
         self._test_mapping = self._build_test_mapping()
 
     def _resolve_item_id(self, database: str) -> str | None:
@@ -141,12 +145,16 @@ class PurviewSync:
         if database in self._item_id_cache:
             return self._item_id_cache[database]
 
-        for lh in self._fabric_client.get_lakehouses():
+        if self._lakehouses is None:
+            self._lakehouses = self._fabric_client.get_lakehouses()
+        for lh in self._lakehouses:
             if lh["displayName"] == database:
                 self._item_id_cache[database] = lh["id"]
                 return lh["id"]
 
-        for wh in self._fabric_client.get_warehouses():
+        if self._warehouses is None:
+            self._warehouses = self._fabric_client.get_warehouses()
+        for wh in self._warehouses:
             if wh["displayName"] == database:
                 self._item_id_cache[database] = wh["id"]
                 return wh["id"]
@@ -363,7 +371,7 @@ class PurviewSync:
 
             self._client.set_business_metadata(entity["id"], "dbt_metadata", attrs)
 
-    def push_lineage(self, models: list, resolved: dict) -> None:
+    def push_lineage(self, models: list, resolved: dict, is_full_sync: bool = False) -> None:
         """Create dbt_transformation process entities in Purview to represent data lineage.
 
         For each model with upstream dependencies (ref/source), creates a Process entity
@@ -395,13 +403,15 @@ class PurviewSync:
                 else config.get("materialized", "")
             )
 
-            upstream_guids = []
+            upstream_refs = []
             for dep_id in dep_nodes:
                 dep_entity = self._resolve_dependency_entity(dep_id, resolved)
                 if dep_entity is not None:
-                    upstream_guids.append(dep_entity["id"])
+                    upstream_refs.append(
+                        (dep_entity["id"], dep_entity.get("entityType", "DataSet"))
+                    )
 
-            if not upstream_guids:
+            if not upstream_refs:
                 continue
 
             process_qn = f"dbt://{unique_id}"
@@ -412,14 +422,29 @@ class PurviewSync:
                     "name": _get_node_name(model),
                     "dbt_model_id": unique_id,
                     "dbt_materialization": str(materialization) if materialization else "",
-                    "inputs": [{"guid": guid, "typeName": "DataSet"} for guid in upstream_guids],
-                    "outputs": [{"guid": entity["id"], "typeName": "DataSet"}],
+                    "inputs": [
+                        {"guid": guid, "typeName": type_name} for guid, type_name in upstream_refs
+                    ],
+                    "outputs": [
+                        {
+                            "guid": entity["id"],
+                            "typeName": entity.get("entityType", "DataSet"),
+                        }
+                    ],
                 },
             }
             process_entities.append(process_entity)
 
         if process_entities:
             self._client.bulk_create_or_update(process_entities)
+
+        if is_full_sync:
+            created_qns = {e["attributes"]["qualifiedName"] for e in process_entities}
+            existing = self._client.search_process_entities("dbt://")
+            for proc in existing:
+                if proc.get("qualifiedName", "") not in created_qns:
+                    self._client.delete_entity_by_guid(proc["id"])
+                    logger.info(f"Purview: removed stale lineage {proc.get('qualifiedName', '')}")
 
     def _resolve_dependency_entity(self, dep_id: str, resolved: dict) -> dict | None:
         """Resolve a dependency to a Purview entity.
