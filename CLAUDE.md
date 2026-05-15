@@ -442,15 +442,15 @@ Integration tests for community dbt packages live in `tests/fabric/packages/`. T
 | Fixture | Purpose |
 |---|---|
 | `package_name` | dbt macro namespace (e.g., `dbt_utils`, `dbt_external_tables`) |
-| `package_repo` | Git URL (`https://github.com/...`) or PyPI identifier (`dbt-labs/dbt_external_tables`) |
+| `package_repo` | Git URL or PyPI identifier — consumed by `packages` fixture |
 | `package_revision` | Git revision/tag or PyPI version string |
-| `packages` | Auto-built from `package_repo`/`package_revision` — detects git vs PyPI from URL prefix |
+| `packages` | Installs via git + integration_tests subdirectory. Override for PyPI packages |
 | `project_config_update` | Sets up dispatch with `search_order: [test_dbt_package, dbt, <package_name>]` |
 | `test_package` | Default flow: `dbt deps` → `dbt seed` → `dbt run` |
 
-Subclasses must provide `package_name`, `package_repo`, and `package_revision`. Override other fixtures only when the package needs non-standard behavior (e.g., custom `models` for sources.yml, custom `test_package` for `stage_external_sources`).
+Subclasses must provide `package_name`, `package_repo`, and `package_revision`. The base class's `packages` fixture uses git format with an `integration_tests` subdirectory — override it for PyPI packages or packages without integration tests.
 
-**Git packages** (have integration_tests subdirectory, e.g., dbt-utils):
+**Git packages** (have integration_tests subdirectory, e.g., dbt-utils) — use base class `packages` as-is:
 
 ```python
 class TestDbtUtils(BaseDbtPackageTests):
@@ -467,7 +467,7 @@ class TestDbtUtils(BaseDbtPackageTests):
         return "1.3.0"
 ```
 
-**PyPI packages** (no integration_tests subdirectory, e.g., dbt-external-tables):
+**PyPI packages** (e.g., dbt-external-tables) — override `packages` to use PyPI format, and override `test_package` when the workflow differs:
 
 ```python
 class TestExternalTableCSV(BaseDbtPackageTests):
@@ -484,6 +484,10 @@ class TestExternalTableCSV(BaseDbtPackageTests):
         return "0.11.0"
 
     @pytest.fixture(scope="class")
+    def packages(self, package_repo: str, package_revision: str):
+        return {"packages": [{"package": package_repo, "version": package_revision}]}
+
+    @pytest.fixture(scope="class")
     def models(self):
         # Custom sources.yml + model SQL
         ...
@@ -492,8 +496,6 @@ class TestExternalTableCSV(BaseDbtPackageTests):
         # Custom flow: deps → stage_external_sources → run → verify
         ...
 ```
-
-The base class detects git vs PyPI from `package_repo`: URLs starting with `https://` are installed via git (with `integration_tests` subdirectory), everything else is installed from PyPI.
 
 ## CI/CD
 

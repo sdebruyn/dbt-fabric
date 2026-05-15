@@ -209,6 +209,10 @@ class TestExternalTableCSV(BaseDbtPackageTests):
         return "0.11.0"
 
     @pytest.fixture(scope="class")
+    def packages(self, package_repo: str, package_revision: str):
+        return {"packages": [{"package": package_repo, "version": package_revision}]}
+
+    @pytest.fixture(scope="class")
     def models(self):
         urls = _skip_without_lakehouse()
         return {
@@ -253,6 +257,10 @@ class TestExternalTableJSONL(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
         return "0.11.0"
+
+    @pytest.fixture(scope="class")
+    def packages(self, package_repo: str, package_revision: str):
+        return {"packages": [{"package": package_repo, "version": package_revision}]}
 
     @pytest.fixture(scope="class")
     def models(self):
