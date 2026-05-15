@@ -1,3 +1,6 @@
+import pytest
+
+from dbt.tests.adapter.aliases.fixtures import MACROS__EXPECT_VALUE_SQL
 from dbt.tests.adapter.aliases.test_aliases import (
     BaseAliasErrors,
     BaseAliases,
@@ -7,16 +10,24 @@ from dbt.tests.adapter.aliases.test_aliases import (
 
 
 class TestAliasesFabricSpark(BaseAliases):
-    pass
+    @pytest.fixture(scope="class")
+    def macros(self):
+        return {"expect_value.sql": MACROS__EXPECT_VALUE_SQL}
 
 
 class TestAliasErrorsFabricSpark(BaseAliasErrors):
-    pass
+    @pytest.fixture(scope="class")
+    def macros(self):
+        return {"expect_value.sql": MACROS__EXPECT_VALUE_SQL}
 
 
 class TestSameAliasDifferentSchemasFabricSpark(BaseSameAliasDifferentSchemas):
-    pass
+    @pytest.fixture(scope="class")
+    def macros(self):
+        return {"expect_value.sql": MACROS__EXPECT_VALUE_SQL}
 
 
 class TestSameAliasDifferentDatabasesFabricSpark(BaseSameAliasDifferentDatabases):
-    pass
+    @pytest.fixture(scope="class")
+    def macros(self):
+        return {"expect_value.sql": MACROS__EXPECT_VALUE_SQL}
