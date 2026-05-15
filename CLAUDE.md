@@ -234,6 +234,14 @@ Development follows a strict test-driven loop using `dbt-tests-adapter` base cla
 
 This loop is the core development method. Every feature and fix starts with a failing test. Never skip the regression check after a fix — changes to macros and adapter methods can have broad impact.
 
+### PR scope
+
+Each pull request covers exactly one logical change. A logical change is the smallest unit that makes sense on its own: a single bug fix, a single test adaptation, a single new feature, or a single refactor. Implementation code and its corresponding test belong in the same PR (they are one logical unit), but unrelated changes — even if they share a theme — go in separate PRs.
+
+**Why:** Small, isolated PRs are easier to review, can be merged and reverted independently, and reduce merge conflicts when multiple agents work in parallel. A PR that bundles 20 test files forces the reviewer to context-switch between unrelated changes and makes partial merges impossible.
+
+**How to split:** When adapting N test files for a new adapter feature, create N PRs (one per test file) unless two files are tightly coupled (e.g., a macro change and the test that exercises it). When fixing M bugs, create M PRs. When in doubt, split further rather than grouping.
+
 ### Debugging test failures
 
 The test harness creates a temporary dbt project and profile for each test class. Both are valuable for understanding failures.
