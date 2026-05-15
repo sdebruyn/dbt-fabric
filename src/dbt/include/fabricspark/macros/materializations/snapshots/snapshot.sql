@@ -20,7 +20,7 @@
   {%- endif -%}
 
   {% if not adapter.check_schema_exists(model.database, model.schema) %}
-    {# dbt-spark: create_schema(model.schema) — FabricSpark expects a relation, not a string #}
+    {# dbt-spark: create_schema(model.schema) passes a string; relation is more correct #}
     {% do create_schema(target_relation.without_identifier()) %}
   {% endif %}
 
