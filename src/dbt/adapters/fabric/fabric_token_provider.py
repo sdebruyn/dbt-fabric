@@ -39,8 +39,10 @@ def get_notebookutils_access_token(scope: str) -> AccessToken:
 
 
 def load_token_credential(
-    credential_class: str, credential_kwargs: dict[str, Any]
+    credential_class: str, credential_kwargs: dict[str, Any] | None
 ) -> TokenCredential:
+    credential_kwargs = credential_kwargs or {}
+
     if not DOTTED_PATH_RE.match(credential_class):
         raise ValueError(
             f"credential_class must be a dotted import path "

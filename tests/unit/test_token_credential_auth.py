@@ -126,6 +126,13 @@ class TestLoadTokenCredential:
         with pytest.raises(ValueError, match="has no attribute"):
             load_token_credential("tests.unit.test_token_credential_auth.NonexistentClass", {})
 
+    def test_handles_none_kwargs(self):
+        cred = load_token_credential(
+            "tests.unit.test_token_credential_auth.StubTokenCredential", None
+        )
+        assert isinstance(cred, TokenCredential)
+        assert cred.kwargs == {}
+
     def test_rejects_non_token_credential(self):
         with pytest.raises(TypeError, match="not a TokenCredential"):
             load_token_credential("tests.unit.test_token_credential_auth.NotATokenCredential", {})
