@@ -45,9 +45,37 @@ def extract_syncable_models(graph: dict, results: list | None = None) -> list[di
         if ran_node_ids is not None and unique_id not in ran_node_ids:
             continue
 
+        if not _has_persist_docs_enabled(node):
+            continue
+
         models.append(node)
 
     return models
+
+
+def _has_persist_docs_enabled(node) -> bool:
+    """Check whether a node's persist_docs config allows Purview sync.
+
+    Returns True (sync) when persist_docs is absent or has any true value.
+    Returns False (skip) only when persist_docs is explicitly configured with all values false.
+    """
+    config = (
+        getattr(node, "config", {})
+        if hasattr(node, "config")
+        else node.get("config", {})
+        if isinstance(node, dict)
+        else getattr(node, "config", {})
+    )
+    persist_docs = (
+        config.get("persist_docs")
+        if isinstance(config, dict)
+        else getattr(config, "persist_docs", None)
+    )
+    if not persist_docs:
+        return True
+    if isinstance(persist_docs, dict):
+        return any(persist_docs.values())
+    return getattr(persist_docs, "relation", False) or getattr(persist_docs, "columns", False)
 
 
 def _get_attr(node: object, key: str, default=None):

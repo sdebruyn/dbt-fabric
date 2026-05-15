@@ -105,6 +105,34 @@ Or via the CLI:
 dbt run-operation purview_sync --args '{sync_lineage: false}'
 ```
 
+## Controlling which models are synced
+
+The sync respects dbt's [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs?WT.mc_id=MVP_310840) configuration. Models where `persist_docs` is explicitly disabled are skipped entirely — no descriptions, no business metadata, and no lineage are pushed to Purview for those models.
+
+| `persist_docs` setting | Purview behavior |
+|---|---|
+| Not configured (default) | Full sync: descriptions, metadata, and lineage |
+| `relation: true` | Full sync |
+| `relation: true, columns: true` | Full sync including column descriptions |
+| `relation: true, columns: false` | Model description, metadata, and lineage — column descriptions skipped |
+| `relation: false, columns: false` | **Skipped entirely** — nothing is synced to Purview |
+
+Example — sync all models except a staging layer:
+
+```yaml
+# dbt_project.yml
+models:
+  my_project:
+    staging:
+      +persist_docs:
+        relation: false
+        columns: false
+    marts:
+      +persist_docs:
+        relation: true
+        columns: true
+```
+
 ## What gets synced
 
 ### Descriptions
