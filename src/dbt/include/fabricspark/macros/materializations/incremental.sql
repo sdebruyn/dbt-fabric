@@ -71,7 +71,7 @@
     {{ fabricspark__get_insert_overwrite_sql(source, target) }}
   {%- elif strategy == 'microbatch' -%}
     {% set missing_partition_key_microbatch_msg -%}
-      fabricspark 'microbatch' incremental strategy requires a `partition_by` config.
+      The 'microbatch' incremental strategy requires a `partition_by` config.
       Ensure you are using a `partition_by` column that is of grain {{ config.get('batch_size') }}.
     {%- endset %}
     {%- if not config.get('partition_by') -%}
