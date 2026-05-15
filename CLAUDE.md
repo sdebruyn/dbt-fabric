@@ -442,15 +442,15 @@ Integration tests for community dbt packages live in `tests/fabric/packages/`. T
 | Fixture | Purpose |
 |---|---|
 | `package_name` | dbt macro namespace (e.g., `dbt_utils`, `dbt_external_tables`) |
-| `package_repo` | Git URL or PyPI identifier — consumed by `packages` fixture |
-| `package_revision` | Git revision/tag or PyPI version string |
-| `packages` | Installs via git + integration_tests subdirectory. Override for PyPI packages |
+| `package_repo` | Git URL to the package repository (e.g., `https://github.com/dbt-labs/dbt-utils`) |
+| `package_revision` | Git revision or tag (e.g., `1.3.0`) |
+| `packages` | Installs via git + `integration_tests` subdirectory, using `package_repo`/`package_revision` |
 | `project_config_update` | Sets up dispatch with `search_order: [test_dbt_package, dbt, <package_name>]` |
 | `test_package` | Default flow: `dbt deps` → `dbt seed` → `dbt run` |
 
-Subclasses must provide `package_name`, `package_repo`, and `package_revision`. The base class's `packages` fixture uses git format with an `integration_tests` subdirectory — override it for PyPI packages or packages without integration tests.
+Subclasses must provide `package_name`, `package_repo`, and `package_revision`.
 
-**Git packages** (have integration_tests subdirectory, e.g., dbt-utils) — use base class `packages` as-is:
+**Git packages** (have integration_tests subdirectory, e.g., dbt-utils) — inherit directly from `BaseDbtPackageTests`:
 
 ```python
 class TestDbtUtils(BaseDbtPackageTests):
@@ -467,10 +467,10 @@ class TestDbtUtils(BaseDbtPackageTests):
         return "1.3.0"
 ```
 
-**PyPI packages** (e.g., dbt-external-tables) — override `packages` to use PyPI format, and override `test_package` when the workflow differs:
+**PyPI packages** (e.g., dbt-external-tables) — create an intermediate base class that overrides `packages` (for PyPI format) and `test_package` (for the package-specific workflow). Concrete test classes then only provide `models` and `verify_data`:
 
 ```python
-class TestExternalTableCSV(BaseDbtPackageTests):
+class BaseExternalTableTest(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
     def package_name(self) -> str:
         return "dbt_external_tables"
@@ -487,14 +487,24 @@ class TestExternalTableCSV(BaseDbtPackageTests):
     def packages(self, package_repo: str, package_revision: str):
         return {"packages": [{"package": package_repo, "version": package_revision}]}
 
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+        run_dbt(["run-operation", "stage_external_sources"])
+        results = run_dbt(["run"])
+        for r in results:
+            assert r.status == "success"
+        self.verify_data(project)
+
+    def verify_data(self, project):
+        raise NotImplementedError
+
+class TestExternalTableCSV(BaseExternalTableTest):
     @pytest.fixture(scope="class")
     def models(self):
-        # Custom sources.yml + model SQL
-        ...
+        ...  # sources.yml + model SQL for CSV
 
-    def test_package(self, project, dbt_core_bug_workaround):
-        # Custom flow: deps → stage_external_sources → run → verify
-        ...
+    def verify_data(self, project):
+        ...  # assert row counts and data values
 ```
 
 ## CI/CD
