@@ -227,7 +227,7 @@ class FabricApiClient:
             raise dbt_common.exceptions.DbtConfigError("lakehouse must be provided.")
 
         for lakehouse in self.get_lakehouses():
-            if lakehouse["displayName"] == self._credentials.lakehouse_name:
+            if lakehouse["displayName"].lower() == self._credentials.lakehouse_name.lower():
                 self._lakehouse_id = lakehouse["id"]
                 assert self._lakehouse_id is not None
                 return self._lakehouse_id
@@ -246,7 +246,7 @@ class FabricApiClient:
             return self._warehouse_id
 
         for warehouse in self.get_warehouses():
-            if warehouse["displayName"] == self._credentials.database:
+            if warehouse["displayName"].lower() == self._credentials.database.lower():
                 self._warehouse_id = warehouse["id"]
                 assert self._warehouse_id is not None
                 return self._warehouse_id
