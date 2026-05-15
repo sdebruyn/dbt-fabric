@@ -36,7 +36,6 @@
 
 {% macro fabric__create_table_as(temporary, relation, compiled_code, language='sql') -%}
     {%- if language == 'sql' -%}
-        {% set query_label = apply_label() %}
         {% set contract_config = config.get('contract') %}
         {% set is_nested_cte = check_for_nested_cte(compiled_code) %}
 
@@ -65,13 +64,13 @@
             {{ get_create_view_as_sql(tmp_vw_relation, compiled_code) }}
 
             INSERT INTO {{relation}} ({{listColumns}})
-            SELECT {{listColumns}} FROM {{tmp_vw_relation}} {{ query_label }};
+            SELECT {{listColumns}} FROM {{tmp_vw_relation}}
 
         {%- else %}
 
             CREATE TABLE {{relation}}
             {{ build_cluster_by_clause(temporary) }}
-            AS {{compiled_code}} {{ query_label }};
+            AS {{compiled_code}}
 
         {% endif %}
     {%- elif language == "python" -%}

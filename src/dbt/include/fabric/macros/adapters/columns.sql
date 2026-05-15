@@ -7,7 +7,6 @@
 {% endmacro %}
 
 {% macro fabric__get_columns_in_relation(relation) -%}
-    {% set query_label = apply_label() %}
     {% call statement('get_columns_in_relation', fetch_result=True) %}
         {{ get_use_database_sql(relation.database) }}
         with mapping as (
@@ -35,7 +34,6 @@
             numeric_scale
         from mapping
         order by ordinal_position
-        {{ query_label }};
 
     {% endcall %}
     {% set table = load_result('get_columns_in_relation').table %}
@@ -43,7 +41,6 @@
 {% endmacro %}
 
 {% macro fabric__get_columns_in_query(select_sql) %}
-    {% set query_label = apply_label() %}
     {% call statement('get_columns_in_query', fetch_result=True, auto_begin=False) -%}
         with __dbt_sbq as
         (
@@ -52,7 +49,6 @@
         select top 0 *
         from __dbt_sbq
         where 0 = 1
-        {{ query_label }};
 
     {% endcall %}
 
@@ -91,7 +87,6 @@
     {% set tempTable %}
         CREATE TABLE {{tempTableName}}
         AS SELECT {{query_result_text}}, CAST([{{ column_name | replace(']', ']]') }}] AS {{new_column_type}}) AS [{{ column_name | replace(']', ']]') }}] FROM {{ relation.schema }}.{{ relation.identifier }}
-        {{ apply_label() }};
     {% endset %}
 
     {% call statement('create_temp_table') -%}
@@ -108,7 +103,7 @@
 
     {% set createTable %}
         CREATE TABLE {{ relation.schema }}.{{ relation.identifier }}
-        AS SELECT * FROM {{tempTableName}} {{ apply_label() }};
+        AS SELECT * FROM {{tempTableName}}
     {% endset %}
 
     {% call statement('create_Table') -%}

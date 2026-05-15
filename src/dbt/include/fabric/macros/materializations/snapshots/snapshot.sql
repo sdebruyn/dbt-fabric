@@ -89,7 +89,7 @@
   {% endif %}
   {{ check_time_data_types(build_or_select_sql) }}
   {% call statement('main') %}
-      {{ final_sql }}
+      {{ final_sql }};
   {% endcall %}
 
   {{ adapter.drop_relation(temp_snapshot_relation) }}

@@ -1,6 +1,5 @@
 {% macro fabric__get_catalog(information_schemas, schemas) -%}
 
-    {% set query_label = apply_label() %}
     {%- call statement('catalog', fetch_result=True) -%}
         {{ get_use_database_sql(information_schemas.database) }}
         with
@@ -122,7 +121,6 @@
         {%- endfor -%})
 
         order by column_index
-        {{ query_label }};
 
         {%- endcall -%}
 
@@ -132,7 +130,6 @@
 
 {% macro fabric__get_catalog_relations(information_schema, relations) -%}
 
-    {% set query_label = apply_label() %}
     {%- set distinct_databases = relations | map(attribute='database') | unique | list -%}
 
     {%- if distinct_databases | length == 1 -%}
@@ -274,7 +271,6 @@
             )
 
             order by column_index
-            {{ query_label }};
 
         {%- endcall -%}
         {{ return(load_result('catalog').table) }}
