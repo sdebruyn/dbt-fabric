@@ -1,6 +1,6 @@
 # Comparison between dbt-fabric and dbt-fabric-samdebruyn
 
-The dbt-fabric adapter was originally built by community contributors, including [Sam Debruyn](https://debruyn.dev), who continues its development and maintenance through this fork. This adapter has all the features of [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric), plus the following additions:
+The dbt-fabric adapter was originally built by community contributors, including [Sam Debruyn](https://debruyn.dev), who continues its development and maintenance through this fork. This adapter builds on [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric) with additional features, improvements, and bugfixes. Some of these have since been contributed back upstream.
 
 ## No ODBC driver required
 
