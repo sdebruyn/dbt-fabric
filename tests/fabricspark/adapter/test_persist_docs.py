@@ -21,7 +21,6 @@ select 2 as id, 'Bob' as name
         }
 
 
-@pytest.mark.skip("Fabric Lakehouse errors on ALTER TABLE CHANGE COLUMN for non-existent columns")
 class TestPersistDocsColumnMissingFabricSpark(BasePersistDocsColumnMissing):
     pass
 
