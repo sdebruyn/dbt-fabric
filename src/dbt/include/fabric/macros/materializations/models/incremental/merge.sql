@@ -15,7 +15,6 @@
 
 {% macro fabric__get_delete_insert_merge_sql(target, source, unique_key, dest_columns, incremental_predicates=none) %}
 
-    {% set query_label = apply_label() %}
     {%- set dest_cols_csv = get_quoted_csv(dest_columns | map(attribute="name")) -%}
 
     {% if unique_key %}
@@ -35,7 +34,7 @@
                     and {{ predicate }}
                 {% endfor %}
             {% endif %}
-            {{ query_label }}
+            ;
         {% else %}
             delete from {{ target }}
             where (
@@ -48,7 +47,7 @@
                     and {{ predicate }}
                 {% endfor %}
             {%- endif -%}
-            {{ query_label }}
+            ;
         {% endif %}
     {% endif %}
 
@@ -56,7 +55,7 @@
     (
         select {{ dest_cols_csv }}
         from {{ source }}
-    ){{ query_label }}
+    );
 {% endmacro %}
 
 {% macro fabric__get_incremental_microbatch_sql(arg_dict) %}

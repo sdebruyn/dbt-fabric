@@ -86,7 +86,9 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ${{ matrix.dwh_name }}
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-        run: uv run pytest -ra -v --dw
+        run: >-
+          uv run pytest -ra -v --dw
+          ${{ github.event_name == 'schedule' && '--with-python' || '' }}
 
       - name: Upload test logs
         if: always()

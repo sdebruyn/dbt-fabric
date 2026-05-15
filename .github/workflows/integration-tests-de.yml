@@ -61,7 +61,7 @@ jobs:
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
-        run: uv run pytest -ra -v --de
+        run: uv run pytest -ra -v --de --with-python
 
       - name: Upload test logs
         if: always()

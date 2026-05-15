@@ -64,6 +64,12 @@ def profile_user(dbt_profile_target):
 def pytest_addoption(parser):
     parser.addoption("--with-grants", action="store_true", default=False, help="run GRANT tests")
     parser.addoption(
+        "--with-python",
+        action="store_true",
+        default=False,
+        help="run Python model tests (slow, requires Livy sessions)",
+    )
+    parser.addoption(
         "--de", action="store_true", default=False, help="run only Fabric Spark tests"
     )
     parser.addoption(
@@ -73,6 +79,7 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "grants: mark test containing GRANT statements")
+    config.addinivalue_line("markers", "python_model: mark test requiring Python model execution")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -86,6 +93,7 @@ def pytest_collection_modifyitems(config, items):
         adapter_type = None
 
     skip_grants = pytest.mark.skip(reason="need --with-grants option to run")
+    skip_python = pytest.mark.skip(reason="need --with-python option to run")
     tests_root = Path(__file__).parent
 
     for item in items:
@@ -93,6 +101,9 @@ def pytest_collection_modifyitems(config, items):
 
         if "grants" in item.keywords and not config.getoption("--with-grants"):
             item.add_marker(skip_grants)
+
+        if "python_model" in item.keywords and not config.getoption("--with-python"):
+            item.add_marker(skip_python)
 
         if adapter_type is not None and tests_child_path != adapter_type:
             item.add_marker(
