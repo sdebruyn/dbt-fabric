@@ -18,6 +18,11 @@ from dbt.adapters.fabric.base_credentials import BaseFabricCredentials
 
 
 def get_notebookutils_access_token(scope: str) -> AccessToken:
+    """Acquire an access token via Fabric notebookutils (for use inside Fabric notebooks).
+
+    Args:
+        scope: The OAuth scope to request a token for.
+    """
     from notebookutils import credentials
 
     aad_token = credentials.getToken(scope)
@@ -40,6 +45,18 @@ class FabricTokenProvider:
         self.credentials = credentials
 
     def get_access_token(self, scope: str | None = None) -> str:
+        """Return a valid access token for the given scope, refreshing if near expiry.
+
+        Tokens are cached per scope and reused until they have less than 5 minutes
+        of validity remaining.
+
+        Args:
+            scope: The OAuth scope. Defaults to the Fabric API scope if not provided.
+
+        Raises:
+            ValueError: If the configured authentication method is not supported,
+                or if required credentials (client_id, etc.) are missing.
+        """
         MAX_REMAINING_TIME = 300
 
         if self.credentials.access_token:
@@ -100,6 +117,11 @@ class FabricTokenProvider:
         return token.token
 
     def get_sql_attrs_before(self) -> dict[int, bytes] | None:
+        """Build the SQL connection attrs_before dict with an encoded access token.
+
+        Returns None when ActiveDirectory authentication is used, since the
+        mssql-python driver handles token acquisition internally in that case.
+        """
         if "ActiveDirectory" in self.credentials.authentication:
             return None
 

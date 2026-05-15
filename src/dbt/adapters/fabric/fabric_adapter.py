@@ -253,6 +253,15 @@ class FabricAdapter(BaseFabricAdapter, SQLAdapter):
     def create_or_update_warehouse_snapshot(
         self, snapshot_name: str, description: str | None = None
     ) -> str:
+        """Create a new warehouse snapshot or update an existing one with the same name.
+
+        Exposed as a Jinja macro via ``@available``, so it can be called from
+        ``on-run-start``, ``on-run-end``, ``post-hook``, or any other Jinja context.
+
+        Args:
+            snapshot_name: Display name for the snapshot.
+            description: Optional description for the snapshot.
+        """
         api = self.connections.get_fabric_api_client(self.config.credentials)
         api.create_or_update_warehouse_snapshot(snapshot_name, description)
         return ""

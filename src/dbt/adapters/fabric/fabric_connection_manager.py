@@ -122,6 +122,17 @@ class FabricConnectionManager(BaseFabricConnectionManager):
 
     @classmethod
     def get_host(cls, credentials: FabricCredentials) -> str:
+        """Resolve the SQL endpoint hostname from config or via the Fabric API.
+
+        Checks ``credentials.host`` first, then falls back to querying the
+        Fabric API using the configured workspace.
+
+        Args:
+            credentials: Fabric connection credentials.
+
+        Raises:
+            DbtConfigError: If neither host nor workspace is configured.
+        """
         if cls._host is None:
             if credentials.host:
                 cls._host = credentials.host
@@ -257,6 +268,12 @@ class FabricConnectionManager(BaseFabricConnectionManager):
 
     @classmethod
     def data_type_code_to_name(cls, type_code: int | str) -> str:
+        """Map an mssql-python type code to its SQL Server data type name.
+
+        Args:
+            type_code: A type code from the cursor's ``description`` attribute,
+                in the format ``<class 'python_type_name'>``.
+        """
         data_type = str(type_code)[str(type_code).index("'") + 1 : str(type_code).rindex("'")]
         return datatypes[data_type]
 

@@ -19,12 +19,22 @@ class BaseFabricConnectionManager(SQLConnectionManager, metaclass=abc.ABCMeta):
 
     @classmethod
     def get_fabric_token_provider(cls, credentials: BaseFabricCredentials) -> FabricTokenProvider:
+        """Return a shared FabricTokenProvider, creating one on first call.
+
+        Args:
+            credentials: Fabric connection credentials used to configure the provider.
+        """
         if cls._fabric_token_provider is None:
             cls._fabric_token_provider = FabricTokenProvider(credentials)
         return cls._fabric_token_provider
 
     @classmethod
     def get_fabric_api_client(cls, credentials: BaseFabricCredentials) -> FabricApiClient:
+        """Return a shared FabricApiClient, creating one on first call.
+
+        Args:
+            credentials: Fabric connection credentials used to configure the client.
+        """
         if cls._fabric_api_client is None:
             cls._fabric_api_client = FabricApiClient(
                 credentials, cls.get_fabric_token_provider(credentials)
