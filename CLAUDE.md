@@ -252,26 +252,6 @@ Common fixture overrides:
 
 This controls which connection profile and dbt_project.yml defaults are used.
 
-### Isolated test infrastructure (`--isolated`)
-
-The `--isolated` flag creates temporary Fabric items for each test session to avoid DDL collisions when multiple agents share a workspace.
-
-**How it works:**
-
-1. At session start, `conftest.py` creates a uniquely-named DW (`dbt_test_dw_<uuid>`) and/or Lakehouse (`dbt_test_lh_<uuid>`) via the Fabric REST API using Azure CLI credentials.
-2. It waits for provisioning to complete (can take 1-3 minutes).
-3. It overrides `FABRIC_TEST_DWH_NAME` and/or `FABRIC_TEST_LAKEHOUSE_NAME` env vars so all tests in the session use the isolated items.
-4. At session end (even on failure), it deletes the temporary items.
-
-**Which items are created:**
-- `--dw --isolated` → creates only a Data Warehouse
-- `--de --isolated` → creates only a Lakehouse (with schemas enabled)
-- `--isolated` (no filter) → creates both
-
-**Orphaned items:** if the process is killed with SIGKILL, cleanup won't run. Orphaned items can be identified by the `dbt_test_` name prefix and deleted manually from the Fabric workspace.
-
-**Requirements:** Azure CLI must be logged in (`az login`). The logged-in identity needs permission to create and delete warehouses/lakehouses in the workspace specified by `FABRIC_TEST_WORKSPACE_NAME`.
-
 ### Integration tests require real infrastructure
 
 Integration tests connect to actual Microsoft Fabric workspaces. They cannot run locally without:
