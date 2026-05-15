@@ -94,7 +94,6 @@ This also works for microbatch models:
 ) }}
 
 select * from source('my_source', 'my_table')
-{% endif %}
 ```
 
 ### [CLUSTER BY](cluster-by.md) support

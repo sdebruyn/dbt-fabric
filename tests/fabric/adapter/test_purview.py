@@ -3,7 +3,7 @@ import os
 import pytest
 import requests
 
-from dbt.adapters.fabric.purview_client import PurviewClient
+from dbt.adapters.fabric.purview_client import _API_VERSION, _SEARCH_API, PurviewClient
 from dbt.tests.util import run_dbt, write_file
 from tests.conftest import requires_purview
 
@@ -12,14 +12,11 @@ _PURVIEW_SCOPE = "https://purview.azure.net/.default"
 
 def _find_any_table(client: PurviewClient) -> dict | None:
     """Search Purview for any table entity to use in tests."""
-    url = f"{client._endpoint}/datamap/api/search/query"
+    url = f"{client._endpoint}{_SEARCH_API}"
     body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
-    resp = requests.post(url, json=body, headers=client._get_auth_headers())
-    if resp.status_code == 200:
-        results = resp.json().get("value", [])
-        if results:
-            return results[0]
-    return None
+    resp = client._api_post(url, body)
+    results = resp.json().get("value", [])
+    return results[0] if results else None
 
 
 def _find_any_table_standalone(endpoint: str) -> dict | None:
@@ -37,7 +34,7 @@ def _find_any_table_standalone(endpoint: str) -> dict | None:
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
-    url = f"{endpoint.rstrip('/')}/datamap/api/search/query"
+    url = f"{endpoint.rstrip('/')}{_SEARCH_API}?api-version={_API_VERSION}"
     body = {"keywords": "*", "filter": {"objectType": "Tables"}, "limit": 1}
     resp = requests.post(url, json=body, headers=headers)
     if resp.status_code == 200:
@@ -49,16 +46,14 @@ def _find_any_table_standalone(endpoint: str) -> dict | None:
 
 def _find_test_process_entities(client: PurviewClient) -> list[dict]:
     """Find dbt_transformation process entities created by tests."""
-    url = f"{client._endpoint}/datamap/api/search/query"
+    url = f"{client._endpoint}{_SEARCH_API}"
     body = {"keywords": None, "filter": {"and": [{"objectType": "Process"}]}, "limit": 100}
-    resp = requests.post(url, json=body, headers=client._get_auth_headers())
-    if resp.status_code == 200:
-        return [
-            r
-            for r in resp.json().get("value", [])
-            if r.get("qualifiedName", "").startswith("dbt://model.test.")
-        ]
-    return []
+    resp = client._api_post(url, body)
+    return [
+        r
+        for r in resp.json().get("value", [])
+        if r.get("qualifiedName", "").startswith("dbt://model.test.")
+    ]
 
 
 @requires_purview

@@ -15,33 +15,23 @@ def extract_syncable_models(graph: dict, results: list | None = None) -> list[di
     When results are provided (e.g. from an on-run-end hook), only nodes that actually
     ran in this invocation are included. When results is None (e.g. a manual run-operation),
     all syncable nodes in the graph are returned.
+
+    Graph nodes are plain dicts (dbt's flat_graph calls to_dict() on each node).
+    Results are RunResult objects with .node (a dataclass) and .status attributes.
     """
     syncable_types = ("model", "seed", "snapshot")
     models = []
 
     ran_node_ids: set[str] | None = None
     if results is not None:
-        ran_node_ids = set()
-        for r in results:
-            node = r.node if hasattr(r, "node") else r.get("node", {})
-            uid = node.unique_id if hasattr(node, "unique_id") else node.get("unique_id", "")
-            if uid:
-                ran_node_ids.add(uid)
+        ran_node_ids = {r.node.unique_id for r in results}
 
-    nodes = graph.nodes if hasattr(graph, "nodes") else graph.get("nodes", {})
-    if hasattr(nodes, "values"):
-        node_iter = nodes.values()
-    else:
-        node_iter = nodes if isinstance(nodes, list) else []
-
-    for node in node_iter:
-        resource_type = (
-            node.resource_type if hasattr(node, "resource_type") else node.get("resource_type", "")
-        )
-        if resource_type not in syncable_types:
+    nodes = graph.get("nodes", {})
+    for node in nodes.values():
+        if node.get("resource_type", "") not in syncable_types:
             continue
 
-        unique_id = node.unique_id if hasattr(node, "unique_id") else node.get("unique_id", "")
+        unique_id = node.get("unique_id", "")
         if ran_node_ids is not None and unique_id not in ran_node_ids:
             continue
 
@@ -53,52 +43,28 @@ def extract_syncable_models(graph: dict, results: list | None = None) -> list[di
     return models
 
 
-def _has_persist_docs_enabled(node) -> bool:
+def _has_persist_docs_enabled(node: dict) -> bool:
     """Check whether a node's persist_docs config allows Purview sync.
 
     Returns True (sync) when persist_docs is absent or has any true value.
     Returns False (skip) only when persist_docs is explicitly configured with all values false.
     """
-    config = (
-        getattr(node, "config", {})
-        if hasattr(node, "config")
-        else node.get("config", {})
-        if isinstance(node, dict)
-        else getattr(node, "config", {})
-    )
-    persist_docs = (
-        config.get("persist_docs")
-        if isinstance(config, dict)
-        else getattr(config, "persist_docs", None)
-    )
+    persist_docs = node.get("config", {}).get("persist_docs")
     if not persist_docs:
         return True
-    if isinstance(persist_docs, dict):
-        relation = persist_docs.get("relation", True)
-        columns = persist_docs.get("columns", True)
-        return relation or columns
-    return getattr(persist_docs, "relation", True) or getattr(persist_docs, "columns", True)
+    return persist_docs.get("relation", True) or persist_docs.get("columns", True)
 
 
-def _get_attr(node: object, key: str, default=None):
-    """Read an attribute from a dbt node, supporting both object and dict representations."""
-    if hasattr(node, key):
-        return getattr(node, key, default)
-    if isinstance(node, dict):
-        return node.get(key, default)
-    return default
+def _get_node_name(node: dict) -> str:
+    return node.get("alias") or node.get("name", "")
 
 
-def _get_node_name(node: object) -> str:
-    return _get_attr(node, "alias") or _get_attr(node, "name", "")
+def _get_node_schema(node: dict) -> str:
+    return node.get("schema", "")
 
 
-def _get_node_schema(node: object) -> str:
-    return _get_attr(node, "schema", "")
-
-
-def _get_node_database(node: object) -> str:
-    return _get_attr(node, "database", "")
+def _get_node_database(node: dict) -> str:
+    return node.get("database", "")
 
 
 def _make_cache_key(database: str, schema: str, name: str) -> str:
@@ -124,6 +90,7 @@ class PurviewSync:
 
     The graph parameter is the dbt flat_graph dict (available as {{ graph }} in Jinja macros),
     containing all nodes (models, tests, seeds, snapshots) and sources in the project.
+    Nodes and sources inside the graph are plain dicts (flat_graph calls to_dict() on each).
 
     The FabricApiClient is needed because Purview qualifiedNames for Lakehouse tables
     contain the Fabric item GUID (not the human-readable name). This class resolves
@@ -177,24 +144,17 @@ class PurviewSync:
         """
         mapping: dict[str, list[str]] = {}
         nodes = self._graph.get("nodes", {})
-        node_iter = nodes.values() if hasattr(nodes, "values") else []
 
         syncable_prefixes = ("model.", "seed.", "snapshot.")
-        for node in node_iter:
-            if _get_attr(node, "resource_type", "") != "test":
+        for node in nodes.values():
+            if node.get("resource_type", "") != "test":
                 continue
 
-            test_name = _get_attr(node, "name", "")
+            test_name = node.get("name", "")
             if not test_name:
                 continue
 
-            depends_on = _get_attr(node, "depends_on", {})
-            dep_nodes = (
-                depends_on.get("nodes", [])
-                if isinstance(depends_on, dict)
-                else _get_attr(depends_on, "nodes", [])
-            )
-
+            dep_nodes = node.get("depends_on", {}).get("nodes", [])
             for dep_id in dep_nodes:
                 if any(dep_id.startswith(p) for p in syncable_prefixes):
                     mapping.setdefault(dep_id, []).append(test_name)
@@ -214,7 +174,7 @@ class PurviewSync:
 
         return results[0]
 
-    def resolve_entities(self, models: list) -> dict[str, dict]:
+    def resolve_entities(self, models: list[dict]) -> dict[str, dict]:
         """Match dbt models to Purview entities by searching on name and database.
 
         Returns a dict mapping both unique_id and cache_key (database.schema.name) to
@@ -226,7 +186,7 @@ class PurviewSync:
             name = _get_node_name(model)
             schema = _get_node_schema(model)
             database = _get_node_database(model)
-            unique_id = _get_attr(model, "unique_id", "")
+            unique_id = model.get("unique_id", "")
 
             if not name:
                 continue
@@ -256,9 +216,9 @@ class PurviewSync:
         self._entity_cache = cache
         return cache
 
-    def _resolve_entity_for_node(self, node: object, resolved: dict) -> dict | None:
+    def _resolve_entity_for_node(self, node: dict, resolved: dict) -> dict | None:
         """Look up the Purview entity for a dbt node, first by unique_id then by cache key."""
-        unique_id = _get_attr(node, "unique_id", "")
+        unique_id = node.get("unique_id", "")
         if unique_id in resolved:
             return resolved[unique_id]
 
@@ -269,7 +229,7 @@ class PurviewSync:
 
     def push_metadata(
         self,
-        models: list,
+        models: list[dict],
         resolved: dict,
         results: list | None = None,
         sync_descriptions: bool = True,
@@ -291,18 +251,9 @@ class PurviewSync:
             if entity is None:
                 continue
 
-            config = _get_attr(model, "config", {})
-            persist_docs = (
-                config.get("persist_docs", {})
-                if isinstance(config, dict)
-                else _get_attr(config, "persist_docs", {})
-            )
-            if isinstance(persist_docs, dict):
-                persist_relation = persist_docs.get("relation", False)
-                persist_columns = persist_docs.get("columns", False)
-            else:
-                persist_relation = _get_attr(persist_docs, "relation", False)
-                persist_columns = _get_attr(persist_docs, "columns", False)
+            persist_docs = model.get("config", {}).get("persist_docs", {})
+            persist_relation = persist_docs.get("relation", True)
+            persist_columns = persist_docs.get("columns", True)
 
             update: dict = {
                 "typeName": entity["entityType"],
@@ -314,18 +265,18 @@ class PurviewSync:
             }
 
             if sync_descriptions and persist_relation:
-                description = _get_attr(model, "description", "")
+                description = model.get("description", "")
                 if description:
                     update["attributes"]["userDescription"] = description
 
             if sync_metadata:
-                unique_id = _get_attr(model, "unique_id", "")
+                unique_id = model.get("unique_id", "")
                 bm_attrs = self._build_business_metadata_attrs(model, unique_id, test_results)
                 update["businessAttributes"] = {"dbt_metadata": bm_attrs}
 
-                tags = _get_attr(model, "tags", [])
+                tags = model.get("tags", [])
                 if tags:
-                    update["labels"] = list(tags) if isinstance(tags, list) else [str(tags)]
+                    update["labels"] = list(tags)
 
             has_content = (
                 "userDescription" in update["attributes"]
@@ -347,40 +298,26 @@ class PurviewSync:
             if col_descriptions:
                 self._client.update_column_descriptions(entity["id"], col_descriptions)
 
-    def _extract_column_descriptions(self, model) -> dict[str, str]:
+    def _extract_column_descriptions(self, model: dict) -> dict[str, str]:
         """Extract column name → description mapping from a dbt model node."""
-        columns = _get_attr(model, "columns", {})
-        if hasattr(columns, "values"):
-            col_iter = columns.values()
-        elif isinstance(columns, dict):
-            col_iter = columns.values()
-        else:
-            col_iter = columns if isinstance(columns, list) else []
-
+        columns = model.get("columns", {})
         col_descriptions: dict[str, str] = {}
-        for col in col_iter:
-            col_name = _get_attr(col, "name", "")
-            col_desc = _get_attr(col, "description", "")
+        for col in columns.values():
+            col_name = col.get("name", "")
+            col_desc = col.get("description", "")
             if col_name and col_desc:
                 col_descriptions[col_name] = col_desc
         return col_descriptions
 
     def _build_business_metadata_attrs(
-        self, model, unique_id: str, test_results: dict[str, dict[str, str]]
+        self, model: dict, unique_id: str, test_results: dict[str, dict[str, str]]
     ) -> dict[str, str]:
         """Build the dbt_metadata business metadata attributes dict for a model."""
-        tags = _get_attr(model, "tags", [])
-        config = _get_attr(model, "config", {})
-        materialization = (
-            _get_attr(config, "materialized", "")
-            if not isinstance(config, dict)
-            else config.get("materialized", "")
-        )
-        meta = _get_attr(model, "meta", {})
-        if isinstance(meta, dict) and not meta:
-            meta_str = ""
-        else:
-            meta_str = json.dumps(meta) if meta else ""
+        tags = model.get("tags", [])
+        config = model.get("config", {})
+        materialization = config.get("materialized", "")
+        meta = model.get("meta", {})
+        meta_str = json.dumps(meta) if meta else ""
 
         test_names = self._get_test_names_for_model(unique_id)
         model_test_results = test_results.get(unique_id, {})
@@ -404,7 +341,7 @@ class PurviewSync:
             attrs["dbt_test_status"] = test_status
         return attrs
 
-    def push_lineage(self, models: list, resolved: dict, is_full_sync: bool = False) -> None:
+    def push_lineage(self, models: list[dict], resolved: dict, is_full_sync: bool = False) -> None:
         """Create dbt_transformation process entities in Purview to represent data lineage.
 
         For each model with upstream dependencies (ref/source), creates a Process entity
@@ -418,23 +355,12 @@ class PurviewSync:
             if entity is None:
                 continue
 
-            depends_on = _get_attr(model, "depends_on", {})
-            dep_nodes = (
-                _get_attr(depends_on, "nodes", [])
-                if not isinstance(depends_on, dict)
-                else depends_on.get("nodes", [])
-            )
-
+            dep_nodes = model.get("depends_on", {}).get("nodes", [])
             if not dep_nodes:
                 continue
 
-            unique_id = _get_attr(model, "unique_id", "")
-            config = _get_attr(model, "config", {})
-            materialization = (
-                _get_attr(config, "materialized", "")
-                if not isinstance(config, dict)
-                else config.get("materialized", "")
-            )
+            unique_id = model.get("unique_id", "")
+            materialization = model.get("config", {}).get("materialized", "")
 
             upstream_refs = []
             for dep_id in dep_nodes:
@@ -473,7 +399,7 @@ class PurviewSync:
 
         if is_full_sync:
             created_qns = {e["attributes"]["qualifiedName"] for e in process_entities}
-            own_model_qns = {f"dbt://{_get_attr(m, 'unique_id', '')}" for m in models}
+            own_model_qns = {f"dbt://{m.get('unique_id', '')}" for m in models}
             existing = self._client.search_process_entities("dbt://")
             for proc in existing:
                 qn = proc.get("qualifiedName", "")
@@ -493,9 +419,13 @@ class PurviewSync:
         if dep_id.startswith("source."):
             return self._resolve_source_entity(dep_id, resolved)
 
-        parts = dep_id.split(".")
-        if len(parts) >= 3:
-            cache_key = _make_cache_key(parts[-3], parts[-2], parts[-1])
+        dep_node = self._graph.get("nodes", {}).get(dep_id)
+        if dep_node:
+            cache_key = _make_cache_key(
+                _get_node_database(dep_node),
+                _get_node_schema(dep_node),
+                _get_node_name(dep_node),
+            )
             return resolved.get(cache_key)
 
         return None
@@ -507,12 +437,12 @@ class PurviewSync:
         if source is None:
             return None
 
-        name = _get_attr(source, "name", "")
+        name = source.get("name", "")
         if not name:
             return None
 
-        database = _get_attr(source, "database", "")
-        schema = _get_attr(source, "schema", "")
+        database = source.get("database", "")
+        schema = source.get("schema", "")
         cache_key = _make_cache_key(database, schema, name)
 
         if cache_key in resolved:
@@ -532,37 +462,30 @@ class PurviewSync:
         return entity
 
     def _collect_test_results(
-        self, models: list, results: list | None
+        self, models: list[dict], results: list | None
     ) -> dict[str, dict[str, str]]:
-        """Extract test results from a dbt run, grouped by the model each test depends on."""
+        """Extract test results from a dbt run, grouped by the model each test depends on.
+
+        Results are RunResult objects with .node (a dataclass) and .status attributes.
+        """
         if results is None:
             return {}
 
         test_results: dict[str, dict[str, str]] = {}
 
         for r in results:
-            node = r.node if hasattr(r, "node") else r.get("node", {})
-            resource_type = _get_attr(node, "resource_type", "")
-            if resource_type != "test":
+            node = r.node
+            if node.resource_type != "test":
                 continue
 
-            status = r.status if hasattr(r, "status") else r.get("status", "")
-            test_name = _get_attr(node, "name", "")
+            status = str(r.status)
+            test_name = node.name
 
-            depends_on = _get_attr(node, "depends_on", {})
-            dep_nodes = (
-                _get_attr(depends_on, "nodes", [])
-                if not isinstance(depends_on, dict)
-                else depends_on.get("nodes", [])
-            )
+            dep_nodes = node.depends_on.nodes
 
             for dep_id in dep_nodes:
-                if (
-                    dep_id.startswith("model.")
-                    or dep_id.startswith("seed.")
-                    or dep_id.startswith("snapshot.")
-                ):
-                    test_results.setdefault(dep_id, {})[test_name] = str(status)
+                if dep_id.startswith(("model.", "seed.", "snapshot.")):
+                    test_results.setdefault(dep_id, {})[test_name] = status
 
         return test_results
 
