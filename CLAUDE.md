@@ -14,8 +14,6 @@ uv sync                              # Set up venv + install all deps (editable 
 uv run pytest                        # Run all integration tests (needs test.env + Fabric)
 uv run pytest --dw                   # Run only Fabric (T-SQL) tests
 uv run pytest --de                   # Run only FabricSpark tests
-uv run pytest --dw --isolated        # Fabric tests with isolated DW (for multi-agent)
-uv run pytest --de --isolated        # FabricSpark tests with isolated Lakehouse
 uv run pytest --with-grants          # Include GRANT/authorization tests
 uv run pytest -k "TestClassName"     # Run a specific test class
 uv run ruff format --check .         # Check formatting
@@ -256,7 +254,9 @@ This controls which connection profile and dbt_project.yml defaults are used.
 
 ### Isolated test infrastructure (`--isolated`)
 
-When multiple agents run tests in parallel, they must not share the same Data Warehouse or Lakehouse — otherwise schema operations, catalog queries, and DDL can collide. The `--isolated` flag solves this by creating temporary Fabric items for each test session.
+**Do not use `--isolated` by default.** Fabric API rate limiting applies to the service principal, not per item — creating extra items adds provisioning overhead without avoiding contention. Only use `--isolated` when explicitly instructed.
+
+The `--isolated` flag creates temporary Fabric items for each test session to avoid DDL collisions when multiple agents share a workspace.
 
 **How it works:**
 

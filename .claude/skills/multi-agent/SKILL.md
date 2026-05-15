@@ -57,8 +57,7 @@ Instructions:
 1. Read CLAUDE.md to understand the project and workflow.
 2. Read the failing test classes and their base classes to understand what they expect.
 3. Implement the fix in the target files.
-4. Run ONLY the specific failing test: uv run pytest -k "TestClassName" --dw --isolated -v (or --de --isolated)
-   The --isolated flag creates a temporary DW/Lakehouse for your run so you don't conflict with other agents.
+4. Run ONLY the specific failing test: uv run pytest -k "TestClassName" --dw -v (or --de -v)
 5. If you discover a recurring pattern, add it to the "Lessons learned" section of CLAUDE.md.
 6. Report back: what you changed, which tests pass/fail, any lessons learned.
 ```
@@ -91,8 +90,8 @@ After workers complete:
 - **Read CLAUDE.md first** — it contains everything you need about the project, architecture, and patterns.
 - **Read the base test class** — understand what the test expects before fixing. The fix often becomes obvious from reading the base class SQL.
 - **Minimal fixes only** — fix the root cause, don't refactor. If a macro works, don't also clean up unrelated macros.
-- **Always use `--isolated`** — every worker must pass `--isolated` when running tests. This creates a temporary DW/Lakehouse for your run so you don't conflict with other agents or the coordinator. Items are automatically cleaned up when your test session ends.
-- **Only run your own specific tests** — never run the full test suite. Fabric infrastructure is slow (Livy sessions, rate-limited APIs). Run only the test class you are fixing: `uv run pytest -k "TestClassName" --dw --isolated -v` (or `--de --isolated`). The coordinator handles regression checks after merging.
+- **Do not use `--isolated` by default** — the `--isolated` flag creates a temporary DW/Lakehouse per session, but Fabric API rate limiting applies to the service principal, not per item. Creating extra items just adds provisioning overhead without avoiding contention. Only use `--isolated` when explicitly instructed.
+- **Only run your own specific tests** — never run the full test suite. Fabric infrastructure is slow (Livy sessions, rate-limited APIs). Run only the test class you are fixing: `uv run pytest -k "TestClassName" --dw -v` (or `--de -v`). The coordinator handles regression checks after merging.
 - **Validate and commit before finishing** — after your fix works, run `uv run ruff format .` and `uv run ruff check --fix .`, then commit only your own changes (not unrelated changes in the repo). Use a descriptive commit message.
 - **Report clearly** — list: files changed, tests that now pass, tests that still fail (if any), and any lessons learned.
 - **Update CLAUDE.md** — if you find a pattern that will help future work, add it to "Lessons learned". This is part of your job, not optional.
