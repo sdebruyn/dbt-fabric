@@ -44,6 +44,61 @@ dispatch:
 
 Replace `my_project` with your dbt project name.
 
+## Quick start
+
+You can try OPENROWSET immediately using Microsoft's publicly accessible [COVID-19 sample data](https://learn.microsoft.com/en-us/fabric/data-warehouse/browse-file-content-with-openrowset), which requires no authentication.
+
+Add this source to your `sources.yml`:
+
+```yaml
+sources:
+  - name: pandemic_data
+    schema: dbo
+    tables:
+      - name: covid_parquet
+        external:
+          location: "https://pandemicdatalake.blob.core.windows.net/public/curated/covid-19/bing_covid-19_data/latest/bing_covid-19_data.parquet"
+          file_format: parquet
+        columns:
+          - name: id
+            data_type: int
+          - name: updated
+            data_type: date
+          - name: confirmed
+            data_type: int
+          - name: deaths
+            data_type: int
+          - name: country_region
+            data_type: "varchar(8000)"
+          - name: iso2
+            data_type: "varchar(8000)"
+          - name: iso3
+            data_type: "varchar(8000)"
+```
+
+Stage the source and query it:
+
+```shell
+dbt run-operation stage_external_sources
+```
+
+```sql
+-- In a dbt model
+select top 100
+    id,
+    updated,
+    confirmed,
+    deaths,
+    country_region
+from {{ source('pandemic_data', 'covid_parquet') }}
+where country_region = 'Belgium'
+```
+
+The same dataset is available in CSV and JSONL formats:
+
+- CSV: `https://pandemicdatalake.blob.core.windows.net/public/curated/covid-19/bing_covid-19_data/latest/bing_covid-19_data.csv`
+- JSONL: `https://pandemicdatalake.blob.core.windows.net/public/curated/covid-19/bing_covid-19_data/latest/bing_covid-19_data.jsonl`
+
 ## Source configuration
 
 Define external sources in your `sources.yml` files. The `external` property controls how `OPENROWSET` is called.
