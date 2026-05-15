@@ -274,13 +274,12 @@ class PurviewClient:
         entity_data = self.get_entity_by_guid(table_guid)
         referred_entities = entity_data.get("referredEntities", {})
 
+        lower_descs = {k.lower(): v for k, v in column_descriptions.items()}
         updates: list[dict] = []
         for col_guid, col_entity in referred_entities.items():
             col_name = col_entity.get("attributes", {}).get("name", "")
-            if col_name.lower() in {k.lower(): v for k, v in column_descriptions.items()}:
-                desc = next(
-                    v for k, v in column_descriptions.items() if k.lower() == col_name.lower()
-                )
+            desc = lower_descs.get(col_name.lower())
+            if desc is not None:
                 updates.append(
                     {
                         "typeName": col_entity["typeName"],
