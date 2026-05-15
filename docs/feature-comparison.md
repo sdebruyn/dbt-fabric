@@ -40,11 +40,11 @@ This adapter supports [Python models](https://docs.getdbt.com/docs/build/python-
 
 ### [Microsoft Purview integration](purview-integration.md)
 
-This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:
+This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). The integration creates all table, column, and lineage entities directly via the Purview API — **no Purview scanning or live view configuration is required**. This eliminates the need to set up and schedule Fabric scans in Purview, saving both configuration effort and [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map?WT.mc_id=MVP_310840).
 
 - **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
 - **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
-- **Table-level lineage**: a full lineage graph based on dbt's `ref()` and `source()` dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and [does not support sub-item lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric).
+- **Table-level lineage**: a full lineage graph based on dbt's `ref()` and `source()` dependencies is created in Purview. The built-in scanner only provides item-level lineage (e.g., Lakehouse → Notebook → Lakehouse) and [does not support sub-item lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric?WT.mc_id=MVP_310840).
 
 The sync runs via `{{ purview_sync() }}` as an `on-run-end` hook or as a manual `dbt run-operation`.
 

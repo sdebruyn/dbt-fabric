@@ -16,7 +16,9 @@ Microsoft Purview has a [built-in integration with Microsoft Fabric](https://lea
 | **Business metadata** | Not populated. No built-in mechanism to attach tags, test results, or custom metadata to table entities. | Automatically creates a `dbt_metadata` business metadata type with model ID, tags, materialization, test names, test results, custom meta, and sync timestamp. |
 | **Automation** | Runs on a scan schedule configured in Purview. | Runs automatically after every `dbt run` via `on-run-end` hook, or on-demand via `dbt run-operation`. |
 
-In short: the built-in Purview integration discovers _what exists_ in Fabric at the item level (Warehouses, Lakehouses). This dbt integration goes deeper: it registers individual tables and columns, adds _what each table means_ (descriptions), shows _how tables relate to each other_ (lineage), and documents _what guarantees are in place_ (tests, tags, metadata). No Purview scanning or live view configuration is required — the adapter creates all necessary entities via the API.
+In short: the built-in Purview integration discovers _what exists_ in Fabric at the item level (Warehouses, Lakehouses). This dbt integration goes deeper: it registers individual tables and columns, adds _what each table means_ (descriptions), shows _how tables relate to each other_ (lineage), and documents _what guarantees are in place_ (tests, tags, metadata).
+
+**No Purview scanning or live view configuration is required** — the adapter creates all necessary entities directly via the Purview Data Map API. This means you can skip configuring Fabric scans in Purview entirely, which saves [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map?WT.mc_id=MVP_310840) and removes the delay between table changes and catalog updates. If you do already have scans configured, the sync works alongside them — existing entities are enriched, not duplicated.
 
 ![Description and business metadata synced from dbt to a Lakehouse table in Purview](assets/purview/purview-description-metadata.png)
 
