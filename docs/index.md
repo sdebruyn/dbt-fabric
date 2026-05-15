@@ -5,4 +5,5 @@
 ![fabric logo](https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png)
 
 --8<-- "README.md:11:19"
+--8<-- "README.md:20:40"
 --8<-- "README.md:44"

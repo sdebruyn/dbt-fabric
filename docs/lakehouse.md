@@ -37,7 +37,7 @@ For all configuration options, see the [configuration reference](configuration.m
 
 ### Authentication
 
-All [authentication methods](authentication.md) work with both adapter types. When following examples in the authentication guide, substitute `type: fabricspark` where the examples show `type: fabric`.
+The [authentication methods](authentication.md) documented in the authentication guide work with both adapter types. When following examples there, substitute `type: fabricspark` where the examples show `type: fabric`. Note that `ActiveDirectoryIntegrated` and `ActiveDirectoryPassword` are Data Warehouse-only methods and do not work with FabricSpark.
 
 The FabricSpark adapter does not use the [`host`](configuration.md#host) option -- it always resolves the Livy endpoint from the workspace and lakehouse information.
 
@@ -143,7 +143,7 @@ The adapter polls for statement completion every 3 seconds. Even very fast queri
 
 ### API rate limiting
 
-Fabric applies rate limits to the Livy API. The adapter handles HTTP 429 responses automatically with exponential backoff using the `Retry-After` header. During heavy workloads, you may see pauses of 5-30 seconds between statements.
+Fabric applies rate limits to the Livy API. The adapter handles HTTP 429 responses automatically by respecting the `Retry-After` header. During heavy workloads, you may see pauses of 5-30 seconds between statements.
 
 ### Practical impact
 

@@ -114,7 +114,7 @@ Example value: `My Workspace`
 The name of your Fabric Workspace.
 
 - For `type: fabric`: used to automatically find the [`host`](#host) value. Not required if `host` is provided (except for Python models).
-- For `type: fabricspark`: **required**. The Lakehouse adapter always needs the workspace to resolve the Livy API endpoint.
+- For `type: fabricspark`: **required** (unless [`workspace_id`](#workspace_id) is provided). The Lakehouse adapter always needs the workspace to resolve the Livy API endpoint.
 
 Not used if [`workspace_id`](#workspace_id) is also provided.
 
@@ -355,7 +355,7 @@ Possible values: any integer (seconds) :timer:
 
 The timeout for executing a query.
 
-- For `type: fabric`: this can be useful if you are receiving the `Query timeout expired` error. The default is no timeout.
+- For `type: fabric`: this can be useful if you are receiving the `Query timeout expired` error. Default: **86400 seconds (24 hours)**.
 - For `type: fabricspark`: controls how long the adapter waits for a Livy statement to complete. Default: **86400 seconds (24 hours)**.
 
 ### `spark_session_timeout`
@@ -365,9 +365,9 @@ Default: `900` (15 minutes)
 
 The maximum time to wait for the Livy Spark session to become idle (ready to accept statements). This is relevant during the first statement of a dbt run, when a new session may need to be created.
 
-!!! info "FabricSpark only"
+!!! info "FabricSpark and Python models"
 
-    This option only applies to `type: fabricspark`. For Data Warehouse connection timeouts, see [`login_timeout`](#login_timeout).
+    This option applies to `type: fabricspark` for all Livy session management, and to `type: fabric` when running [Python models](python-models.md) (which also use Livy sessions). For Data Warehouse SQL connection timeouts, see [`login_timeout`](#login_timeout).
 
 ### `livy_session_name`
 

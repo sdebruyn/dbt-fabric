@@ -6,6 +6,8 @@ The dbt-fabric-samdebruyn adapter supports a variety of authentication methods s
 
     All authentication methods on this page work with both `type: fabric` (Data Warehouse) and `type: fabricspark` (Lakehouse). The examples below use `type: fabric` -- substitute `type: fabricspark` when using the [Lakehouse adapter](lakehouse.md). Note that the FabricSpark adapter does not use the `host` option; it resolves the Livy endpoint from `workspace` or `workspace_id` automatically.
 
+    The full [configuration reference](configuration.md#authentication) lists additional methods (`ActiveDirectoryIntegrated`, `ActiveDirectoryPassword`) that only work with `type: fabric` because they are handled by the mssql-python driver.
+
 !!! tip "Quick recommendation"
 
     | Scenario | Recommended method |
