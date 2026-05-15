@@ -114,7 +114,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def livy_session_lifecycle(request):
+def livy_session_lifecycle():
     session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
     lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
     workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
