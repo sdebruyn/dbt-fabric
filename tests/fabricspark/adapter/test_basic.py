@@ -199,6 +199,7 @@ class TestBaseCachingSpark(BaseAdapterMethod):
 
     {%- do adapter.create_schema(upstream) -%}
 
+    {# upstream uses create_view_as — FabricSpark has no view support #}
     {% set sql = create_table_as(False, upstream, 'select 2 as id') %}
     {% do run_query(sql) %}
 {% endif %}
