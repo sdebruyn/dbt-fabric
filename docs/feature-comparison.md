@@ -40,7 +40,7 @@ This adapter supports [Python models](https://docs.getdbt.com/docs/build/python-
 
 ### [Microsoft Purview integration](purview-integration.md)
 
-This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). Purview's built-in Fabric scanner discovers items and table schemas, but does not populate descriptions, business metadata, or table-level lineage. This integration fills those gaps:
+This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). The integration creates all table, column, and lineage entities directly via the Purview API — **no Purview scanning or live view configuration is required**. This eliminates the need to set up and schedule Fabric scans in Purview, saving both configuration effort and [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map?WT.mc_id=MVP_310840).
 
 - **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
 - **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
