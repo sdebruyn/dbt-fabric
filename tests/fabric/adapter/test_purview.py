@@ -104,7 +104,7 @@ class TestPurviewEnsureTypeDefinitions:
 
     def test_creates_and_verifies_type_definitions(self, purview_client: PurviewClient):
         purview_client._types_ensured = False
-        assert purview_client.ensure_type_definitions()
+        purview_client.ensure_type_definitions()
 
         for name in _CUSTOM_ENTITY_TYPES + _CUSTOM_BM_TYPES:
             td = purview_client.get_type_def_by_name(name)
@@ -112,9 +112,9 @@ class TestPurviewEnsureTypeDefinitions:
 
     def test_idempotent_registration(self, purview_client: PurviewClient):
         purview_client._types_ensured = False
-        assert purview_client.ensure_type_definitions()
+        purview_client.ensure_type_definitions()
         purview_client._types_ensured = False
-        assert purview_client.ensure_type_definitions()
+        purview_client.ensure_type_definitions()
         assert purview_client._types_ensured
 
 

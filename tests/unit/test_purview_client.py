@@ -291,11 +291,9 @@ class TestEnsureTypeDefinitions:
         mock_response.json.return_value = {}
         mock_request.return_value = mock_response
 
-        result1 = client.ensure_type_definitions()
-        result2 = client.ensure_type_definitions()
+        client.ensure_type_definitions()
+        client.ensure_type_definitions()
 
-        assert result1 is True
-        assert result2 is True
         assert mock_request.call_count == 4  # BM, entity, warehouse entities, warehouse rels
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
@@ -331,20 +329,19 @@ class TestEnsureTypeDefinitions:
             put_success,  # warehouse rels: POST fails, PUT succeeds
         ]
 
-        result = client.ensure_type_definitions()
-        assert result is True
+        client.ensure_type_definitions()
         methods = [call[0][0] for call in mock_request.call_args_list]
         assert methods == ["post", "put"] * 4
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
-    def test_returns_false_when_registration_fails(self, mock_request, client):
+    def test_raises_when_registration_fails(self, mock_request, client):
         mock_response = MagicMock()
         mock_response.status_code = 400
         mock_response.text = "Bad Request"
         mock_request.return_value = mock_response
 
-        result = client.ensure_type_definitions()
-        assert result is False
+        with pytest.raises(dbt_common.exceptions.DbtRuntimeError):
+            client.ensure_type_definitions()
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_registers_warehouse_entity_types(self, mock_request, client):

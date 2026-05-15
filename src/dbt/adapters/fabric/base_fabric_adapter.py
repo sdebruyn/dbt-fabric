@@ -78,9 +78,7 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
         client = self.connections.get_purview_client(credentials)
         fabric_client = self.connections.get_fabric_api_client(credentials)
 
-        if not client.ensure_type_definitions():
-            logger.warning("Purview sync: type definitions could not be registered, skipping sync")
-            return ""
+        client.ensure_type_definitions()
 
         models = extract_syncable_models(graph, results)
         if not models:

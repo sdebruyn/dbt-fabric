@@ -394,26 +394,22 @@ class PurviewClient:
         url = f"{self._endpoint}{_LABELS_API.format(guid=guid)}"
         self._api_post(url, labels)
 
-    def _register_type_def(self, url: str, type_def: dict) -> bool:
+    def _register_type_def(self, url: str, type_def: dict) -> None:
         """Register a type definition, creating it if new or updating it if it already exists.
 
         The Purview API requires POST for initial creation and PUT for updates.
         We try POST first; if it fails (type already exists), we fall back to PUT.
+        Raises DbtRuntimeError if both attempts fail.
         """
         try:
             self._api_post(url, type_def)
-            return True
+            return
         except dbt_common.exceptions.DbtRuntimeError as e:
             logger.debug(f"Type definition POST failed (may already exist), trying PUT: {e}")
 
-        try:
-            self._api_put(url, type_def)
-            return True
-        except dbt_common.exceptions.DbtRuntimeError as e:
-            logger.warning(f"Type definition PUT also failed: {e}")
-            return False
+        self._api_put(url, type_def)
 
-    def ensure_type_definitions(self) -> bool:
+    def ensure_type_definitions(self) -> None:
         """Register or update custom Purview type definitions.
 
         Registers:
@@ -426,13 +422,12 @@ class PurviewClient:
         entity types to exist before relationship types can reference them.
 
         Only runs once per client instance.
-        Returns True if all type definitions were registered successfully.
+        Raises DbtRuntimeError if any type definition cannot be registered.
         """
         if self._types_ensured:
-            return True
+            return
 
         url = f"{self._endpoint}{_TYPEDEF_API}"
-        all_ok = True
 
         warehouse_entity_defs = {"entityDefs": _WAREHOUSE_TYPE_DEFS["entityDefs"]}
         warehouse_rel_defs = {"relationshipDefs": _WAREHOUSE_TYPE_DEFS["relationshipDefs"]}
@@ -443,12 +438,9 @@ class PurviewClient:
             ("fabric_warehouse entity", warehouse_entity_defs),
             ("fabric_warehouse relationship", warehouse_rel_defs),
         ]:
-            if not self._register_type_def(url, type_def):
-                logger.warning(f"Failed to register {label} types in Purview")
-                all_ok = False
+            self._register_type_def(url, type_def)
 
-        self._types_ensured = all_ok
-        return self._types_ensured
+        self._types_ensured = True
 
     def get_type_def_by_name(self, name: str) -> dict | None:
         """Fetch a type definition by name. Returns None if not found.
