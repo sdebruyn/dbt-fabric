@@ -7,6 +7,7 @@ import requests
 from azure.identity import AzureCliCredential
 
 from dbt.tests.util import relation_from_name, run_dbt
+from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 TEST_CSV_CONTENT = (
     "id,name,amount,sale_date\n"
@@ -194,7 +195,19 @@ from {{ source('test_external', 'sample_jsonl') }}
 """
 
 
-class TestExternalTableCSV:
+class TestExternalTableCSV(BaseDbtPackageTests):
+    @pytest.fixture(scope="class")
+    def package_name(self) -> str:
+        return "dbt_external_tables"
+
+    @pytest.fixture(scope="class")
+    def package_repo(self) -> str:
+        return ""
+
+    @pytest.fixture(scope="class")
+    def package_revision(self) -> str:
+        return ""
+
     @pytest.fixture(scope="class")
     def packages(self):
         return {"packages": [{"package": "dbt-labs/dbt_external_tables", "version": "0.11.0"}]}
@@ -219,8 +232,7 @@ class TestExternalTableCSV:
             ],
         }
 
-    @pytest.fixture(scope="class", autouse=True)
-    def stage_and_run(self, project):
+    def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
         run_dbt(["run-operation", "stage_external_sources"])
         results = run_dbt(["run"])
@@ -228,13 +240,10 @@ class TestExternalTableCSV:
         for r in results:
             assert r.status == "success"
 
-    def test_csv_row_count(self, project):
         relation = relation_from_name(project.adapter, "csv_data")
         result = project.run_sql(f"select count(*) from {relation}", fetch="one")
         assert result[0] == 5
 
-    def test_csv_data_values(self, project):
-        relation = relation_from_name(project.adapter, "csv_data")
         result = project.run_sql(
             f"select id, name, amount from {relation} where id = 1", fetch="one"
         )
@@ -242,14 +251,24 @@ class TestExternalTableCSV:
         assert result[1] == "Widget A"
         assert float(result[2]) == pytest.approx(19.99)
 
-    def test_csv_auto_detect_format(self, project):
-        """Verifies format is auto-detected from .csv extension when file_format is omitted."""
         relation = relation_from_name(project.adapter, "csv_auto_data")
         result = project.run_sql(f"select count(*) from {relation}", fetch="one")
         assert result[0] == 5
 
 
-class TestExternalTableJSONL:
+class TestExternalTableJSONL(BaseDbtPackageTests):
+    @pytest.fixture(scope="class")
+    def package_name(self) -> str:
+        return "dbt_external_tables"
+
+    @pytest.fixture(scope="class")
+    def package_repo(self) -> str:
+        return ""
+
+    @pytest.fixture(scope="class")
+    def package_revision(self) -> str:
+        return ""
+
     @pytest.fixture(scope="class")
     def packages(self):
         return {"packages": [{"package": "dbt-labs/dbt_external_tables", "version": "0.11.0"}]}
@@ -273,21 +292,17 @@ class TestExternalTableJSONL:
             ],
         }
 
-    @pytest.fixture(scope="class", autouse=True)
-    def stage_and_run(self, project):
+    def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
         run_dbt(["run-operation", "stage_external_sources"])
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
 
-    def test_jsonl_row_count(self, project):
         relation = relation_from_name(project.adapter, "jsonl_data")
         result = project.run_sql(f"select count(*) from {relation}", fetch="one")
         assert result[0] == 5
 
-    def test_jsonl_data_values(self, project):
-        relation = relation_from_name(project.adapter, "jsonl_data")
         result = project.run_sql(f"select id, name from {relation} where id = 1", fetch="one")
         assert result[0] == 1
         assert result[1] == "Widget A"
