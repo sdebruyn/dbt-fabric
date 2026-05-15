@@ -8,6 +8,7 @@ from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonSampleTests,
 )
 from dbt.tests.adapter.python_model.test_spark import BasePySparkTests
+from dbt.tests.util import run_dbt
 
 pytestmark = pytest.mark.python_model
 
@@ -21,7 +22,9 @@ class TestPythonIncrementalTestsFabricSpark(BasePythonIncrementalTests):
 
 
 class TestPySparkTestsFabricSpark(BasePySparkTests):
-    pass
+    def test_different_dataframes(self, project):
+        results = run_dbt(["run", "--exclude", "koalas_df"])
+        assert len(results) == 3
 
 
 class TestPythonEmptyTestsFabricSpark(BasePythonEmptyTests):
