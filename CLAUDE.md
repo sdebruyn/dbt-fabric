@@ -192,13 +192,24 @@ tests/
 
 **Every change to the codebase — no matter how small — must happen on a feature branch, never directly on `main`.** Use a git worktree (or `isolation: "worktree"` when spawning agents) so the main working directory stays clean and on `main`. This applies to all changes: code, macros, tests, documentation, and CLAUDE.md itself.
 
-```shell
-git worktree add ../dbt-fabric-<short-name> -b <branch-name>
-# work in the worktree, commit, push, create PR
-git worktree remove ../dbt-fabric-<short-name>
-```
+Workflow for every change:
 
-This avoids conflicts with other people or agents working in the same repository at the same time.
+1. Create a worktree on a new branch:
+   ```shell
+   git worktree add ../dbt-fabric-<short-name> -b <branch-name>
+   ```
+2. Make changes, run ruff, commit.
+3. Push and create a PR:
+   ```shell
+   git push -u origin <branch-name>
+   gh pr create --title "..." --body "..."
+   ```
+4. Clean up the worktree:
+   ```shell
+   git worktree remove ../dbt-fabric-<short-name>
+   ```
+
+**When your work is done, always push and open a PR.** Don't leave committed work sitting on a local branch — the PR is the deliverable.
 
 ## Development workflow (TDD)
 
