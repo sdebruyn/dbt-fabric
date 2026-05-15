@@ -8,6 +8,7 @@ from dbt.adapters.fabric.purview_sync import (
     _get_node_database,
     _get_node_name,
     _get_node_schema,
+    _has_persist_docs_enabled,
     _make_cache_key,
     extract_syncable_models,
 )
@@ -145,6 +146,68 @@ class TestExtractSyncableModels:
         }
         models = extract_syncable_models(graph, results=None)
         assert len(models) == 2
+
+    def test_excludes_persist_docs_all_false(self):
+        graph = {
+            "nodes": {
+                "model.test.a": _make_node(
+                    unique_id="model.test.a",
+                    config={
+                        "materialized": "table",
+                        "persist_docs": {"relation": False, "columns": False},
+                    },
+                ),
+                "model.test.b": _make_node(
+                    unique_id="model.test.b",
+                    config={
+                        "materialized": "table",
+                        "persist_docs": {"relation": True, "columns": False},
+                    },
+                ),
+            }
+        }
+        models = extract_syncable_models(graph)
+        ids = {_get_attr(m, "unique_id") for m in models}
+        assert ids == {"model.test.b"}
+
+    def test_includes_when_persist_docs_not_set(self):
+        graph = {
+            "nodes": {
+                "model.test.a": _make_node(
+                    unique_id="model.test.a",
+                    config={"materialized": "table"},
+                ),
+            }
+        }
+        models = extract_syncable_models(graph)
+        assert len(models) == 1
+
+
+class TestHasPersistDocsEnabled:
+    def test_no_config(self):
+        assert _has_persist_docs_enabled({"resource_type": "model"}) is True
+
+    def test_no_persist_docs_key(self):
+        assert _has_persist_docs_enabled({"config": {"materialized": "table"}}) is True
+
+    def test_empty_persist_docs(self):
+        assert _has_persist_docs_enabled({"config": {"persist_docs": {}}}) is True
+
+    def test_all_false(self):
+        node = {"config": {"persist_docs": {"relation": False, "columns": False}}}
+        assert _has_persist_docs_enabled(node) is False
+
+    def test_relation_true(self):
+        node = {"config": {"persist_docs": {"relation": True, "columns": False}}}
+        assert _has_persist_docs_enabled(node) is True
+
+    def test_columns_true(self):
+        node = {"config": {"persist_docs": {"relation": False, "columns": True}}}
+        assert _has_persist_docs_enabled(node) is True
+
+    def test_relation_false_only(self):
+        node = {"config": {"persist_docs": {"relation": False}}}
+        assert _has_persist_docs_enabled(node) is False
 
 
 class TestGetAttr:
