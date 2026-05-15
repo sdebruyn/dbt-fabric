@@ -21,12 +21,20 @@
 
   {%- set target_relation = this.incorporate(type='materialized_view') -%}
 
-  {% set search_name = "materialization_materialized_view_" ~ adapter.type() %}
-  {% if not search_name in context %}
-      {% set search_name = "materialization_materialized_view_default" %}
+  {% if existing_relation is not none %}
+      {{ drop_relation_if_exists(existing_relation) }}
   {% endif %}
-  {% set materialization_macro = context[search_name] %}
-  {% set relations = materialization_macro() %}
-  {{ return(relations) }}
+
+  {%- set clone_sql = "select * from " ~ defer_relation -%}
+
+  {% call statement('main') %}
+      {{ get_create_materialized_view_as_sql(target_relation, clone_sql) }}
+  {% endcall %}
+
+  {%- set grant_config = config.get('grants') -%}
+  {% set should_revoke = should_revoke(existing_relation, full_refresh_mode=True) %}
+  {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
+
+  {{ return({'relations': [target_relation]}) }}
 
 {% endmaterialization %}

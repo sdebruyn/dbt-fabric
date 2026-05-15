@@ -105,14 +105,14 @@ class TestFabricSparkCloneSameTargetAndState(BaseCloneSameTargetAndState):
 
 
 @pytest.mark.skip(
-    "TODO: Fabric Lakehouse does not support SHALLOW CLONE (Databricks-specific Delta feature)"
+    "Fabric Lakehouse does not support SHALLOW CLONE (Databricks-specific Delta feature)"
 )
 class TestFabricSparkClonePossible(BaseCloneNotPossible):
     pass
 
 
 @pytest.mark.skip(
-    "TODO: Fabric Lakehouse does not support SHALLOW CLONE (Databricks-specific Delta feature)"
+    "Fabric Lakehouse does not support SHALLOW CLONE (Databricks-specific Delta feature)"
 )
 class TestFabricSparkCloneSameSourceAndTarget(BaseCloneNotPossible):
     pass
