@@ -16,7 +16,6 @@ No other system-level dependencies are required. Unlike Microsoft's upstream dbt
 
 === "Data Warehouse (T-SQL)"
 
-<<<<<<< HEAD
     Install dbt-fabric-samdebruyn for use with Fabric Data Warehouse:
 
     ```bash
@@ -40,10 +39,5 @@ No other system-level dependencies are required. Unlike Microsoft's upstream dbt
         If you only use Fabric Data Warehouse, you do not need the `[spark]` extra. The base `pip install dbt-fabric-samdebruyn dbt-core` is sufficient.
 
     See the [Lakehouse guide](lakehouse.md) for configuration and usage details.
-=======
-```bash
-pip install dbt-fabric-samdebruyn dbt-core
-```
 
 That's it. No ODBC driver setup, no platform-specific steps. The adapter works the same on Linux, macOS, and Windows.
->>>>>>> 8f2c84e (Document mssql-python driver as key differentiator from upstream dbt-fabric)

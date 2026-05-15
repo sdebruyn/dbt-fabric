@@ -3,13 +3,6 @@
 This adapter has all the features of [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric), plus some additional features.
 The following features are exclusive to dbt-fabric-samdebruyn:
 
-<<<<<<< HEAD
-## Fabric Lakehouse (Spark SQL) support
-
-This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft's dbt-fabric only supports Data Warehouse.
-
-The Lakehouse adapter (`type: fabricspark`) uses Spark SQL via Livy sessions and supports tables, materialized lake views, and Python models natively. See the [Lakehouse guide](lakehouse.md) for details.
-=======
 ## No ODBC driver required
 
 This adapter uses Microsoft's official [`mssql-python`](https://github.com/microsoft/mssql-python) driver instead of pyODBC. This is a pure Python driver for SQL Server and Microsoft Fabric that communicates over the TDS protocol natively, without requiring any system-level ODBC components.
@@ -21,7 +14,12 @@ Microsoft's upstream dbt-fabric adapter depends on pyODBC, which requires:
 - Platform-specific installation steps that vary between Linux distributions, macOS, and Windows
 
 With dbt-fabric-samdebruyn, none of this is needed. Installation is a single `pip install` or `uv add` command, with no platform-specific setup. This eliminates a common source of installation issues and makes the adapter work consistently across all platforms, including containerized environments.
->>>>>>> 8f2c84e (Document mssql-python driver as key differentiator from upstream dbt-fabric)
+
+## Fabric Lakehouse (Spark SQL) support
+
+This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft's dbt-fabric only supports Data Warehouse.
+
+The Lakehouse adapter (`type: fabricspark`) uses Spark SQL via Livy sessions and supports tables, materialized lake views, and Python models natively. See the [Lakehouse guide](lakehouse.md) for details.
 
 ## dbt Core 1.11 support
 
