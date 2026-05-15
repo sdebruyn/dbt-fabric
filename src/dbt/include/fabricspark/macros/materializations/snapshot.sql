@@ -48,7 +48,7 @@
   {%- endif -%}
 
   {% if not adapter.check_schema_exists(model.database, model.schema) %}
-    {% do create_schema(target_relation) %}
+    {% do create_schema(target_relation.without_identifier()) %}
   {% endif %}
 
   {% set full_refresh_mode = should_full_refresh() %}
