@@ -7,7 +7,7 @@ import yaml
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
-from dbt.adapters.fabric.purview_client import _SEARCH_API, PurviewClient
+from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import write_file
 
 pytest_plugins = ["dbt.tests.fixtures.project"]
