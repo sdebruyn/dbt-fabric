@@ -65,13 +65,13 @@
             {{ get_create_view_as_sql(tmp_vw_relation, compiled_code) }}
 
             INSERT INTO {{relation}} ({{listColumns}})
-            SELECT {{listColumns}} FROM {{tmp_vw_relation}} {{ query_label }}
+            SELECT {{listColumns}} FROM {{tmp_vw_relation}} {{ query_label }};
 
         {%- else %}
 
             CREATE TABLE {{relation}}
             {{ build_cluster_by_clause(temporary) }}
-            AS {{compiled_code}} {{ query_label }}
+            AS {{compiled_code}} {{ query_label }};
 
         {% endif %}
     {%- elif language == "python" -%}

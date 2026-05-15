@@ -35,7 +35,7 @@
             numeric_scale
         from mapping
         order by ordinal_position
-        {{ query_label }}
+        {{ query_label }};
 
     {% endcall %}
     {% set table = load_result('get_columns_in_relation').table %}
@@ -52,7 +52,7 @@
         select top 0 *
         from __dbt_sbq
         where 0 = 1
-        {{ query_label }}
+        {{ query_label }};
 
     {% endcall %}
 
@@ -91,7 +91,7 @@
     {% set tempTable %}
         CREATE TABLE {{tempTableName}}
         AS SELECT {{query_result_text}}, CAST([{{ column_name | replace(']', ']]') }}] AS {{new_column_type}}) AS [{{ column_name | replace(']', ']]') }}] FROM {{ relation.schema }}.{{ relation.identifier }}
-        {{ apply_label() }}
+        {{ apply_label() }};
     {% endset %}
 
     {% call statement('create_temp_table') -%}
@@ -108,7 +108,7 @@
 
     {% set createTable %}
         CREATE TABLE {{ relation.schema }}.{{ relation.identifier }}
-        AS SELECT * FROM {{tempTableName}} {{ apply_label() }}
+        AS SELECT * FROM {{tempTableName}} {{ apply_label() }};
     {% endset %}
 
     {% call statement('create_Table') -%}

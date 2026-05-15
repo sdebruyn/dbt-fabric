@@ -122,7 +122,7 @@
         {%- endfor -%})
 
         order by column_index
-        {{ query_label }}
+        {{ query_label }};
 
         {%- endcall -%}
 
@@ -274,7 +274,7 @@
             )
 
             order by column_index
-            {{ query_label }}
+            {{ query_label }};
 
         {%- endcall -%}
         {{ return(load_result('catalog').table) }}

@@ -35,7 +35,7 @@
                     and {{ predicate }}
                 {% endfor %}
             {% endif %}
-            {{ query_label }}
+            {{ query_label }};
         {% else %}
             delete from {{ target }}
             where (
@@ -48,7 +48,7 @@
                     and {{ predicate }}
                 {% endfor %}
             {%- endif -%}
-            {{ query_label }}
+            {{ query_label }};
         {% endif %}
     {% endif %}
 
@@ -56,7 +56,7 @@
     (
         select {{ dest_cols_csv }}
         from {{ source }}
-    ){{ query_label }}
+    ){{ query_label }};
 {% endmacro %}
 
 {% macro fabric__get_incremental_microbatch_sql(arg_dict) %}
