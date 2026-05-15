@@ -83,20 +83,6 @@ When adding override macros for a community package:
 2. Only override leaf macros that the package dispatches to — don't override orchestration macros that already use dispatched calls
 3. Document the required `dispatch` config in the docs page for that feature
 
-### Class hierarchy
-
-```
-Fabric (T-SQL):
-  FabricAdapter → BaseFabricAdapter → SQLAdapter (from dbt-adapters)
-  FabricConnectionManager → BaseFabricConnectionManager → SQLConnectionManager
-
-FabricSpark:
-  FabricSparkAdapter → (BaseFabricAdapter, SparkAdapter)
-  FabricSparkConnectionManager → BaseFabricConnectionManager
-```
-
-`BaseFabricAdapter` provides shared functionality for Python model execution via Fabric Livy sessions. `FabricSparkAdapter` inherits from both this base and dbt-spark's `SparkAdapter`.
-
 ### `@available` decorator
 
 Adapter methods decorated with `@available` become callable from Jinja macros via `adapter.method_name()`. Use this when adding a new Python method that macros need to call. Example: `create_or_update_warehouse_snapshot` in `FabricAdapter` is `@available` so the snapshot macro can invoke it. There's also `@available.parse(lambda *a, **k: ...)` for methods that need a parse-time stub (e.g., `get_column_schema_from_query` returns `[]` during parsing).
@@ -118,75 +104,6 @@ Each adapter has an `__init__.py` that registers the plugin:
 - `src/dbt/adapters/fabricspark/__init__.py` — Registers `FabricSparkAdapter` with `FabricSparkCredentials`, declares `dependencies=["spark"]`
 
 The FabricSpark adapter requires the optional `spark` dependency group: `pip install dbt-fabric-samdebruyn[spark]`.
-
-## Code organization
-
-```
-src/
-  dbt/
-    adapters/
-      fabric/                         # Fabric (T-SQL) adapter Python code
-        __init__.py                   # Plugin registration
-        __version__.py                # Version (updated by CI on release)
-        base_fabric_adapter.py        # Shared base: Python/Livy submission
-        base_connection_manager.py    # Shared base: connection management
-        base_credentials.py           # Shared base: credential fields
-        fabric_adapter.py             # T-SQL adapter implementation
-        fabric_connection_manager.py  # T-SQL connection management (mssql-python)
-        fabric_credentials.py         # T-SQL credential handling
-        fabric_relation.py            # Relation types and rendering
-        fabric_column.py              # Column type mapping (T-SQL types)
-        fabric_configs.py             # Model configuration
-        fabric_token_provider.py      # Azure token acquisition
-        fabric_api_client.py          # Fabric REST API client
-        fabric_livy_session.py        # Livy session management
-        fabric_livy_helper.py         # Livy helper utilities
-        relation_configs/             # Advanced relation configuration
-      fabricspark/                    # FabricSpark adapter Python code
-        __init__.py                   # Plugin registration
-        __version__.py                # Version (separate from fabric)
-        fabricspark_adapter.py        # Spark adapter implementation
-        fabricspark_connection_manager.py
-        fabricspark_connection.py     # Spark connection handling
-        fabricspark_cursor.py         # Spark cursor implementation
-        fabricspark_credentials.py
-        fabricspark_relation.py       # Spark relation types (incl. MaterializedView)
-        fabricspark_column.py         # Spark column types
-    include/
-      fabric/                         # Fabric (T-SQL) macros
-        dbt_project.yml               # Macro package config
-        macros/
-          adapters/                    # Core adapter operations (catalog, columns, schema, etc.)
-          materializations/            # Table, view, incremental, snapshot, seed macros
-            models/incremental/        # Merge, delete+insert, append, microbatch strategies
-            models/table/              # CREATE TABLE, clone, python models
-            models/view/               # CREATE VIEW
-            snapshots/                 # Snapshot strategies and helpers
-            seeds/                     # Seed loading helpers
-            tests/                     # Test helpers
-            functions/                 # Scalar function support
-          utils/                       # Cross-database functions (dateadd, hash, concat, etc.)
-          dbt_package_support/         # Compatibility macros for community packages
-            dbt_utils/                 # dbt-utils overrides
-            dbt_date/                  # dbt-date overrides
-            dbt_expectations/          # dbt-expectations overrides
-            dbt_audit_helper/          # dbt-audit-helper overrides
-      fabricspark/                     # FabricSpark macros (minimal, inherits from dbt-spark)
-        dbt_project.yml               # Sets default materialization to materialized_view
-        macros/
-          adapters/metadata.sql        # Spark catalog metadata
-          materializations/            # Materialized lake view
-          relations/                   # Drop, rename, materialized_view CRUD
-          get_custom_name/             # Database name generation
-tests/
-  conftest.py                         # Shared fixtures, adapter type detection, CLI flags
-  isolated_items.py                   # FabricTestItemManager for --isolated mode
-  unit/                               # Unit tests (no Fabric connection needed)
-  fabric/                             # Fabric (T-SQL) integration tests
-    adapter/                          # ~20 test modules
-  fabricspark/                        # FabricSpark integration tests
-    adapter/                          # ~15 test modules
-```
 
 ## Branching and worktrees
 
