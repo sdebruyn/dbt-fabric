@@ -14,7 +14,7 @@ A maintained and extended fork of the [dbt-fabric](https://github.com/microsoft/
 - **Fabric Data Warehouse** — T-SQL, uses the mssql-python driver (`type: fabric`)
 - **Fabric Lakehouse** — Spark SQL via Livy sessions (`type: fabricspark`)
 
-This fork has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to the original adapter, which was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft. Given Microsoft's limited investments in the adapter, this fork aims to continue its development and maintenance.
+The dbt-fabric adapter was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft. [Sam Debruyn](https://debruyn.dev), one of the original authors and core contributors, continues development and maintenance through this fork. It has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to Microsoft's version, which has seen limited investment since adoption.
 
 [![PyPI - Version](https://img.shields.io/pypi/v/dbt-fabric-samdebruyn)](https://pypi.org/project/dbt-fabric-samdebruyn/)
 
