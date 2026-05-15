@@ -32,6 +32,8 @@ The project has a documentation website at https://dbt-fabric.debruyn.dev, built
 
 The docs cover everything that is specific to this dbt adapter compared to other dbt adapters: installation, configuration, authentication, feature guides (Python models, warehouse snapshots), and a comparison with Microsoft's upstream `dbt-fabric`. When adding or changing adapter-specific behavior, update the relevant docs page. If a new feature has no existing page, add one under the appropriate nav section in `zensical.toml`.
 
+When linking to Microsoft Learn pages (anywhere in docs, code comments, or markdown), always append the MVP tracking parameter: `?WT.mc_id=MVP_310840` (or `&WT.mc_id=MVP_310840` if the URL already has query parameters).
+
 Current nav structure:
 
 - **Home** — Overview, comparison with upstream dbt-fabric, contributing, license
