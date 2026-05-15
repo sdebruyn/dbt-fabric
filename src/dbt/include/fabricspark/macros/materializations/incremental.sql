@@ -23,8 +23,7 @@
     {%- endcall -%}
   {%- endif -%}
 
-  {{ run_hooks(pre_hooks, inside_transaction=False) }}
-  {{ run_hooks(pre_hooks, inside_transaction=True) }}
+  {{ run_hooks(pre_hooks) }}
 
   {%- if existing_relation is none -%}
     {%- call statement('main', language=language) -%}
@@ -44,7 +43,7 @@
     {%- endcall -%}
     {%- do process_schema_changes(on_schema_change, tmp_relation, existing_relation) -%}
     {%- call statement('main') -%}
-      {{ dbt_spark_get_incremental_sql(strategy, tmp_relation, target_relation, existing_relation, unique_key, incremental_predicates) }}
+      {{ fabricspark_get_incremental_sql(strategy, tmp_relation, target_relation, existing_relation, unique_key, incremental_predicates) }}
     {%- endcall -%}
     {% call statement('drop_tmp_relation') -%}
       drop table if exists {{ tmp_relation }}
@@ -56,15 +55,14 @@
 
   {% do persist_docs(target_relation, model) %}
 
-  {{ run_hooks(post_hooks, inside_transaction=True) }}
-  {{ run_hooks(post_hooks, inside_transaction=False) }}
+  {{ run_hooks(post_hooks) }}
 
   {{ return({'relations': [target_relation]}) }}
 
 {%- endmaterialization %}
 
 
-{% macro dbt_spark_get_incremental_sql(strategy, source, target, existing, unique_key, incremental_predicates) %}
+{% macro fabricspark_get_incremental_sql(strategy, source, target, existing, unique_key, incremental_predicates) %}
   {%- if strategy == 'append' -%}
     {{ fabricspark__get_insert_into_sql(source, target) }}
   {%- elif strategy == 'insert_overwrite' -%}
