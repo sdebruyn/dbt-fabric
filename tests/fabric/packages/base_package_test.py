@@ -18,14 +18,19 @@ class BaseDbtPackageTests:
 
     @pytest.fixture(scope="class")
     def packages(self, package_name: str, package_repo: str, package_revision: str):
-        packages = [
-            {"git": package_repo, "revision": package_revision},
-            {
-                "git": package_repo,
-                "revision": package_revision,
-                "subdirectory": "integration_tests",
-            },
-        ]
+        if package_repo.startswith(("https://", "http://")):
+            packages = [
+                {"git": package_repo, "revision": package_revision},
+                {
+                    "git": package_repo,
+                    "revision": package_revision,
+                    "subdirectory": "integration_tests",
+                },
+            ]
+        else:
+            packages = [
+                {"package": package_repo, "version": package_revision},
+            ]
 
         if package_name != "dbt_utils":
             packages.append({"package": "dbt-labs/dbt_utils", "version": "1.3.0"})

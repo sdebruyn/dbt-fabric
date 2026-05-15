@@ -202,15 +202,11 @@ class TestExternalTableCSV(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
-        return ""
+        return "dbt-labs/dbt_external_tables"
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return ""
-
-    @pytest.fixture(scope="class")
-    def packages(self):
-        return {"packages": [{"package": "dbt-labs/dbt_external_tables", "version": "0.11.0"}]}
+        return "0.11.0"
 
     @pytest.fixture(scope="class")
     def models(self):
@@ -219,17 +215,6 @@ class TestExternalTableCSV(BaseDbtPackageTests):
             "sources.yml": _build_csv_sources_yml(urls["csv_url"]),
             "csv_data.sql": csv_model_sql,
             "csv_auto_data.sql": csv_auto_model_sql,
-        }
-
-    @pytest.fixture(scope="class")
-    def project_config_update(self):
-        return {
-            "dispatch": [
-                {
-                    "macro_namespace": "dbt_external_tables",
-                    "search_order": ["dbt", "dbt_external_tables"],
-                }
-            ],
         }
 
     def test_package(self, project, dbt_core_bug_workaround):
@@ -263,15 +248,11 @@ class TestExternalTableJSONL(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
-        return ""
+        return "dbt-labs/dbt_external_tables"
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return ""
-
-    @pytest.fixture(scope="class")
-    def packages(self):
-        return {"packages": [{"package": "dbt-labs/dbt_external_tables", "version": "0.11.0"}]}
+        return "0.11.0"
 
     @pytest.fixture(scope="class")
     def models(self):
@@ -279,17 +260,6 @@ class TestExternalTableJSONL(BaseDbtPackageTests):
         return {
             "sources.yml": _build_jsonl_sources_yml(urls["jsonl_url"]),
             "jsonl_data.sql": jsonl_model_sql,
-        }
-
-    @pytest.fixture(scope="class")
-    def project_config_update(self):
-        return {
-            "dispatch": [
-                {
-                    "macro_namespace": "dbt_external_tables",
-                    "search_order": ["dbt", "dbt_external_tables"],
-                }
-            ],
         }
 
     def test_package(self, project, dbt_core_bug_workaround):
