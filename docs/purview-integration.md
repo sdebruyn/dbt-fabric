@@ -20,6 +20,8 @@ In short: the built-in scanner discovers _what exists_ in Fabric (table names, c
 
 The two are complementary — the scanner creates the entities in Purview, and the dbt sync enriches them.
 
+![Description and business metadata synced from dbt to a Lakehouse table in Purview](assets/purview/purview-description-metadata.png)
+
 ## How it works
 
 When Purview scans your Fabric workspace, it discovers tables and views but doesn't know about the rich metadata in your dbt project: model descriptions, column documentation, tests, tags, and lineage. The Purview sync bridges this gap by:
@@ -135,6 +137,8 @@ For each dbt model with upstream dependencies, the sync creates:
 - `process_dataset_outputs` relationships from the process to the output table
 
 This shows up in Purview's lineage view as a graph of how data flows through your dbt models.
+
+![Table-level lineage graph in Purview created from dbt ref() and source() dependencies](assets/purview/purview-lineage.png)
 
 ## Entity matching
 
