@@ -1,6 +1,5 @@
 {% macro fabricspark__get_create_materialized_view_as_sql(relation, sql) %}
     {%- set partition_by = config.get('partition_by', none) -%}
-    {%- set comment = model.description if config.persist_relation_docs() and model.description else none -%}
     {%- set tblproperties = config.get('tblproperties', none) -%}
     {%- set raw_constraints = model['constraints'] -%}
 
@@ -16,9 +15,6 @@
     {%- endif %}
     {%- if partition_by %}
     PARTITIONED BY ({{ partition_by | join(', ') }})
-    {%- endif %}
-    {%- if comment %}
-    COMMENT "{{ comment }}"
     {%- endif %}
     {%- if tblproperties %}
     TBLPROPERTIES (

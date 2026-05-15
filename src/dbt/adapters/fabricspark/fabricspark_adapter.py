@@ -128,6 +128,8 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
         rows = [row for row in raw_rows[0:pos] if not row["col_name"].startswith("#")]
         metadata = {col["col_name"]: col["data_type"] for col in raw_rows[pos + 1 :]}
 
+        table_comment = metadata.get("Comment") or None
+
         return [
             FabricSparkColumn(
                 table_catalog=relation.catalog,
@@ -136,9 +138,11 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
                 table_name=relation.name,
                 table_type=FabricSparkRelation.try_translate_type(metadata.get("Type"))
                 or relation.type,
+                table_comment=table_comment,
                 column=column["col_name"],
                 column_index=idx,
                 dtype=column["data_type"],
+                column_comment=column.get("comment") or None,
             )
             for idx, column in enumerate(rows)
         ]
