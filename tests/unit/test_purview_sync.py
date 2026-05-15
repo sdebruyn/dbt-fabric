@@ -1,8 +1,8 @@
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from dbt.adapters.fabric.purview_sync import (
     PurviewSync,
-    _get_attr,
     _get_node_database,
     _get_node_name,
     _get_node_schema,
@@ -66,16 +66,19 @@ def _make_source(
     }
 
 
-def _make_result(unique_id="model.test.my_model", resource_type="model", status="pass"):
-    return {
-        "node": {
-            "unique_id": unique_id,
-            "resource_type": resource_type,
-            "name": unique_id.split(".")[-1],
-            "depends_on": {"nodes": []},
-        },
-        "status": status,
-    }
+def _make_result(
+    unique_id="model.test.my_model",
+    resource_type="model",
+    status="pass",
+    depends_on_nodes=None,
+):
+    node = SimpleNamespace(
+        unique_id=unique_id,
+        resource_type=resource_type,
+        name=unique_id.split(".")[-1],
+        depends_on=SimpleNamespace(nodes=depends_on_nodes or []),
+    )
+    return SimpleNamespace(node=node, status=status)
 
 
 def _make_purview_entity(
@@ -120,7 +123,7 @@ class TestExtractSyncableModels:
             }
         }
         models = extract_syncable_models(graph)
-        ids = {_get_attr(m, "unique_id") for m in models}
+        ids = {m["unique_id"] for m in models}
         assert ids == {"model.test.a", "seed.test.s", "snapshot.test.snap"}
 
     def test_filters_by_results_when_provided(self):
@@ -133,7 +136,7 @@ class TestExtractSyncableModels:
         results = [_make_result(unique_id="model.test.a")]
         models = extract_syncable_models(graph, results)
         assert len(models) == 1
-        assert _get_attr(models[0], "unique_id") == "model.test.a"
+        assert models[0]["unique_id"] == "model.test.a"
 
     def test_no_results_returns_all(self):
         graph = {
@@ -165,7 +168,7 @@ class TestExtractSyncableModels:
             }
         }
         models = extract_syncable_models(graph)
-        ids = {_get_attr(m, "unique_id") for m in models}
+        ids = {m["unique_id"] for m in models}
         assert ids == {"model.test.b"}
 
     def test_includes_when_persist_docs_not_set(self):
@@ -206,17 +209,6 @@ class TestHasPersistDocsEnabled:
     def test_relation_false_only(self):
         node = {"config": {"persist_docs": {"relation": False}}}
         assert _has_persist_docs_enabled(node) is True
-
-
-class TestGetAttr:
-    def test_dict(self):
-        assert _get_attr({"key": "val"}, "key") == "val"
-        assert _get_attr({"key": "val"}, "missing", "default") == "default"
-
-    def test_object(self):
-        obj = MagicMock()
-        obj.key = "val"
-        assert _get_attr(obj, "key") == "val"
 
 
 class TestNodeAccessors:
@@ -358,8 +350,9 @@ class TestPushMetadata:
         assert entities[0]["typeName"] == "fabric_lakehouse_table"
         client.update_column_descriptions.assert_not_called()
 
-    def test_skips_description_when_persist_docs_not_set(self):
+    def test_syncs_description_when_persist_docs_not_set(self):
         client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
@@ -368,8 +361,9 @@ class TestPushMetadata:
 
         sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
-        client.bulk_create_or_update.assert_not_called()
-        client.update_column_descriptions.assert_not_called()
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert entities[0]["attributes"]["userDescription"] == "This model tracks user events"
 
     def test_skips_description_when_persist_docs_relation_false(self):
         client = MagicMock()
@@ -378,7 +372,10 @@ class TestPushMetadata:
         entity = _make_purview_entity()
         node = _make_node(
             description="Has description but persist_docs is off",
-            config={"materialized": "table", "persist_docs": {"relation": False}},
+            config={
+                "materialized": "table",
+                "persist_docs": {"relation": False, "columns": False},
+            },
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
@@ -478,8 +475,8 @@ class TestPushMetadata:
             unique_id="test.test.not_null_my_model_id",
             resource_type="test",
             status="pass",
+            depends_on_nodes=["model.test.my_model"],
         )
-        test_result["node"]["depends_on"] = {"nodes": ["model.test.my_model"]}
         model_result = _make_result(unique_id="model.test.my_model")
         results = [model_result, test_result]
 
@@ -749,6 +746,38 @@ class TestPushLineage:
         sync.push_lineage([removed_node], resolved, is_full_sync=True)
 
         client.delete_entity_by_guid.assert_called_once_with("proc-stale")
+
+    def test_resolves_dependency_via_graph_node(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+
+        upstream_node = _make_node(
+            unique_id="model.test.upstream",
+            name="upstream",
+            schema="dbo",
+            database="my_db",
+        )
+        graph = _make_graph(nodes={"model.test.upstream": upstream_node})
+        sync = PurviewSync(client, _make_fabric_client(), graph)
+
+        upstream_entity = _make_purview_entity(guid="guid-upstream", name="upstream")
+        downstream_entity = _make_purview_entity(guid="guid-downstream", name="downstream")
+        node = _make_node(
+            unique_id="model.test.downstream",
+            name="downstream",
+            depends_on={"nodes": ["model.test.upstream"]},
+        )
+        resolved = {
+            "model.test.downstream": downstream_entity,
+            "my_db.dbo.downstream": downstream_entity,
+            "my_db.dbo.upstream": upstream_entity,
+        }
+
+        sync.push_lineage([node], resolved)
+
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert entities[0]["attributes"]["inputs"][0]["guid"] == "guid-upstream"
 
 
 class TestFormatTestStatus:
