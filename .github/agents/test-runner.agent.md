@@ -149,7 +149,7 @@ pytest's `-k` flag matches test class and method names. Use `and`, `or`, `not`, 
 | `TestCachingSelectedSchemaOnlyFabricSpark` | Schema-scoped caching |
 | `TestNoPopulateCacheFabricSpark` | No-cache mode |
 
-**Shorthand:** `Cach and FabricSpark`
+**Shorthand:** `Caching and FabricSpark`
 
 ### Aliases (`test_aliases.py`)
 | Class | Tests |

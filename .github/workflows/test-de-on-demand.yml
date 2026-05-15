@@ -17,6 +17,7 @@ on:
 
 permissions:
   contents: read
+  packages: read
   pull-requests: write
   id-token: write
 
@@ -31,7 +32,7 @@ jobs:
       (github.event_name == 'workflow_dispatch') ||
       (github.event_name == 'issue_comment'
        && github.event.issue.pull_request
-       && startsWith(github.event.comment.body, '/test-de')
+       && (github.event.comment.body == '/test-de' || startsWith(github.event.comment.body, '/test-de '))
        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     environment: azure
@@ -43,11 +44,13 @@ jobs:
       - name: Resolve PR metadata
         id: pr
         uses: actions/github-script@v7
+        env:
+          INPUT_PR_NUMBER: ${{ github.event.inputs.pr_number }}
         with:
           script: |
             const prNumber = context.eventName === 'issue_comment'
               ? context.issue.number
-              : parseInt('${{ github.event.inputs.pr_number }}');
+              : parseInt(process.env.INPUT_PR_NUMBER);
 
             if (!prNumber) {
               core.setFailed('No PR number provided');
@@ -72,6 +75,8 @@ jobs:
       - name: Parse pytest filter
         id: filter
         uses: actions/github-script@v7
+        env:
+          INPUT_PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
         with:
           script: |
             let rawFilter = '';
@@ -80,10 +85,10 @@ jobs:
               const match = body.match(/^\/test-de\s+(.*)/);
               rawFilter = match ? match[1].split('\n')[0].trim() : '';
             } else {
-              rawFilter = `${{ github.event.inputs.pytest_filter }}`;
+              rawFilter = process.env.INPUT_PYTEST_FILTER || '';
             }
 
-            const sanitized = rawFilter.replace(/[^a-zA-Z0-9 _\-()]/g, '');
+            const sanitized = rawFilter.replace(/[^a-zA-Z0-9 _()]/g, '');
             core.setOutput('expression', sanitized);
             core.setOutput('has_filter', sanitized.length > 0 ? 'true' : 'false');
             core.info(`Pytest filter: ${sanitized || '(none — running all DE tests)'}`);
