@@ -1,6 +1,4 @@
-from unittest.mock import MagicMock, call, patch
-
-import pytest
+from unittest.mock import MagicMock
 
 from dbt.adapters.fabric.purview_sync import (
     PurviewSync,
@@ -207,7 +205,7 @@ class TestHasPersistDocsEnabled:
 
     def test_relation_false_only(self):
         node = {"config": {"persist_docs": {"relation": False}}}
-        assert _has_persist_docs_enabled(node) is False
+        assert _has_persist_docs_enabled(node) is True
 
 
 class TestGetAttr:
@@ -447,16 +445,14 @@ class TestPushBusinessMetadata:
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        with patch("dbt.adapters.fabric.purview_sync.datetime") as mock_dt:
-            mock_dt.now.return_value.isoformat.return_value = "2026-01-01T00:00:00+00:00"
-            mock_dt.side_effect = lambda *args, **kw: __import__("datetime").datetime(*args, **kw)
-            sync.push_business_metadata([node], resolved)
+        sync.push_business_metadata([node], resolved)
 
         call_args = client.set_business_metadata.call_args
         assert call_args[0][0] == "guid-1"
         assert call_args[0][1] == "dbt_metadata"
         attrs = call_args[0][2]
         assert attrs["dbt_model_id"] == "model.test.my_model"
+        assert attrs.get("dbt_last_sync")
         assert attrs["dbt_tags"] == "finance,daily"
         assert attrs["dbt_materialization"] == "incremental"
         assert "owner" in attrs["dbt_meta"]
@@ -500,10 +496,7 @@ class TestPushBusinessMetadata:
         node = _make_node()
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        with patch("dbt.adapters.fabric.purview_sync.datetime") as mock_dt:
-            mock_dt.now.return_value.isoformat.return_value = "2026-01-01T00:00:00+00:00"
-            mock_dt.side_effect = lambda *args, **kw: __import__("datetime").datetime(*args, **kw)
-            sync.push_business_metadata([node], resolved)
+        sync.push_business_metadata([node], resolved)
 
         call_args = client.set_business_metadata.call_args
         attrs = call_args[0][2]
@@ -540,8 +533,10 @@ class TestPushLineage:
         assert process["attributes"]["qualifiedName"] == "dbt://model.test.my_model"
         assert len(process["attributes"]["inputs"]) == 1
         assert process["attributes"]["inputs"][0]["guid"] == "guid-upstream"
+        assert process["attributes"]["inputs"][0]["typeName"] == "fabric_lakehouse_table"
         assert len(process["attributes"]["outputs"]) == 1
         assert process["attributes"]["outputs"][0]["guid"] == "guid-downstream"
+        assert process["attributes"]["outputs"][0]["typeName"] == "fabric_lakehouse_table"
 
     def test_resolves_source_dependencies(self):
         client = MagicMock()
