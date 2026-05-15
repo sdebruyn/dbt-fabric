@@ -32,19 +32,24 @@ class TestPurviewEnsureTypeDefinitions:
         assert purview_client._types_ensured
 
 
-_BASE_MODEL_SQL = "SELECT 1 AS id, 'hello' AS name"
-_DERIVED_MODEL_SQL = "SELECT id, name FROM {{ ref('base_model') }}"
-_NO_DOCS_MODEL_SQL = "SELECT 42 AS value"
+_BASE_MODEL_SQL = """
+{{ config(materialized='table') }}
+SELECT 1 AS id, 'hello' AS name
+"""
+_DERIVED_MODEL_SQL = """
+{{ config(materialized='table') }}
+SELECT id, name FROM {{ ref('base_model') }}
+"""
+_NO_DOCS_MODEL_SQL = """
+{{ config(materialized='table') }}
+SELECT 42 AS value
+"""
 
 _SCHEMA_V1 = """\
 version: 2
 models:
   - name: base_model
     description: "Base model for Purview integration test"
-    config:
-      persist_docs:
-        relation: true
-        columns: true
     columns:
       - name: id
         description: "Primary key"
@@ -54,9 +59,6 @@ models:
         description: "Display name"
   - name: derived_model
     description: "Derived model referencing base"
-    config:
-      persist_docs:
-        relation: true
   - name: no_docs_model
     description: "This description should NOT be synced to Purview"
     config:
@@ -73,10 +75,6 @@ version: 2
 models:
   - name: base_model
     description: "Updated base model (v2)"
-    config:
-      persist_docs:
-        relation: true
-        columns: true
     columns:
       - name: id
         description: "Primary key (updated)"
@@ -89,9 +87,6 @@ models:
           - not_null
   - name: derived_model
     description: "Updated derived model (v2)"
-    config:
-      persist_docs:
-        relation: true
     columns:
       - name: id
         tests:
