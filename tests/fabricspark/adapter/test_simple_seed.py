@@ -19,7 +19,7 @@ from dbt.tests.adapter.simple_seed.test_seed import (
     BaseTestEmptySeed,
 )
 from dbt.tests.adapter.simple_seed.test_seed_type_override import BaseSimpleSeedColumnOverride
-from dbt.tests.util import copy_file, run_dbt
+from dbt.tests.util import copy_file, read_file, rm_dir, run_dbt
 
 fixed_seeds__expected_sql = (
     seeds.seeds__expected_sql.replace("TIMESTAMP WITHOUT TIME ZONE", "TIMESTAMP")
@@ -67,22 +67,29 @@ class TestSeedConfigFullRefreshOnFabricSpark(FixedSeedSetup, BaseSeedConfigFullR
 
 
 class TestSeedCustomSchemaFabricSpark(FixedSeedSetup, BaseSeedCustomSchema):
-    @pytest.mark.skip("TODO: FabricSpark cannot drop and recreate schemas during seed operations")
-    def test_simple_seed_with_drop_and_schema(self, project, custom_schema):
-        pass
+    pass
 
 
-@pytest.mark.skip("TODO: FabricSpark seed parsing test encounters runtime errors")
 class TestSeedParsingFabricSpark(FixedSeedSetup, BaseSeedParsing):
     pass
 
 
-@pytest.mark.skip("Spark SQL interprets dots in seed names as schema separators")
 class TestSeedSpecificFormatsFabricSpark(BaseSeedSpecificFormats):
-    pass
+    @pytest.fixture(scope="class")
+    def seeds(self, test_data_dir):
+        big_seed_path = self._make_big_seed(test_data_dir)
+        big_seed = read_file(big_seed_path)
+        yield {
+            "big_seed.csv": big_seed,
+            "seed_unicode.csv": seeds.seed__unicode_csv,
+        }
+        rm_dir(test_data_dir)
+
+    def test_simple_seed(self, project):
+        results = run_dbt(["seed"])
+        assert len(results) == 2
 
 
-@pytest.mark.skip("TODO: FabricSpark seed with empty delimiter encounters runtime errors")
 class TestSeedWithEmptyDelimiterFabricSpark(FixedSeedSetup, BaseSeedWithEmptyDelimiter):
     pass
 
@@ -118,46 +125,12 @@ class TestSimpleSeedColumnOverrideFabricSpark(BaseSimpleSeedColumnOverride):
         }
 
 
-class BaseSimpleSeedEnabledViaConfigFabricSpark(BaseSimpleSeedEnabledViaConfig):
+class TestSimpleSeedEnabledViaConfigFabricSpark(BaseSimpleSeedEnabledViaConfig):
     @pytest.fixture(scope="function")
-    def clear_test_schema(self):
-        pass
-
-
-class TestSimpleSeedEnabledViaConfigFabricSparkDisabled(
-    BaseSimpleSeedEnabledViaConfigFabricSpark,
-):
-    @pytest.mark.skip("Tests have to be split up into multiple classes")
-    def test_simple_seed_selection(self, clear_test_schema, project):
-        super().test_simple_seed_selection(clear_test_schema, project)
-
-    @pytest.mark.skip("Tests have to be split up into multiple classes")
-    def test_simple_seed_exclude(self, clear_test_schema, project):
-        super().test_simple_seed_exclude(clear_test_schema, project)
-
-
-class TestSimpleSeedEnabledViaConfigFabricSparkSelection(
-    BaseSimpleSeedEnabledViaConfigFabricSpark,
-):
-    @pytest.mark.skip("Tests have to be split up into multiple classes")
-    def test_simple_seed_with_disabled(self, clear_test_schema, project):
-        super().test_simple_seed_with_disabled(clear_test_schema, project)
-
-    @pytest.mark.skip("Tests have to be split up into multiple classes")
-    def test_simple_seed_exclude(self, clear_test_schema, project):
-        super().test_simple_seed_exclude(clear_test_schema, project)
-
-
-class TestSimpleSeedEnabledViaConfigFabricSparkExclude(
-    BaseSimpleSeedEnabledViaConfigFabricSpark,
-):
-    @pytest.mark.skip("Tests have to be split up into multiple classes")
-    def test_simple_seed_with_disabled(self, clear_test_schema, project):
-        super().test_simple_seed_with_disabled(clear_test_schema, project)
-
-    @pytest.mark.skip("Tests have to be split up into multiple classes")
-    def test_simple_seed_selection(self, clear_test_schema, project):
-        super().test_simple_seed_selection(clear_test_schema, project)
+    def clear_test_schema(self, project):
+        yield
+        for table in ["seed_enabled", "seed_disabled", "seed_tricky"]:
+            project.run_sql(f"DROP TABLE IF EXISTS {project.test_schema}.{table}")
 
 
 class TestSimpleSeedWithBOMFabricSpark(FixedSeedSetup, BaseSimpleSeedWithBOM):
