@@ -3,6 +3,18 @@
 This adapter has all the features of [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric), plus some additional features.
 The following features are exclusive to dbt-fabric-samdebruyn:
 
+## No ODBC driver required
+
+This adapter uses Microsoft's official [`mssql-python`](https://github.com/microsoft/mssql-python) driver instead of pyODBC. This is a pure Python driver for SQL Server and Microsoft Fabric that communicates over the TDS protocol natively, without requiring any system-level ODBC components.
+
+Microsoft's upstream dbt-fabric adapter depends on pyODBC, which requires:
+
+- A system-level ODBC driver manager (unixODBC on Linux/macOS)
+- The Microsoft ODBC Driver for SQL Server (`msodbcsql18`)
+- Platform-specific installation steps that vary between Linux distributions, macOS, and Windows
+
+With dbt-fabric-samdebruyn, none of this is needed. Installation is a single `pip install` or `uv add` command, with no platform-specific setup. This eliminates a common source of installation issues and makes the adapter work consistently across all platforms, including containerized environments.
+
 ## Fabric Lakehouse (Spark SQL) support
 
 This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft's dbt-fabric only supports Data Warehouse.

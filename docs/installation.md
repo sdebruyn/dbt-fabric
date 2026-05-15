@@ -10,6 +10,8 @@ Make sure you have [Python](https://www.python.org/) 3.11 or higher installed. Y
 python --version
 ```
 
+No other system-level dependencies are required. Unlike Microsoft's upstream dbt-fabric adapter (which depends on pyODBC and requires installing ODBC drivers like `msodbcsql18` and `unixODBC`), this adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python) -- Microsoft's official pure Python driver for SQL Server and Fabric. It handles TDS protocol communication natively, so there is nothing else to install on your system.
+
 ## Install dbt-fabric-samdebruyn
 
 === "Data Warehouse (T-SQL)"
@@ -37,3 +39,5 @@ python --version
         If you only use Fabric Data Warehouse, you do not need the `[spark]` extra. The base `pip install dbt-fabric-samdebruyn dbt-core` is sufficient.
 
     See the [Lakehouse guide](lakehouse.md) for configuration and usage details.
+
+That's it. No ODBC driver setup, no platform-specific steps. The adapter works the same on Linux, macOS, and Windows.

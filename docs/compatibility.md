@@ -18,6 +18,16 @@ The first release of this fork was version 1.10.0. The adapter follows [dbt-adap
 | 3.12 | Yes |
 | 3.13 | Yes |
 
+## SQL Server driver
+
+This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), Microsoft's official pure Python driver for SQL Server and Fabric. No ODBC drivers or system-level dependencies are required.
+
+| | dbt-fabric-samdebruyn | Microsoft's dbt-fabric |
+|---|---|---|
+| Driver | `mssql-python` | pyODBC + `msodbcsql18` |
+| System dependencies | None | ODBC driver manager + ODBC driver |
+| Installation | `pip install` only | `pip install` + platform-specific ODBC setup |
+
 ## Fabric compute types
 
 | Compute type | Adapter type | SQL dialect |
