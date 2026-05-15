@@ -158,6 +158,8 @@ tests/
 
 ## Development workflow (TDD)
 
+**Always work in a git worktree.** When working on a PR, feature, or bugfix, always create and use a separate git worktree (or use `isolation: "worktree"` when spawning agents). This avoids conflicts with other people or agents working in the same repository at the same time. The main working directory should stay on its current branch — all development happens in worktrees.
+
 Development follows a strict test-driven loop using `dbt-tests-adapter` base classes:
 
 1. **Add a base test class** — Find the relevant base class in `dbt.tests.adapter.*` and create a subclass in the appropriate test directory (`tests/fabric/` or `tests/fabricspark/`). Start with a bare `pass` body.
