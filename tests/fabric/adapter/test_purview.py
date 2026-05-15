@@ -51,6 +51,7 @@ class TestPurviewEnsureTypeDefinitions:
 
 _BASE_MODEL_SQL = "SELECT 1 AS id, 'hello' AS name"
 _DERIVED_MODEL_SQL = "SELECT id, name FROM {{ ref('base_model') }}"
+_NO_DOCS_MODEL_SQL = "SELECT 42 AS value"
 
 _SCHEMA_V1 = """\
 version: 2
@@ -73,6 +74,15 @@ models:
     config:
       persist_docs:
         relation: true
+  - name: no_docs_model
+    description: "This description should NOT be synced to Purview"
+    config:
+      persist_docs:
+        relation: false
+        columns: false
+    columns:
+      - name: value
+        description: "This column description should NOT be synced"
 """
 
 _SCHEMA_V2 = """\
@@ -103,6 +113,12 @@ models:
       - name: id
         tests:
           - not_null
+  - name: no_docs_model
+    description: "Still should NOT be synced"
+    config:
+      persist_docs:
+        relation: false
+        columns: false
 """
 
 
@@ -115,12 +131,13 @@ class TestPurviewProjectFlow:
         return {
             "base_model.sql": _BASE_MODEL_SQL,
             "derived_model.sql": _DERIVED_MODEL_SQL,
+            "no_docs_model.sql": _NO_DOCS_MODEL_SQL,
             "schema.yml": _SCHEMA_V1,
         }
 
     def test_dbt_run_succeeds(self, project):
         results = run_dbt(["run"])
-        assert len(results) == 2
+        assert len(results) == 3
 
     def test_dbt_test_succeeds(self, project):
         results = run_dbt(["test"])
@@ -142,7 +159,7 @@ class TestPurviewProjectFlow:
     def test_updated_project_syncs(self, project):
         write_file(_SCHEMA_V2, project.project_root, "models", "schema.yml")
         results = run_dbt(["run"])
-        assert len(results) == 2
+        assert len(results) == 3
         run_dbt(["run-operation", "purview_sync"])
 
 
@@ -321,3 +338,29 @@ class TestPurviewMetadataSync:
         entity_data = purview_client.get_entity_by_guid(purview_table["id"])
         desc = entity_data["entity"]["attributes"].get("userDescription", "")
         assert desc == "Should persist"
+
+    def test_persist_docs_false_still_pushes_business_metadata(
+        self, purview_client, fabric_api_client, purview_table
+    ):
+        purview_client.ensure_type_definitions()
+        name = purview_table["name"]
+
+        graph = self._make_graph(
+            name,
+            description="Should NOT land in Purview",
+            tags=["persist-docs-false"],
+            persist_docs={"relation": False, "columns": False},
+        )
+        sync, models, resolved = self._sync(purview_client, fabric_api_client, graph)
+        if not resolved:
+            pytest.skip("Entity not resolvable in Purview")
+
+        sync.push_descriptions(models, resolved)
+        sync.push_business_metadata(models, resolved)
+
+        entity_data = purview_client.get_entity_by_guid(purview_table["id"])
+        bm = entity_data["entity"].get("businessAttributes", {}).get("dbt_metadata", {})
+        desc = entity_data["entity"]["attributes"].get("userDescription", "")
+
+        assert bm["dbt_tags"] == "persist-docs-false"
+        assert desc != "Should NOT land in Purview"
