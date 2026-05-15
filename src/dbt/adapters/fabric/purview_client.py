@@ -220,7 +220,9 @@ class PurviewClient:
     def __init__(self, endpoint: str, token_provider: FabricTokenProvider) -> None:
         self._endpoint = endpoint.rstrip("/")
         self._token_provider = token_provider
-        self._types_ensured = False
+        self._bm_type_ensured = False
+        self._transformation_type_ensured = False
+        self._warehouse_types_ensured = False
 
     def _get_auth_headers(self) -> dict[str, str]:
         token = self._token_provider.get_access_token(scope=_PURVIEW_SCOPE)
@@ -417,38 +419,33 @@ class PurviewClient:
 
         self._api_put(url, type_def)
 
-    def ensure_type_definitions(self) -> None:
-        """Register or update custom Purview type definitions.
-
-        Registers:
-        - dbt_metadata business metadata type
-        - dbt_transformation entity type (for lineage)
-        - fabric_warehouse_schema/table/column entity types
-        - fabric_warehouse relationship types (schema↔warehouse, table↔schema, column↔table)
-
-        Entity and relationship types must be registered separately: Purview requires
-        entity types to exist before relationship types can reference them.
-
-        Only runs once per client instance.
-        Raises DbtRuntimeError if any type definition cannot be registered.
-        """
-        if self._types_ensured:
+    def ensure_business_metadata_type(self) -> None:
+        """Register the dbt_metadata business metadata type. No-op after first success."""
+        if self._bm_type_ensured:
             return
+        self._register_type_def(f"{self._endpoint}{_TYPEDEF_API}", _DBT_BUSINESS_METADATA_DEF)
+        self._bm_type_ensured = True
 
+    def ensure_transformation_type(self) -> None:
+        """Register the dbt_transformation entity type (for lineage). No-op after first success."""
+        if self._transformation_type_ensured:
+            return
+        self._register_type_def(f"{self._endpoint}{_TYPEDEF_API}", _DBT_TRANSFORMATION_TYPE_DEF)
+        self._transformation_type_ensured = True
+
+    def ensure_warehouse_types(self) -> None:
+        """Register warehouse entity and relationship types. No-op after first success.
+
+        Entity types must be registered before relationship types that reference them.
+        """
+        if self._warehouse_types_ensured:
+            return
         url = f"{self._endpoint}{_TYPEDEF_API}"
-
-        warehouse_entity_defs = {"entityDefs": _WAREHOUSE_TYPE_DEFS["entityDefs"]}
-        warehouse_rel_defs = {"relationshipDefs": _WAREHOUSE_TYPE_DEFS["relationshipDefs"]}
-
-        for label, type_def in [
-            ("dbt_metadata business metadata", _DBT_BUSINESS_METADATA_DEF),
-            ("dbt_transformation entity", _DBT_TRANSFORMATION_TYPE_DEF),
-            ("fabric_warehouse entity", warehouse_entity_defs),
-            ("fabric_warehouse relationship", warehouse_rel_defs),
-        ]:
-            self._register_type_def(url, type_def)
-
-        self._types_ensured = True
+        self._register_type_def(url, {"entityDefs": _WAREHOUSE_TYPE_DEFS["entityDefs"]})
+        self._register_type_def(
+            url, {"relationshipDefs": _WAREHOUSE_TYPE_DEFS["relationshipDefs"]}
+        )
+        self._warehouse_types_ensured = True
 
     def get_type_def_by_name(self, name: str) -> dict | None:
         """Fetch a type definition by name. Returns None if not found.

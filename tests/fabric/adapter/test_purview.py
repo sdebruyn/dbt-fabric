@@ -102,20 +102,40 @@ class TestPurviewEnsureTypeDefinitions:
         _cleanup_custom_types(purview_client)
         yield
 
-    def test_creates_and_verifies_type_definitions(self, purview_client: PurviewClient):
-        purview_client._types_ensured = False
-        purview_client.ensure_type_definitions()
+    def test_creates_business_metadata_type(self, purview_client: PurviewClient):
+        purview_client._bm_type_ensured = False
+        purview_client.ensure_business_metadata_type()
 
-        for name in _CUSTOM_ENTITY_TYPES + _CUSTOM_BM_TYPES:
+        for name in _CUSTOM_BM_TYPES:
             td = purview_client.get_type_def_by_name(name)
             assert td is not None, f"Type {name} not found after registration"
+        assert purview_client._bm_type_ensured
+
+    def test_creates_transformation_type(self, purview_client: PurviewClient):
+        purview_client._transformation_type_ensured = False
+        purview_client.ensure_transformation_type()
+
+        td = purview_client.get_type_def_by_name("dbt_transformation")
+        assert td is not None, "dbt_transformation not found after registration"
+        assert purview_client._transformation_type_ensured
+
+    def test_creates_warehouse_types(self, purview_client: PurviewClient):
+        purview_client._warehouse_types_ensured = False
+        purview_client.ensure_warehouse_types()
+
+        for name in _CUSTOM_ENTITY_TYPES:
+            if name == "dbt_transformation":
+                continue
+            td = purview_client.get_type_def_by_name(name)
+            assert td is not None, f"Type {name} not found after registration"
+        assert purview_client._warehouse_types_ensured
 
     def test_idempotent_registration(self, purview_client: PurviewClient):
-        purview_client._types_ensured = False
-        purview_client.ensure_type_definitions()
-        purview_client._types_ensured = False
-        purview_client.ensure_type_definitions()
-        assert purview_client._types_ensured
+        purview_client._bm_type_ensured = False
+        purview_client.ensure_business_metadata_type()
+        purview_client._bm_type_ensured = False
+        purview_client.ensure_business_metadata_type()
+        assert purview_client._bm_type_ensured
 
 
 _BASE_MODEL_SQL = """

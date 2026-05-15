@@ -78,8 +78,6 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
         client = self.connections.get_purview_client(credentials)
         fabric_client = self.connections.get_fabric_api_client(credentials)
 
-        client.ensure_type_definitions()
-
         models = extract_syncable_models(graph, results)
         if not models:
             logger.info("Purview sync: no syncable models found")

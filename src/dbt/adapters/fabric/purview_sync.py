@@ -289,6 +289,7 @@ class PurviewSync:
         Entities are created sequentially because Purview requires referenced entities
         to exist before they can be used in relationshipAttributes.
         """
+        self._client.ensure_warehouse_types()
         wh_qn = f"{_FABRIC_GROUPS_URL}/{workspace_id}/warehouses/{warehouse_id}"
         schema_qn = f"{wh_qn}/schemas/{schema}"
         table_qn = f"{schema_qn}/tables/{table_name}"
@@ -451,9 +452,13 @@ class PurviewSync:
                 column_work.append((model, entity))
 
         has_bm = any("businessAttributes" in u for u in entity_updates)
+        if has_bm:
+            self._client.ensure_business_metadata_type()
         if entity_updates:
             self._client.bulk_create_or_update(entity_updates, merge_business_attrs=has_bm)
 
+        if any("warehouse" in entity["entityType"] for _, entity in column_work):
+            self._client.ensure_warehouse_types()
         for model, entity in column_work:
             col_entities = self._build_column_entities(model, entity)
             if col_entities:
@@ -635,6 +640,7 @@ class PurviewSync:
             process_entities.append(process_entity)
 
         if process_entities:
+            self._client.ensure_transformation_type()
             self._client.bulk_create_or_update(process_entities)
 
         if is_full_sync:
