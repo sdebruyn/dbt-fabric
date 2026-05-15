@@ -1,5 +1,6 @@
 import pytest
 
+from dbt.tests.adapter.utils import fixture_listagg
 from dbt.tests.adapter.utils.test_listagg import BaseListagg
 
 models__test_listagg_no_order_by_sql = """
@@ -66,7 +67,7 @@ class TestListaggFabricSpark(BaseListagg):
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "test_listagg.yml": models__test_listagg_no_order_by_sql,
+            "test_listagg.yml": fixture_listagg.models__test_listagg_yml,
             "test_listagg.sql": self.interpolate_macro_namespace(
                 models__test_listagg_no_order_by_sql, "listagg"
             ),
