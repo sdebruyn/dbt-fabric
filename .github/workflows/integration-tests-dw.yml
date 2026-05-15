@@ -86,6 +86,7 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ${{ matrix.dwh_name }}
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
         run: >-
           uv run pytest -ra -v --dw
           ${{ github.event_name == 'schedule' && '--with-python' || '' }}
