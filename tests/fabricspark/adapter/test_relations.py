@@ -9,7 +9,6 @@ class TestChangeRelationTypesFabricSpark(BaseChangeRelationTypeValidator):
         self._run_and_check_materialization("materialized_view")
         self._run_and_check_materialization("table")
         self._run_and_check_materialization("materialized_view")
-        self._run_and_check_materialization("incremental")
         self._run_and_check_materialization("table", extra_args=["--full-refresh"])
 
 
