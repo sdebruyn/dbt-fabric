@@ -1,5 +1,3 @@
-from collections import namedtuple
-
 import pytest
 
 from dbt.artifacts.schemas.results import TestStatus
@@ -11,13 +9,14 @@ from dbt.tests.adapter.store_test_failures_tests.basic import (
     StoreTestFailuresAsProjectLevelEphemeral,
     StoreTestFailuresAsProjectLevelOff,
     StoreTestFailuresAsProjectLevelView,
+    TestResult,
 )
 from dbt.tests.adapter.store_test_failures_tests.test_store_test_failures import (
     BaseStoreTestFailures,
     BaseStoreTestFailuresLimit,
 )
 
-TestResult = namedtuple("TestResult", ["name", "status", "type"])
+TestResult.__test__ = False
 
 TEST__TABLE_TRUE = """
 {{ config(store_failures_as="table", store_failures=True) }}
