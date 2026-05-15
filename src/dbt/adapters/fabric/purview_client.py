@@ -86,6 +86,107 @@ _DBT_TRANSFORMATION_TYPE_DEF = {
     ]
 }
 
+_WAREHOUSE_SERVICE_TYPE = "Azure Synapse Analytics"
+
+_WAREHOUSE_TYPE_DEFS = {
+    "entityDefs": [
+        {
+            "name": "fabric_warehouse_schema",
+            "description": "Schema within a Fabric Data Warehouse",
+            "superTypes": ["Asset"],
+            "serviceType": _WAREHOUSE_SERVICE_TYPE,
+            "typeVersion": "1.0",
+            "attributeDefs": [],
+        },
+        {
+            "name": "fabric_warehouse_table",
+            "description": "Table in a Fabric Data Warehouse",
+            "superTypes": ["DataSet", "Purview_Table"],
+            "serviceType": _WAREHOUSE_SERVICE_TYPE,
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {"name": "createTime", "typeName": "date", "isOptional": True},
+                {"name": "modifiedTime", "typeName": "date", "isOptional": True},
+            ],
+        },
+        {
+            "name": "fabric_warehouse_table_column",
+            "description": "Column in a Fabric Data Warehouse table",
+            "superTypes": ["DataSet"],
+            "serviceType": _WAREHOUSE_SERVICE_TYPE,
+            "typeVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "name": "data_type",
+                    "typeName": "string",
+                    "isOptional": False,
+                    "description": "SQL data type",
+                },
+                {"name": "length", "typeName": "long", "isOptional": True},
+                {"name": "precision", "typeName": "int", "isOptional": True},
+                {"name": "scale", "typeName": "int", "isOptional": True},
+                {"name": "isNullable", "typeName": "boolean", "isOptional": True},
+            ],
+        },
+    ],
+    "relationshipDefs": [
+        {
+            "name": "fabric_warehouse_schema_warehouses",
+            "description": "Link between warehouse and its schemas",
+            "serviceType": _WAREHOUSE_SERVICE_TYPE,
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "fabric_warehouse",
+                "name": "schemas",
+                "cardinality": "SET",
+                "isContainer": True,
+            },
+            "endDef2": {
+                "type": "fabric_warehouse_schema",
+                "name": "warehouse",
+                "cardinality": "SINGLE",
+            },
+        },
+        {
+            "name": "fabric_warehouse_table_schemas",
+            "description": "Link between schema and its tables",
+            "serviceType": _WAREHOUSE_SERVICE_TYPE,
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "fabric_warehouse_schema",
+                "name": "tables",
+                "cardinality": "SET",
+                "isContainer": True,
+            },
+            "endDef2": {
+                "type": "fabric_warehouse_table",
+                "name": "dbSchema",
+                "cardinality": "SINGLE",
+            },
+        },
+        {
+            "name": "fabric_warehouse_table_columns",
+            "description": "Link between table and its columns",
+            "serviceType": _WAREHOUSE_SERVICE_TYPE,
+            "typeVersion": "1.0",
+            "relationshipCategory": "COMPOSITION",
+            "endDef1": {
+                "type": "fabric_warehouse_table",
+                "name": "columns",
+                "cardinality": "SET",
+                "isContainer": True,
+            },
+            "endDef2": {
+                "type": "fabric_warehouse_table_column",
+                "name": "table",
+                "cardinality": "SINGLE",
+            },
+        },
+    ],
+}
+
 
 class PurviewClient:
     """Low-level client for the Microsoft Purview Data Map REST API.
@@ -258,35 +359,59 @@ class PurviewClient:
         url = f"{self._endpoint}{_LABELS_API.format(guid=guid)}"
         self._api_post(url, labels)
 
+    def _register_type_def(self, url: str, type_def: dict) -> bool:
+        """Register a type definition, creating it if new or updating it if it already exists.
+
+        The Purview API requires POST for initial creation and PUT for updates.
+        We try POST first; if it fails (type already exists), we fall back to PUT.
+        """
+        try:
+            self._api_post(url, type_def)
+            return True
+        except dbt_common.exceptions.DbtRuntimeError:
+            pass
+
+        try:
+            self._api_put(url, type_def)
+            return True
+        except dbt_common.exceptions.DbtRuntimeError:
+            return False
+
     def ensure_type_definitions(self) -> bool:
-        """Register or update the dbt_metadata business metadata type and dbt_transformation
-        entity type in Purview.
+        """Register or update custom Purview type definitions.
 
-        Uses PUT (idempotent create-or-update) so that definition changes in future adapter
-        versions are always applied. Only runs once per client instance.
+        Registers:
+        - dbt_metadata business metadata type
+        - dbt_transformation entity type (for lineage)
+        - fabric_warehouse_schema/table/column entity types
+        - fabric_warehouse relationship types (schema↔warehouse, table↔schema, column↔table)
 
-        Returns True if both type definitions were registered successfully.
+        Entity and relationship types must be registered separately: Purview requires
+        entity types to exist before relationship types can reference them.
+
+        Only runs once per client instance.
+        Returns True if all type definitions were registered successfully.
         """
         if self._types_ensured:
             return True
 
         url = f"{self._endpoint}{_TYPEDEF_API}"
+        all_ok = True
 
-        bm_ok = False
-        try:
-            self._api_put(url, _DBT_BUSINESS_METADATA_DEF)
-            bm_ok = True
-        except dbt_common.exceptions.DbtRuntimeError:
-            logger.warning("Failed to register dbt_metadata business metadata type in Purview")
+        warehouse_entity_defs = {"entityDefs": _WAREHOUSE_TYPE_DEFS["entityDefs"]}
+        warehouse_rel_defs = {"relationshipDefs": _WAREHOUSE_TYPE_DEFS["relationshipDefs"]}
 
-        entity_ok = False
-        try:
-            self._api_put(url, _DBT_TRANSFORMATION_TYPE_DEF)
-            entity_ok = True
-        except dbt_common.exceptions.DbtRuntimeError:
-            logger.warning("Failed to register dbt_transformation entity type in Purview")
+        for label, type_def in [
+            ("dbt_metadata business metadata", _DBT_BUSINESS_METADATA_DEF),
+            ("dbt_transformation entity", _DBT_TRANSFORMATION_TYPE_DEF),
+            ("fabric_warehouse entity", warehouse_entity_defs),
+            ("fabric_warehouse relationship", warehouse_rel_defs),
+        ]:
+            if not self._register_type_def(url, type_def):
+                logger.warning(f"Failed to register {label} types in Purview")
+                all_ok = False
 
-        self._types_ensured = bm_ok and entity_ok
+        self._types_ensured = all_ok
         return self._types_ensured
 
     def delete_business_metadata(self, guid: str, bm_name: str) -> None:

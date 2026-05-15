@@ -217,10 +217,10 @@ class TestEnsureTypeDefinitions:
 
         assert result1 is True
         assert result2 is True
-        assert mock_request.call_count == 2  # one PUT for BM def, one PUT for entity def
+        assert mock_request.call_count == 4  # BM, entity, warehouse entities, warehouse rels
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
-    def test_uses_put_for_idempotent_updates(self, mock_request, client):
+    def test_tries_post_first_for_creation(self, mock_request, client):
         mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {}
@@ -229,7 +229,33 @@ class TestEnsureTypeDefinitions:
         client.ensure_type_definitions()
 
         for call in mock_request.call_args_list:
-            assert call[0][0] == "put"
+            assert call[0][0] == "post"
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_falls_back_to_put_when_post_fails(self, mock_request, client):
+        post_fail = MagicMock()
+        post_fail.status_code = 409
+        post_fail.text = "Conflict"
+
+        put_success = MagicMock()
+        put_success.status_code = 200
+        put_success.json.return_value = {}
+
+        mock_request.side_effect = [
+            post_fail,
+            put_success,  # BM: POST fails, PUT succeeds
+            post_fail,
+            put_success,  # entity: POST fails, PUT succeeds
+            post_fail,
+            put_success,  # warehouse entities: POST fails, PUT succeeds
+            post_fail,
+            put_success,  # warehouse rels: POST fails, PUT succeeds
+        ]
+
+        result = client.ensure_type_definitions()
+        assert result is True
+        methods = [call[0][0] for call in mock_request.call_args_list]
+        assert methods == ["post", "put"] * 4
 
     @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_returns_false_when_registration_fails(self, mock_request, client):
@@ -240,6 +266,101 @@ class TestEnsureTypeDefinitions:
 
         result = client.ensure_type_definitions()
         assert result is False
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_registers_warehouse_entity_types(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_request.return_value = mock_response
+
+        client.ensure_type_definitions()
+
+        put_bodies = [call[1]["json"] for call in mock_request.call_args_list]
+        entity_def_bodies = [b for b in put_bodies if "entityDefs" in b]
+        assert len(entity_def_bodies) >= 1
+
+        all_entity_names = []
+        for body in entity_def_bodies:
+            all_entity_names.extend(e["name"] for e in body.get("entityDefs", []))
+        assert "fabric_warehouse_schema" in all_entity_names
+        assert "fabric_warehouse_table" in all_entity_names
+        assert "fabric_warehouse_table_column" in all_entity_names
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_registers_warehouse_relationship_types(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_request.return_value = mock_response
+
+        client.ensure_type_definitions()
+
+        put_bodies = [call[1]["json"] for call in mock_request.call_args_list]
+        rel_def_bodies = [b for b in put_bodies if "relationshipDefs" in b]
+        assert len(rel_def_bodies) >= 1
+
+        all_rel_names = []
+        for body in rel_def_bodies:
+            all_rel_names.extend(r["name"] for r in body.get("relationshipDefs", []))
+        assert "fabric_warehouse_schema_warehouses" in all_rel_names
+        assert "fabric_warehouse_table_schemas" in all_rel_names
+        assert "fabric_warehouse_table_columns" in all_rel_names
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_warehouse_table_has_dataset_supertype(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_request.return_value = mock_response
+
+        client.ensure_type_definitions()
+
+        put_bodies = [call[1]["json"] for call in mock_request.call_args_list]
+        for body in put_bodies:
+            for entity_def in body.get("entityDefs", []):
+                if entity_def["name"] == "fabric_warehouse_table":
+                    assert "DataSet" in entity_def["superTypes"]
+                    assert "Purview_Table" in entity_def["superTypes"]
+                    return
+        pytest.fail("fabric_warehouse_table entity def not found")
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_warehouse_column_has_data_type_attribute(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_request.return_value = mock_response
+
+        client.ensure_type_definitions()
+
+        put_bodies = [call[1]["json"] for call in mock_request.call_args_list]
+        for body in put_bodies:
+            for entity_def in body.get("entityDefs", []):
+                if entity_def["name"] == "fabric_warehouse_table_column":
+                    attr_names = [a["name"] for a in entity_def.get("attributeDefs", [])]
+                    assert "data_type" in attr_names
+                    data_type_attr = next(
+                        a for a in entity_def["attributeDefs"] if a["name"] == "data_type"
+                    )
+                    assert data_type_attr["isOptional"] is False
+                    return
+        pytest.fail("fabric_warehouse_table_column entity def not found")
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_warehouse_relationships_use_composition(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {}
+        mock_request.return_value = mock_response
+
+        client.ensure_type_definitions()
+
+        put_bodies = [call[1]["json"] for call in mock_request.call_args_list]
+        for body in put_bodies:
+            for rel_def in body.get("relationshipDefs", []):
+                if rel_def["name"].startswith("fabric_warehouse_"):
+                    assert rel_def["relationshipCategory"] == "COMPOSITION"
 
 
 class TestBusinessMetadata:
