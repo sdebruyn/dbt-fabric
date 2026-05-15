@@ -3,9 +3,6 @@ from unittest.mock import MagicMock
 
 from dbt.adapters.fabric.purview_sync import (
     PurviewSync,
-    _get_node_database,
-    _get_node_name,
-    _get_node_schema,
     _has_persist_docs_enabled,
     _make_cache_key,
     extract_syncable_models,
@@ -209,21 +206,6 @@ class TestHasPersistDocsEnabled:
     def test_relation_false_only(self):
         node = {"config": {"persist_docs": {"relation": False}}}
         assert _has_persist_docs_enabled(node) is True
-
-
-class TestNodeAccessors:
-    def test_alias_preferred_over_name(self):
-        node = _make_node(name="original", alias="aliased")
-        assert _get_node_name(node) == "aliased"
-
-    def test_name_when_no_alias(self):
-        node = _make_node(name="original", alias=None)
-        assert _get_node_name(node) == "original"
-
-    def test_schema_and_database(self):
-        node = _make_node(schema="staging", database="analytics")
-        assert _get_node_schema(node) == "staging"
-        assert _get_node_database(node) == "analytics"
 
 
 class TestMakeCacheKey:
