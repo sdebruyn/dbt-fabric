@@ -191,8 +191,8 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
-| `integration-tests.yml` | PR, push, weekly | DW: Python 3.11/3.12/3.13 on every trigger. DE: Python 3.13 on schedule + manual dispatch only |
-| `test-de-on-demand.yml` | PR comment, manual | On-demand DE tests — see below |
+| `integration-tests-dw.yml` | PR, push, manual | DW tests: Python 3.11/3.12/3.13 matrix |
+| `integration-tests-de.yml` | Weekly, PR comment, manual | DE tests: weekly on main, on-demand per PR — see below |
 | `publish-docker.yml` | Manual | Build CI Docker image (`.github/CI.Dockerfile`) → ghcr.io |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
 
@@ -215,7 +215,7 @@ The workflow checks out the PR branch, runs the matching tests, and comments bac
 **From the CLI:**
 
 ```shell
-gh workflow run test-de-on-demand.yml -f pytest_filter="TestDebugFabricSpark" -f pr_number="94"
+gh workflow run integration-tests-de.yml -f pytest_filter="TestDebugFabricSpark" -f pr_number="94"
 ```
 
 **Via Copilot:** mention `@test-runner` in a PR comment with a natural language description of which tests to run. The agent translates it to the right pytest filter and triggers the workflow.

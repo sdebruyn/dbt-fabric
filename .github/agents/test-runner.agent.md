@@ -16,7 +16,7 @@ You help developers run FabricSpark (DE) integration tests on pull requests. Whe
 Use `gh workflow run` with the PR number and filter:
 
 ```shell
-gh workflow run test-de-on-demand.yml -f pytest_filter="<FILTER>" -f pr_number="<PR_NUMBER>"
+gh workflow run integration-tests-de.yml -f pytest_filter="<FILTER>" -f pr_number="<PR_NUMBER>"
 ```
 
 Get the PR number from the current context (the PR you're working on, or ask the user).
