@@ -133,7 +133,7 @@ class TestSimpleSeedEnabledViaConfigFabricSpark(BaseSimpleSeedEnabledViaConfig):
             project.run_sql(f"DROP TABLE IF EXISTS {project.test_schema}.{table}")
 
 
-class TestSimpleSeedWithBOMFabricSpark(FixedSeedSetup, BaseSimpleSeedWithBOM):
+class TestSimpleSeedWithBOMFabricSpark(BaseSimpleSeedWithBOM):
     @pytest.fixture(scope="class", autouse=True)
     def setUp(self, project):
         run_sql_statements(project, fixed_seeds__expected_sql)
