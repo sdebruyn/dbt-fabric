@@ -99,6 +99,17 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
 
         return relations
 
+    def list_relations_without_caching(
+        self, schema_relation: FabricSparkRelation
+    ) -> list[FabricSparkRelation]:
+        try:
+            return super().list_relations_without_caching(schema_relation)
+        except DbtRuntimeError as e:
+            errmsg = getattr(e, "msg", "")
+            if "[SCHEMA_NOT_FOUND]" in errmsg:
+                return []
+            raise
+
     def get_relation(
         self, database: str, schema: str, identifier: str
     ) -> FabricSparkRelation | None:
