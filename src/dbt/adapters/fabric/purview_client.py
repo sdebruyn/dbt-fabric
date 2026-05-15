@@ -359,11 +359,10 @@ class PurviewClient:
             f"{self._endpoint}{_ENTITY_API}"
             f"/uniqueAttribute/type/{type_name}?attr:qualifiedName={qualified_name}"
         )
-        try:
-            response = self._api_get(url)
-            return response.json()
-        except dbt_common.exceptions.DbtRuntimeError:
+        response = self._api_request(url, expected_statuses={404})
+        if response.status_code == 404:
             return None
+        return response.json()
 
     def bulk_create_or_update(
         self, entities: list[AtlasEntity], merge_business_attrs: bool = False
@@ -464,10 +463,17 @@ class PurviewClient:
         return None
 
     def delete_type_def_by_name(self, name: str) -> bool:
-        """Delete a type definition by name. Returns True if deleted, False if not found."""
-        url = f"{self._endpoint}{_TYPEDEF_BY_NAME_API}/name/{name}"
-        response = self._api_request(url, method="delete", expected_statuses={404})
-        return response.status_code != 404
+        """Delete a type definition by name. Returns True if deleted, False if not found.
+
+        Tries both the entity/relationship endpoint and the business metadata endpoint,
+        mirroring get_type_def_by_name().
+        """
+        for base in (_TYPEDEF_BY_NAME_API, _BM_TYPEDEF_BY_NAME_API):
+            url = f"{self._endpoint}{base}/name/{name}"
+            response = self._api_request(url, method="delete", expected_statuses={404})
+            if response.status_code != 404:
+                return True
+        return False
 
     def delete_business_metadata(self, guid: str, bm_name: str) -> None:
         """Remove all attributes of a business metadata type from an entity."""

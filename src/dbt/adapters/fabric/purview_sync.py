@@ -653,6 +653,9 @@ class PurviewSync:
                 qn = f"dbt://{model.get('unique_id', '')}"
                 if qn in created_qns:
                     continue
+                dep_nodes = model.get("depends_on", {}).get("nodes", [])
+                if dep_nodes:
+                    continue
                 result = self._client.get_entity_by_qualified_name("dbt_transformation", qn)
                 if result is not None and "entity" in result:
                     self._client.delete_entity_by_guid(result["entity"]["guid"])
