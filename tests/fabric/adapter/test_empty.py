@@ -1,7 +1,11 @@
 import pytest
 
 from dbt.tests.adapter.empty._models import schema_sources_yml
-from dbt.tests.adapter.empty.test_empty import BaseTestEmpty, BaseTestEmptyInlineSourceRef
+from dbt.tests.adapter.empty.test_empty import (
+    BaseTestEmpty,
+    BaseTestEmptyInlineSourceRef,
+    MetadataWithEmptyFlag,
+)
 
 
 class TestFabricEmpty(BaseTestEmpty):
@@ -19,3 +23,7 @@ class TestFabricEmptyInlineSourceRef(BaseTestEmptyInlineSourceRef):
             "model.sql": "select * from {{ source('seed_sources', 'raw_source') }}",
             "sources.yml": schema_sources_yml,
         }
+
+
+class TestMetadataWithEmptyFlagFabric(MetadataWithEmptyFlag):
+    pass

@@ -1,6 +1,7 @@
 from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonEmptyTests,
     BasePythonIncrementalTests,
+    BasePythonMetaGetTests,
     BasePythonModelTests,
     BasePythonSampleTests,
 )
@@ -24,4 +25,8 @@ class TestPythonEmptyTestsFabricSpark(BasePythonEmptyTests):
 
 
 class TestPythonSampleTestsFabricSpark(BasePythonSampleTests):
+    pass
+
+
+class TestPythonMetaGetTestsFabricSpark(BasePythonMetaGetTests):
     pass

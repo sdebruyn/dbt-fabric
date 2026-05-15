@@ -76,6 +76,22 @@
   {{ return(load_result('list_relations_without_caching').table) }}
 {% endmacro %}
 
+{% macro fabric__list_function_relations_without_caching(schema_relation) %}
+  {% call statement('list_function_relations_without_caching', fetch_result=True) %}
+    {{ get_use_database_sql(schema_relation.database) }}
+    select
+        DB_NAME() as [database],
+        f.name as [name],
+        SCHEMA_NAME(f.schema_id) as [schema],
+        'function' as table_type
+    from sys.objects as f {{ information_schema_hints() }}
+    where f.type_desc like '%function%'
+      and SCHEMA_NAME(f.schema_id) like '{{ schema_relation.schema }}'
+    {{ apply_label() }}
+  {% endcall %}
+  {{ return(load_result('list_function_relations_without_caching').table) }}
+{% endmacro %}
+
 {% macro fabric__get_relation_last_modified(information_schema, relations) -%}
   {%- call statement('last_modified', fetch_result=True) -%}
         select

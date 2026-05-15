@@ -4,6 +4,7 @@ import yaml
 from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonEmptyTests,
     BasePythonIncrementalTests,
+    BasePythonMetaGetTests,
     BasePythonModelTests,
     BasePythonSampleTests,
     basic_python,
@@ -51,6 +52,10 @@ class TestPythonEmptyTestsFabric(FabricInputModel, BasePythonEmptyTests):
 
 
 class TestPythonSampleTestsFabric(FabricInputModel, BasePythonSampleTests):
+    pass
+
+
+class TestPythonMetaGetTestsFabric(BasePythonMetaGetTests):
     pass
 
 

@@ -1,4 +1,8 @@
-from dbt.tests.adapter.empty.test_empty import BaseTestEmpty, BaseTestEmptyInlineSourceRef
+from dbt.tests.adapter.empty.test_empty import (
+    BaseTestEmpty,
+    BaseTestEmptyInlineSourceRef,
+    MetadataWithEmptyFlag,
+)
 
 
 class TestFabricSparkEmpty(BaseTestEmpty):
@@ -6,4 +10,8 @@ class TestFabricSparkEmpty(BaseTestEmpty):
 
 
 class TestFabricSparkEmptyInlineSourceRef(BaseTestEmptyInlineSourceRef):
+    pass
+
+
+class TestMetadataWithEmptyFlagFabricSpark(MetadataWithEmptyFlag):
     pass

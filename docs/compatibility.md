@@ -9,6 +9,7 @@ The first release of this fork was version 1.10.0. The adapter follows [dbt-adap
 | 1.9 | Yes |
 | 1.10 | Yes |
 | 1.11 | Yes |
+| 1.12 | Yes |
 
 ## Python
 
