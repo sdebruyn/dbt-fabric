@@ -8,9 +8,27 @@ from dbt.tests.adapter.unit_testing.test_quoted_reserved_word_column_names impor
 from dbt.tests.adapter.unit_testing.test_types import BaseUnitTestingTypes
 
 
-@pytest.mark.skip("TODO: FabricSpark unit test data type handling differs from standard adapters")
 class TestFabricSparkUnitTestingTypes(BaseUnitTestingTypes):
-    pass
+    @pytest.fixture
+    def data_types(self):
+        return [
+            ["1", "1"],
+            ["2.0", "2.0"],
+            ["'12345'", "12345"],
+            ["'string'", "string"],
+            ["true", "true"],
+            ["date '2011-11-11'", "2011-11-11"],
+            ["timestamp '2013-11-03 00:00:00-0'", "2013-11-03 00:00:00-0"],
+            ["array(1, 2, 3)", "'array(1, 2, 3)'"],
+            [
+                "map('10', 't', '15', 'f', '20', NULL)",
+                """'map("10", "t", "15", "f", "20", NULL)'""",
+            ],
+            [
+                'named_struct("a", 1, "b", 2, "c", 3)',
+                """'named_struct("a", 1, "b", 2, "c", 3)'""",
+            ],
+        ]
 
 
 class TestFabricSparkUnitTestCaseInsensivity(BaseUnitTestCaseInsensivity):
@@ -21,9 +39,6 @@ class TestFabricSparkUnitTestInvalidInput(BaseUnitTestInvalidInput):
     pass
 
 
-@pytest.mark.skip(
-    "TODO: FabricSpark quoted reserved word column names need Spark SQL compatible quoting"
-)
 class TestFabricSparkUnitTestQuotedReservedWordColumnNames(
     BaseUnitTestQuotedReservedWordColumnNames,
 ):
