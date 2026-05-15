@@ -5,11 +5,11 @@
 
   {%- set strategy_name = config.get('strategy') -%}
   {%- set unique_key = config.get('unique_key') %}
-  {# dbt-spark: file_format config + validation removed — Fabric Lakehouse only supports Delta #}
+  {# dbt-spark: file_format config + validation removed -- Fabric Lakehouse only supports Delta #}
   {%- set grant_config = config.get('grants') -%}
 
+  {# dbt-spark: database=none -- FabricSpark supports 3-part names #}
   {% set target_relation_exists, target_relation = get_or_create_relation(
-          {# dbt-spark: database=none — FabricSpark supports 3-part names #}
           database=model.database,
           schema=model.schema,
           identifier=target_table,
@@ -43,7 +43,7 @@
 
       {{ adapter.valid_snapshot_target(target_relation, columns) }}
 
-      {# dbt-spark: spark_build_snapshot_staging_table (creates a view) — Fabric Lakehouse has no view support #}
+      {# dbt-spark: spark_build_snapshot_staging_table (creates a view) -- Fabric Lakehouse has no view support #}
       {% set staging_table = fabricspark__build_snapshot_staging_table(strategy, sql, target_relation) %}
 
       {% do adapter.expand_target_column_types(from_relation=staging_table,
