@@ -15,6 +15,7 @@ The dbt-fabric-samdebruyn adapter supports a variety of authentication methods s
     | Local development | [`CLI`](#azure-cli) or [`auto`](#automatic-defaultazurecredential) |
     | CI/CD pipelines | [`environment`](#environment-variables) or [`ActiveDirectoryServicePrincipal`](#service-principal) |
     | Fabric Notebook | [`environment`](#environment-variables) or [`ActiveDirectoryServicePrincipal`](#service-principal) |
+    | Custom token source | [`token_credential`](#custom-token-credential) |
 
 All examples below assume the following base profile structure. Only the authentication-related keys change per method.
 
@@ -221,6 +222,66 @@ default:
 !!! warning "`FabricSpark` is currently broken"
 
     The adapter also has a `FabricSpark` (alias `SynapseSpark`) authentication method that uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to obtain an access token from the notebook session. However, this method is **not working** at the moment because Microsoft's Runtime in the Notebooks returns a credential with a scope that is not allowed to access Data Warehouses and SQL Endpoints. Use one of the alternatives above instead.
+
+---
+
+## Custom token credential
+
+### Bring your own `TokenCredential`
+
+If the built-in authentication methods don't cover your scenario, you can supply any class that implements the [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840) protocol. The adapter loads the class by its dotted import path at runtime and calls `get_token()` whenever it needs an access token.
+
+This is useful when:
+
+- Your organization uses a custom OAuth flow or token broker
+- You need Workload Identity Federation with a non-standard setup
+- A desktop tool already has its own credential and you want to pass it through
+- You want to wrap an existing credential with custom logging or caching
+
+**Step 1 -- Implement a `TokenCredential`**
+
+Your class must implement the `get_token` method from the `azure.core.credentials.TokenCredential` protocol:
+
+```python
+# my_pkg/auth.py
+from azure.core.credentials import AccessToken, TokenCredential
+
+
+class MyCredential(TokenCredential):
+    def __init__(self, token_url: str, **kwargs):
+        self.token_url = token_url
+
+    def get_token(self, *scopes, **kwargs) -> AccessToken:
+        # Your custom logic to acquire a token
+        ...
+```
+
+**Step 2 -- Configure your profile**
+
+```yaml
+default:
+  target: dev
+  outputs:
+    dev:
+      type: fabric
+      database: my_data_warehouse
+      schema: dbt
+      workspace: My Workspace
+      authentication: token_credential
+      credential_class: "my_pkg.auth.MyCredential"
+      credential_kwargs:
+        token_url: "{{ env_var('TOKEN_URL') }}"
+```
+
+The `credential_class` must be a fully qualified dotted path to an importable Python class. The `credential_kwargs` dictionary is passed as keyword arguments to the class constructor.
+
+!!! warning "The credential class must be importable"
+
+    The class specified in `credential_class` must be importable from the Python environment where dbt runs. Make sure the package is installed (e.g. `pip install my_pkg`) or that the module is on the Python path.
+
+!!! info "Configuration reference"
+
+    See [`credential_class`](configuration.md#credential_class) and [`credential_kwargs`](configuration.md#credential_kwargs) for details on validation rules and allowed values.
 
 ---
 
