@@ -7,6 +7,13 @@ import requests
 
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
+from dbt.adapters.fabric.purview_types import (
+    AtlasEntity,
+    AtlasRelationship,
+    BulkResponse,
+    EntityResponse,
+    PurviewEntityRef,
+)
 
 logger = AdapterLogger("fabric")
 
@@ -263,7 +270,7 @@ class PurviewClient:
         self,
         name: str,
         database_identifiers: list[str] | None = None,
-    ) -> list[dict]:
+    ) -> list[PurviewEntityRef]:
         """Search Purview for table entities by name, filtering by database identifiers.
 
         The database_identifiers list can contain both human-readable names and Fabric item
@@ -289,7 +296,7 @@ class PurviewClient:
 
     def _run_search(
         self, url: str, filters: list[dict], keywords: str | None = None
-    ) -> list[dict]:
+    ) -> list[PurviewEntityRef]:
         """Execute a paginated search request against the Purview Data Map search API."""
 
         body: dict = {
@@ -298,7 +305,7 @@ class PurviewClient:
             "limit": 50,
         }
 
-        results: list[dict] = []
+        results: list[PurviewEntityRef] = []
         while True:
             response = self._api_post(url, body)
             data = response.json()
@@ -310,20 +317,22 @@ class PurviewClient:
 
         return results
 
-    def search_process_entities(self, qualified_name_prefix: str) -> list[dict]:
+    def search_process_entities(self, qualified_name_prefix: str) -> list[PurviewEntityRef]:
         """Search for process entities with a given qualifiedName prefix."""
         url = f"{self._endpoint}{_SEARCH_API}"
         filters = [{"objectType": "Process"}]
         results = self._run_search(url, filters, keywords=qualified_name_prefix)
         return [r for r in results if r.get("qualifiedName", "").startswith(qualified_name_prefix)]
 
-    def get_entity_by_guid(self, guid: str) -> dict:
+    def get_entity_by_guid(self, guid: str) -> EntityResponse:
         """Fetch a single entity and its referred entities (e.g. columns) by GUID."""
         url = f"{self._endpoint}{_ENTITY_API}/guid/{guid}"
         response = self._api_get(url)
         return response.json()
 
-    def get_entity_by_qualified_name(self, type_name: str, qualified_name: str) -> dict | None:
+    def get_entity_by_qualified_name(
+        self, type_name: str, qualified_name: str
+    ) -> EntityResponse | None:
         """Fetch a single entity by its type and qualifiedName.
 
         Uses the Atlas uniqueAttribute endpoint, which bypasses the search index
@@ -340,8 +349,8 @@ class PurviewClient:
             return None
 
     def bulk_create_or_update(
-        self, entities: list[dict], merge_business_attrs: bool = False
-    ) -> dict:
+        self, entities: list[AtlasEntity], merge_business_attrs: bool = False
+    ) -> BulkResponse:
         """Create or update entities in batches of 50 (Purview API limit).
 
         When merge_business_attrs is True, includes businessAttributeUpdateBehavior=merge
@@ -350,7 +359,7 @@ class PurviewClient:
         url = f"{self._endpoint}{_ENTITY_BULK_API}"
         if merge_business_attrs:
             url += "?businessAttributeUpdateBehavior=merge"
-        all_results: dict = {"mutatedEntities": {}, "guidAssignments": {}}
+        all_results: BulkResponse = {"mutatedEntities": {}, "guidAssignments": {}}
 
         for i in range(0, len(entities), 50):
             batch = entities[i : i + 50]
@@ -362,13 +371,13 @@ class PurviewClient:
 
         return all_results
 
-    def create_relationship(self, relationship: dict) -> dict:
+    def create_relationship(self, relationship: AtlasRelationship) -> dict:
         """Create a relationship between two Purview entities."""
         url = f"{self._endpoint}{_RELATIONSHIP_API}"
         response = self._api_post(url, relationship)
         return response.json()
 
-    def set_business_metadata(self, guid: str, bm_name: str, attrs: dict) -> None:
+    def set_business_metadata(self, guid: str, bm_name: str, attrs: dict[str, str]) -> None:
         """Set business metadata attributes on an entity (e.g. dbt_metadata)."""
         url = f"{self._endpoint}{_BUSINESS_METADATA_API.format(guid=guid, bm_name=bm_name)}"
         self._api_post(url, attrs)

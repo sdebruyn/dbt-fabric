@@ -4,6 +4,12 @@ from datetime import datetime, timezone
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.purview_client import PurviewClient
+from dbt.adapters.fabric.purview_types import (
+    AtlasEntity,
+    BulkResponse,
+    DbtMetadataAttrs,
+    PurviewEntityRef,
+)
 
 logger = AdapterLogger("fabric")
 
@@ -65,7 +71,7 @@ def _make_cache_key(database: str, schema: str, name: str) -> str:
 _FABRIC_BASE_URL = "https://app.fabric.microsoft.com/groups"
 
 
-def _extract_guid(result: dict, qualified_name: str) -> str | None:
+def _extract_guid(result: BulkResponse, qualified_name: str) -> str | None:
     """Extract the GUID for an entity from a bulk_create_or_update response."""
     for entities in result.get("mutatedEntities", {}).values():
         for entity in entities:
@@ -106,7 +112,7 @@ class PurviewSync:
         self._client = client
         self._fabric_client = fabric_client
         self._graph = graph
-        self._entity_cache: dict[str, dict] = {}
+        self._entity_cache: dict[str, PurviewEntityRef] = {}
         self._item_cache: dict[str, tuple[str, str] | None] = {}
         self._lakehouses: list[dict] | None = None
         self._warehouses: list[dict] | None = None
@@ -172,7 +178,9 @@ class PurviewSync:
 
         return mapping
 
-    def _pick_best_entity(self, results: list[dict], db_ids: list[str] | None) -> dict:
+    def _pick_best_entity(
+        self, results: list[PurviewEntityRef], db_ids: list[str] | None
+    ) -> PurviewEntityRef:
         """Pick the best Purview entity from search results, preferring database ID matches."""
         if len(results) == 1 or not db_ids:
             return results[0]
@@ -185,7 +193,7 @@ class PurviewSync:
 
         return results[0]
 
-    def resolve_entities(self, models: list[dict]) -> dict[str, dict]:
+    def resolve_entities(self, models: list[dict]) -> dict[str, PurviewEntityRef]:
         """Match dbt models to Purview entities, creating them if they don't exist.
 
         Searches for existing entities first. When no match is found, creates the
@@ -193,7 +201,7 @@ class PurviewSync:
         for DW models). Returns a dict mapping both unique_id and cache_key to
         the Purview entity for each matched or created entity.
         """
-        cache: dict[str, dict] = {}
+        cache: dict[str, PurviewEntityRef] = {}
 
         for model in models:
             name = model.get("alias") or model.get("name", "")
@@ -231,7 +239,7 @@ class PurviewSync:
         self._entity_cache = cache
         return cache
 
-    def _create_entity_for_model(self, model: dict) -> dict | None:
+    def _create_entity_for_model(self, model: dict) -> PurviewEntityRef | None:
         """Create Purview entities for a dbt model that has no existing entity.
 
         For warehouse models: creates warehouse, schema, and table entities.
@@ -262,7 +270,7 @@ class PurviewSync:
         warehouse_name: str,
         schema: str,
         table_name: str,
-    ) -> dict | None:
+    ) -> PurviewEntityRef | None:
         """Create fabric_warehouse, fabric_warehouse_schema, and fabric_warehouse_table entities.
 
         Entities are created sequentially because Purview requires referenced entities
@@ -320,7 +328,7 @@ class PurviewSync:
 
     def _create_lakehouse_table(
         self, workspace_id: str, lakehouse_id: str, table_name: str
-    ) -> dict | None:
+    ) -> PurviewEntityRef | None:
         """Create a fabric_lakehouse_table entity."""
         table_qn = (
             f"{_FABRIC_BASE_URL}/{workspace_id}/lakehouses/{lakehouse_id}/tables/{table_name}"
@@ -344,7 +352,9 @@ class PurviewSync:
             "qualifiedName": table_qn,
         }
 
-    def _resolve_entity_for_node(self, node: dict, resolved: dict) -> dict | None:
+    def _resolve_entity_for_node(
+        self, node: dict, resolved: dict[str, PurviewEntityRef]
+    ) -> PurviewEntityRef | None:
         """Look up the Purview entity for a dbt node, first by unique_id then by cache key."""
         unique_id = node.get("unique_id", "")
         if unique_id in resolved:
@@ -360,7 +370,7 @@ class PurviewSync:
     def push_metadata(
         self,
         models: list[dict],
-        resolved: dict,
+        resolved: dict[str, PurviewEntityRef],
         results: list | None = None,
         sync_descriptions: bool = True,
         sync_metadata: bool = True,
@@ -373,8 +383,8 @@ class PurviewSync:
         need to fetch referred entities first.
         """
         test_results = self._collect_test_results(models, results) if sync_metadata else {}
-        entity_updates: list[dict] = []
-        column_work: list[tuple] = []
+        entity_updates: list[AtlasEntity] = []
+        column_work: list[tuple[dict, PurviewEntityRef]] = []
 
         for model in models:
             entity = self._resolve_entity_for_node(model, resolved)
@@ -428,7 +438,9 @@ class PurviewSync:
             if col_entities:
                 self._client.bulk_create_or_update(col_entities)
 
-    def _build_column_entities(self, model: dict, table_entity: dict) -> list[dict]:
+    def _build_column_entities(
+        self, model: dict, table_entity: PurviewEntityRef
+    ) -> list[AtlasEntity]:
         """Build column entity payloads for a table, creating them if they don't exist.
 
         Uses the table's entityType to determine whether to create warehouse or lakehouse
@@ -442,7 +454,7 @@ class PurviewSync:
         table_type = table_entity["entityType"]
         is_warehouse = "warehouse" in table_type
 
-        col_entities: list[dict] = []
+        col_entities: list[AtlasEntity] = []
         for col in columns.values():
             col_name = col.get("name", "")
             if not col_name:
@@ -486,7 +498,7 @@ class PurviewSync:
 
     def _build_business_metadata_attrs(
         self, model: dict, unique_id: str, test_results: dict[str, dict[str, str]]
-    ) -> dict[str, str]:
+    ) -> DbtMetadataAttrs:
         """Build the dbt_metadata business metadata attributes dict for a model."""
         tags = model.get("tags", [])
         config = model.get("config", {})
@@ -498,7 +510,7 @@ class PurviewSync:
         model_test_results = test_results.get(unique_id, {})
         test_status = self._format_test_status(model_test_results)
 
-        attrs: dict[str, str] = {
+        attrs: DbtMetadataAttrs = {
             "dbt_model_id": unique_id,
             "dbt_last_sync": datetime.now(timezone.utc).isoformat(),
         }
@@ -516,14 +528,19 @@ class PurviewSync:
             attrs["dbt_test_status"] = test_status
         return attrs
 
-    def push_lineage(self, models: list[dict], resolved: dict, is_full_sync: bool = False) -> None:
+    def push_lineage(
+        self,
+        models: list[dict],
+        resolved: dict[str, PurviewEntityRef],
+        is_full_sync: bool = False,
+    ) -> None:
         """Create dbt_transformation process entities in Purview to represent data lineage.
 
         For each model with upstream dependencies (ref/source), creates a Process entity
         with inputs (upstream tables) and outputs (the model's table) so Purview displays
         the lineage graph. Source dependencies are resolved lazily from the graph.
         """
-        process_entities: list[dict] = []
+        process_entities: list[AtlasEntity] = []
 
         for model in models:
             entity = self._resolve_entity_for_node(model, resolved)
@@ -582,7 +599,9 @@ class PurviewSync:
                     self._client.delete_entity_by_guid(proc["id"])
                     logger.info(f"Purview: removed stale lineage {qn}")
 
-    def _resolve_dependency_entity(self, dep_id: str, resolved: dict) -> dict | None:
+    def _resolve_dependency_entity(
+        self, dep_id: str, resolved: dict[str, PurviewEntityRef]
+    ) -> PurviewEntityRef | None:
         """Resolve a dependency to a Purview entity.
 
         Handles model/seed/snapshot dependencies via the resolved cache, and source
@@ -605,7 +624,9 @@ class PurviewSync:
 
         return None
 
-    def _resolve_source_entity(self, source_id: str, resolved: dict) -> dict | None:
+    def _resolve_source_entity(
+        self, source_id: str, resolved: dict[str, PurviewEntityRef]
+    ) -> PurviewEntityRef | None:
         """Resolve a dbt source to a Purview entity by searching on name and database."""
         sources = self._graph.get("sources", {})
         source = sources.get(source_id)
