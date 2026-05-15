@@ -43,6 +43,30 @@ def _make_node(
     }
 
 
+def _make_test_node(name, depends_on_nodes):
+    return {
+        "unique_id": f"test.test.{name}",
+        "name": name,
+        "resource_type": "test",
+        "depends_on": {"nodes": depends_on_nodes},
+    }
+
+
+def _make_source(
+    unique_id="source.test.raw.orders",
+    name="orders",
+    schema="raw",
+    database="my_db",
+):
+    return {
+        "unique_id": unique_id,
+        "name": name,
+        "schema": schema,
+        "database": database,
+        "resource_type": "source",
+    }
+
+
 def _make_result(unique_id="model.test.my_model", resource_type="model", status="pass"):
     return {
         "node": {
@@ -74,6 +98,13 @@ def _make_fabric_client(lakehouses=None, warehouses=None):
     client.get_lakehouses.return_value = lakehouses or [{"displayName": "my_db", "id": "b2c3d4e5"}]
     client.get_warehouses.return_value = warehouses or []
     return client
+
+
+def _make_graph(nodes=None, sources=None):
+    return {
+        "nodes": nodes or {},
+        "sources": sources or {},
+    }
 
 
 class TestExtractSyncableModels:
@@ -147,13 +178,55 @@ class TestMakeCacheKey:
         assert _make_cache_key("DB", "DBO", "Table") == "db.dbo.table"
 
 
+class TestBuildTestMapping:
+    def test_maps_tests_to_models(self):
+        graph = _make_graph(
+            nodes={
+                "model.test.my_model": _make_node(),
+                "test.test.not_null_id": _make_test_node("not_null_id", ["model.test.my_model"]),
+                "test.test.unique_id": _make_test_node("unique_id", ["model.test.my_model"]),
+            }
+        )
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), graph)
+        assert sorted(sync._get_test_names_for_model("model.test.my_model")) == [
+            "not_null_id",
+            "unique_id",
+        ]
+
+    def test_maps_tests_to_seeds(self):
+        graph = _make_graph(
+            nodes={
+                "seed.test.raw_data": _make_node(
+                    unique_id="seed.test.raw_data", resource_type="seed"
+                ),
+                "test.test.not_null_raw": _make_test_node("not_null_raw", ["seed.test.raw_data"]),
+            }
+        )
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), graph)
+        assert sync._get_test_names_for_model("seed.test.raw_data") == ["not_null_raw"]
+
+    def test_ignores_source_dependencies(self):
+        graph = _make_graph(
+            nodes={
+                "test.test.src_test": _make_test_node("src_test", ["source.test.raw.orders"]),
+            }
+        )
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), graph)
+        assert sync._get_test_names_for_model("source.test.raw.orders") == []
+
+    def test_no_tests_returns_empty(self):
+        graph = _make_graph(nodes={"model.test.my_model": _make_node()})
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), graph)
+        assert sync._get_test_names_for_model("model.test.my_model") == []
+
+
 class TestResolveEntities:
     def test_resolves_single_match(self):
         client = MagicMock()
         entity = _make_purview_entity()
         client.search_entities.return_value = [entity]
 
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
         node = _make_node()
         resolved = sync.resolve_entities([node])
 
@@ -173,7 +246,7 @@ class TestResolveEntities:
         )
         client.search_entities.return_value = [entity_a, entity_b]
 
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
         node = _make_node()
         resolved = sync.resolve_entities([node])
 
@@ -183,7 +256,7 @@ class TestResolveEntities:
         client = MagicMock()
         client.search_entities.return_value = []
 
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
         node = _make_node()
         resolved = sync.resolve_entities([node])
 
@@ -194,7 +267,7 @@ class TestResolveEntities:
         entity = _make_purview_entity()
         client.search_entities.return_value = [entity]
 
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
         node_a = _make_node(unique_id="model.test.my_model")
         node_b = _make_node(unique_id="model.other.my_model")
         resolved = sync.resolve_entities([node_a, node_b])
@@ -205,7 +278,7 @@ class TestResolveEntities:
 class TestPushDescriptions:
     def test_pushes_model_description(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node(description="This model tracks user events")
@@ -223,7 +296,7 @@ class TestPushDescriptions:
 
     def test_skips_empty_description(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node(description="")
@@ -235,7 +308,7 @@ class TestPushDescriptions:
 
     def test_pushes_column_descriptions(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node(
@@ -256,7 +329,7 @@ class TestPushDescriptions:
 class TestPushBusinessMetadata:
     def test_pushes_metadata(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node(
@@ -282,7 +355,7 @@ class TestPushBusinessMetadata:
 
     def test_includes_test_results(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node()
@@ -304,12 +377,37 @@ class TestPushBusinessMetadata:
         attrs = call_args[0][2]
         assert attrs["dbt_test_status"] == "all_passed"
 
+    def test_includes_test_names_from_graph(self):
+        client = MagicMock()
+        graph = _make_graph(
+            nodes={
+                "model.test.my_model": _make_node(),
+                "test.test.not_null_id": _make_test_node("not_null_id", ["model.test.my_model"]),
+                "test.test.unique_id": _make_test_node("unique_id", ["model.test.my_model"]),
+            }
+        )
+        sync = PurviewSync(client, _make_fabric_client(), graph)
+
+        entity = _make_purview_entity()
+        node = _make_node()
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        with patch("dbt.adapters.fabric.purview_sync.datetime") as mock_dt:
+            mock_dt.now.return_value.isoformat.return_value = "2026-01-01T00:00:00+00:00"
+            mock_dt.side_effect = lambda *args, **kw: __import__("datetime").datetime(*args, **kw)
+            sync.push_business_metadata([node], resolved)
+
+        call_args = client.set_business_metadata.call_args
+        attrs = call_args[0][2]
+        test_names = set(attrs["dbt_tests"].split(","))
+        assert test_names == {"not_null_id", "unique_id"}
+
 
 class TestPushLineage:
     def test_creates_process_entities(self):
         client = MagicMock()
         client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         upstream = _make_purview_entity(guid="guid-upstream", name="source_table")
         downstream = _make_purview_entity(guid="guid-downstream", name="my_model")
@@ -337,9 +435,99 @@ class TestPushLineage:
         assert len(process["attributes"]["outputs"]) == 1
         assert process["attributes"]["outputs"][0]["guid"] == "guid-downstream"
 
+    def test_resolves_source_dependencies(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+
+        source_entity = _make_purview_entity(
+            guid="guid-source",
+            name="orders",
+            qualified_name="https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/orders",
+        )
+        client.search_entities.return_value = [source_entity]
+
+        graph = _make_graph(
+            sources={
+                "source.test.raw.orders": _make_source(),
+            }
+        )
+        sync = PurviewSync(client, _make_fabric_client(), graph)
+
+        downstream = _make_purview_entity(guid="guid-downstream", name="my_model")
+        node = _make_node(
+            depends_on={"nodes": ["source.test.raw.orders"]},
+        )
+        resolved = {
+            "model.test.my_model": downstream,
+            "my_db.dbo.my_model": downstream,
+        }
+
+        sync.push_lineage([node], resolved)
+
+        client.search_entities.assert_called_once_with(
+            name="orders", database_identifiers=["my_db", "b2c3d4e5"]
+        )
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert entities[0]["attributes"]["inputs"][0]["guid"] == "guid-source"
+
+    def test_source_resolution_is_cached(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+
+        source_entity = _make_purview_entity(guid="guid-source", name="orders")
+        client.search_entities.return_value = [source_entity]
+
+        graph = _make_graph(
+            sources={
+                "source.test.raw.orders": _make_source(),
+            }
+        )
+        sync = PurviewSync(client, _make_fabric_client(), graph)
+
+        downstream_a = _make_purview_entity(guid="guid-a", name="model_a")
+        downstream_b = _make_purview_entity(guid="guid-b", name="model_b")
+        node_a = _make_node(
+            unique_id="model.test.model_a",
+            name="model_a",
+            depends_on={"nodes": ["source.test.raw.orders"]},
+        )
+        node_b = _make_node(
+            unique_id="model.test.model_b",
+            name="model_b",
+            depends_on={"nodes": ["source.test.raw.orders"]},
+        )
+        resolved = {
+            "model.test.model_a": downstream_a,
+            "my_db.dbo.model_a": downstream_a,
+            "model.test.model_b": downstream_b,
+            "my_db.dbo.model_b": downstream_b,
+        }
+
+        sync.push_lineage([node_a, node_b], resolved)
+
+        client.search_entities.assert_called_once()
+
+    def test_skips_when_source_not_in_graph(self):
+        client = MagicMock()
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        downstream = _make_purview_entity()
+        node = _make_node(
+            depends_on={"nodes": ["source.test.raw.unknown"]},
+        )
+        resolved = {
+            "model.test.my_model": downstream,
+            "my_db.dbo.my_model": downstream,
+        }
+
+        sync.push_lineage([node], resolved)
+
+        client.bulk_create_or_update.assert_not_called()
+
     def test_skips_when_no_upstream_resolved(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         downstream = _make_purview_entity()
         node = _make_node(
@@ -357,7 +545,7 @@ class TestPushLineage:
 
     def test_skips_when_no_depends_on(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client())
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
         node = _make_node(depends_on={"nodes": []})
@@ -370,13 +558,13 @@ class TestPushLineage:
 
 class TestFormatTestStatus:
     def test_all_passed(self):
-        sync = PurviewSync(MagicMock(), _make_fabric_client())
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), _make_graph())
         assert sync._format_test_status({"t1": "pass", "t2": "pass"}) == "all_passed"
 
     def test_partial_pass(self):
-        sync = PurviewSync(MagicMock(), _make_fabric_client())
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), _make_graph())
         assert sync._format_test_status({"t1": "pass", "t2": "fail"}) == "1/2 passed"
 
     def test_empty(self):
-        sync = PurviewSync(MagicMock(), _make_fabric_client())
+        sync = PurviewSync(MagicMock(), _make_fabric_client(), _make_graph())
         assert sync._format_test_status({}) == ""

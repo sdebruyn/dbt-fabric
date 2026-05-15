@@ -57,7 +57,7 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
 
         client = self.connections.get_purview_client(credentials)
         fabric_client = self.connections.get_fabric_api_client(credentials)
-        sync = PurviewSync(client, fabric_client)
+        sync = PurviewSync(client, fabric_client, graph)
 
         if sync_metadata or sync_lineage:
             client.ensure_type_definitions()
