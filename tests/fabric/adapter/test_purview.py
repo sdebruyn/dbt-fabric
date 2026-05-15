@@ -120,11 +120,11 @@ class TestPurviewEnsureTypeDefinitions:
 
 _BASE_MODEL_SQL = """
 {{ config(materialized='table') }}
-SELECT 1 AS id, 'hello' AS name
+SELECT 1 AS id, 'hello' AS name, GETDATE() AS created_at
 """
 _DERIVED_MODEL_SQL = """
 {{ config(materialized='table') }}
-SELECT id, name FROM {{ ref('base_model') }}
+SELECT id, name, created_at FROM {{ ref('base_model') }}
 """
 _NO_DOCS_MODEL_SQL = """
 {{ config(materialized='table') }}
@@ -282,11 +282,31 @@ class TestPurviewSync:
 
         id_col = col_names["id"]
         assert id_col["attributes"].get("userDescription") == "Primary key"
-        assert id_col["attributes"].get("data_type") == "int"
 
         name_col = col_names["name"]
         assert name_col["attributes"].get("userDescription") == "Display name"
-        assert name_col["attributes"].get("data_type") == "varchar"
+
+    def test_undocumented_columns_discovered_from_catalog(self, purview_client, synced_entities):
+        """Columns not in dbt YAML should still appear in Purview from catalog discovery."""
+        entity = synced_entities["base_model"]
+        entity_data = purview_client.get_entity_by_guid(entity["id"])
+        referred = entity_data.get("referredEntities", {})
+
+        col_names = {
+            e["attributes"]["name"]: e
+            for e in referred.values()
+            if "column" in e.get("typeName", "").lower()
+        }
+        assert "created_at" in col_names, (
+            "Undocumented column 'created_at' should be discovered from catalog"
+        )
+        created_at = col_names["created_at"]
+        assert created_at["attributes"].get("data_type"), (
+            "Catalog-discovered column should have a data_type"
+        )
+        assert "userDescription" not in created_at["attributes"] or not created_at[
+            "attributes"
+        ].get("userDescription"), "Undocumented column should not have a description"
 
     def test_business_metadata_landed(self, purview_client, synced_entities):
         entity = synced_entities["base_model"]

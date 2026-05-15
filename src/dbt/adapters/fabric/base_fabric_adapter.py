@@ -36,6 +36,26 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
             )
         return AdapterResponse(_message="OK", query_id=submission_result.run_id)
 
+    def _fetch_catalog_columns(self, models: list) -> dict[str, list[tuple[str, str]]]:
+        """Fetch column names and data types from the database catalog for each model."""
+        catalog_columns: dict[str, list[tuple[str, str]]] = {}
+        for model in models:
+            unique_id = model.get("unique_id", "")
+            database = model.get("database", "")
+            schema_name = model.get("schema", "")
+            name = model.get("alias") or model.get("name", "")
+            if not (database and schema_name and name):
+                continue
+            try:
+                relation = self.Relation.create(
+                    database=database, schema=schema_name, identifier=name, type="table"
+                )
+                cols = self.get_columns_in_relation(relation)
+                catalog_columns[unique_id] = [(c.name, c.data_type) for c in cols]
+            except Exception:
+                logger.debug(f"Purview: could not fetch catalog columns for {unique_id}")
+        return catalog_columns
+
     @available
     def purview_sync(
         self,
@@ -57,7 +77,6 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
 
         client = self.connections.get_purview_client(credentials)
         fabric_client = self.connections.get_fabric_api_client(credentials)
-        sync = PurviewSync(client, fabric_client, graph)
 
         if not client.ensure_type_definitions():
             logger.warning("Purview sync: type definitions could not be registered, skipping sync")
@@ -67,6 +86,9 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
         if not models:
             logger.info("Purview sync: no syncable models found")
             return ""
+
+        catalog_columns = self._fetch_catalog_columns(models)
+        sync = PurviewSync(client, fabric_client, graph, catalog_columns=catalog_columns)
 
         logger.info(f"Purview sync: syncing {len(models)} models")
         resolved = sync.resolve_entities(models)

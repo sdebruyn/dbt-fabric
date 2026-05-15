@@ -9,7 +9,7 @@ Microsoft Purview has a [built-in integration with Microsoft Fabric](https://lea
 | Capability | Built-in Purview scanner | dbt Purview sync |
 |---|---|---|
 | **Table discovery** | Lakehouse tables only (preview). Data Warehouse tables are [not scanned as sub-items](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric?WT.mc_id=MVP_310840). | Searches for existing entities first, creates them if missing. Works without live view or scanning. |
-| **Column discovery** | Not populated for either Lakehouse or Data Warehouse tables. | Creates column entities with data types from dbt's YAML definitions for both Lakehouse and Data Warehouse tables. |
+| **Column discovery** | Not populated for either Lakehouse or Data Warehouse tables. | Creates column entities for all physical columns (discovered from the database catalog), with data types and descriptions from dbt YAML where available. |
 | **Table descriptions** | Not populated. Must be [manually entered](https://learn.microsoft.com/en-us/purview/data-gov-classic-metadata-curation?WT.mc_id=MVP_310840) in the Purview portal per table. | Automatically pushed from dbt model YAML files after every run. |
 | **Column descriptions** | Not populated. Must be manually entered per column. | Automatically pushed from dbt column YAML files after every run. |
 | **Table-level lineage** | Not supported. The scanner only captures [item-level lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric?WT.mc_id=MVP_310840) (e.g., Lakehouse → Notebook → Lakehouse), not which specific table was derived from which other tables. | Full table-level lineage graph based on dbt's `ref()` and `source()` dependencies. |
@@ -26,14 +26,14 @@ In short: the built-in Purview integration discovers _what exists_ in Fabric at 
 
 The sync uses a "search first, create if missing" approach for all entity types. If a Purview entity already exists (from [live view](https://learn.microsoft.com/en-us/purview/data-gov-live-view?WT.mc_id=MVP_310840) or a [scan](https://learn.microsoft.com/en-us/purview/register-scan-fabric-tenant?WT.mc_id=MVP_310840)), the sync enriches it. If no entity exists, the sync creates it via the Purview Data Map API. This means users don't need to configure live view or run scans for the sync to work.
 
-**Lakehouse tables** — the sync searches for existing `fabric_lakehouse_table` entities and creates them if missing. Column entities (`fabric_lakehouse_table_column`) are created using column definitions from the dbt manifest (names, `data_type`, and descriptions from your YAML schema files).
+**Lakehouse tables** — the sync searches for existing `fabric_lakehouse_table` entities and creates them if missing. Column entities (`fabric_lakehouse_table_column`) are created for all physical columns discovered from the database catalog.
 
 **Data Warehouse tables** — the sync creates the full entity hierarchy: `fabric_warehouse` → `fabric_warehouse_schema` → `fabric_warehouse_table` → `fabric_warehouse_table_column`. Custom Purview types are registered automatically (see [Custom Purview types](#custom-purview-types)). If a `fabric_warehouse` entity already exists from live view, the sync reuses it.
 
 For both adapter types, the sync then:
 
 1. **Pushes descriptions** from dbt model and column YAML to `userDescription` on the entities
-2. **Creates column entities** with data types from dbt's YAML column definitions
+2. **Creates column entities** for all physical columns (from database catalog), with descriptions from dbt YAML where available
 3. **Adds business metadata** like dbt tags, materialization type, test results, and custom meta
 4. **Creates lineage** between tables using dbt's `ref()` and `source()` dependency graph
 
@@ -185,12 +185,12 @@ Ephemeral models are skipped in both cases since they don't produce physical tab
 
 ## Column entities
 
-Neither Purview's live view nor its scanner creates column entities for Fabric items. The dbt sync creates column entities using column metadata from dbt's YAML definitions (`data_type` and `description`):
+Neither Purview's live view nor its scanner creates column entities for Fabric items. The dbt sync creates column entities for **all physical columns** by querying the database catalog at sync time. This means every column in the table gets a Purview entity — not just columns documented in dbt YAML files.
+
+Column data types come from the database catalog (the actual SQL types), and column descriptions from dbt YAML are overlaid where available. Columns without a dbt description still get a Purview entity with their data type.
 
 - **Lakehouse** — creates `fabric_lakehouse_table_column` entities (Purview's native type) linked to `fabric_lakehouse_table` entities. Attributes: `dataType`.
 - **Data Warehouse** — creates `fabric_warehouse_table_column` entities (custom type, see below) linked to `fabric_warehouse_table` entities. Attributes: `data_type`, `length`, `precision`, `scale`, `isNullable`.
-
-Column descriptions from dbt are set as `userDescription` on the column entities at creation time.
 
 ## Custom Purview types
 

@@ -737,6 +737,81 @@ class TestColumnEntityCreation:
                 for e in call[0][0]:
                     assert "column" not in e.get("typeName", "")
 
+    def test_catalog_columns_included_without_yaml(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        catalog_columns = {
+            "model.test.my_model": [
+                ("id", "int"),
+                ("name", "varchar(100)"),
+                ("created_at", "datetime2(6)"),
+            ],
+        }
+        sync = PurviewSync(
+            client, _make_fabric_client(), _make_graph(), catalog_columns=catalog_columns
+        )
+
+        entity = _make_purview_entity(
+            entity_type="fabric_warehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/warehouses/wh/schemas/dbo/tables/t",
+        )
+        node = _make_node(columns={})
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        col_entities = []
+        for c in client.bulk_create_or_update.call_args_list:
+            for e in c[0][0]:
+                if "column" in e.get("typeName", ""):
+                    col_entities.append(e)
+        assert len(col_entities) == 3
+        col_names = {e["attributes"]["name"] for e in col_entities}
+        assert col_names == {"id", "name", "created_at"}
+        assert col_entities[2]["attributes"]["data_type"] == "datetime2(6)"
+
+    def test_catalog_columns_with_yaml_descriptions(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        catalog_columns = {
+            "model.test.my_model": [
+                ("id", "int"),
+                ("name", "varchar(100)"),
+                ("status", "varchar(20)"),
+            ],
+        }
+        sync = PurviewSync(
+            client, _make_fabric_client(), _make_graph(), catalog_columns=catalog_columns
+        )
+
+        entity = _make_purview_entity(
+            entity_type="fabric_warehouse_table",
+            qualified_name="https://app.fabric.microsoft.com/groups/ws/warehouses/wh/schemas/dbo/tables/t",
+        )
+        node = _make_node(
+            columns={
+                "id": {"name": "id", "description": "Primary key", "data_type": "int"},
+                "name": {"name": "name", "description": "Display name", "data_type": "varchar"},
+            },
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        col_entities = []
+        for c in client.bulk_create_or_update.call_args_list:
+            for e in c[0][0]:
+                if "column" in e.get("typeName", ""):
+                    col_entities.append(e)
+        assert len(col_entities) == 3
+
+        by_name = {e["attributes"]["name"]: e for e in col_entities}
+        assert by_name["id"]["attributes"].get("userDescription") == "Primary key"
+        assert by_name["id"]["attributes"]["data_type"] == "int"
+        assert by_name["name"]["attributes"].get("userDescription") == "Display name"
+        assert by_name["name"]["attributes"]["data_type"] == "varchar(100)"
+        assert "userDescription" not in by_name["status"]["attributes"]
+
 
 class TestPushLineage:
     def test_creates_process_entities(self):

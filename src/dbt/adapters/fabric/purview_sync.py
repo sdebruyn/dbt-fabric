@@ -109,10 +109,17 @@ class PurviewSync:
     Lakehouse/Warehouse names to GUIDs so search results can be filtered accurately.
     """
 
-    def __init__(self, client: PurviewClient, fabric_client: FabricApiClient, graph: dict) -> None:
+    def __init__(
+        self,
+        client: PurviewClient,
+        fabric_client: FabricApiClient,
+        graph: dict,
+        catalog_columns: dict[str, list[tuple[str, str]]] | None = None,
+    ) -> None:
         self._client = client
         self._fabric_client = fabric_client
         self._graph = graph
+        self._catalog_columns = catalog_columns or {}
         self._entity_cache: dict[str, PurviewEntityRef] = {}
         self._item_cache: dict[str, tuple[str, str] | None] = {}
         self._lakehouses: list[dict] | None = None
@@ -440,11 +447,42 @@ class PurviewSync:
     ) -> list[AtlasEntity]:
         """Build column entity payloads for a table, creating them if they don't exist.
 
-        Uses the table's entityType to determine whether to create warehouse or lakehouse
-        column entities, with the appropriate type-specific attributes.
+        Merges two column sources:
+        - Database catalog (all columns with accurate data types, via catalog_columns)
+        - dbt YAML definitions (descriptions and user-specified data types)
+
+        Catalog columns form the base (ensuring all physical columns are represented).
+        YAML descriptions are overlaid where available. If no catalog data exists
+        (e.g. table not yet created), falls back to YAML-only columns.
         """
-        columns = model.get("columns", {})
-        if not columns:
+        unique_id = model.get("unique_id", "")
+        yaml_columns = model.get("columns", {})
+        catalog_cols = self._catalog_columns.get(unique_id, [])
+
+        merged: dict[str, dict[str, str]] = {}
+        for col_name, data_type in catalog_cols:
+            merged[col_name.lower()] = {
+                "name": col_name,
+                "data_type": data_type,
+                "description": "",
+            }
+
+        for col in yaml_columns.values():
+            col_name = col.get("name", "")
+            if not col_name:
+                continue
+            key = col_name.lower()
+            if key in merged:
+                if col.get("description"):
+                    merged[key]["description"] = col["description"]
+            else:
+                merged[key] = {
+                    "name": col_name,
+                    "data_type": col.get("data_type", ""),
+                    "description": col.get("description", ""),
+                }
+
+        if not merged:
             return []
 
         table_qn = table_entity["qualifiedName"]
@@ -452,13 +490,10 @@ class PurviewSync:
         is_warehouse = "warehouse" in table_type
 
         col_entities: list[AtlasEntity] = []
-        for col in columns.values():
-            col_name = col.get("name", "")
-            if not col_name:
-                continue
-
+        for col in merged.values():
+            col_name = col["name"]
             col_qn = f"{table_qn}/columns/{col_name}"
-            data_type = col.get("data_type", "")
+            data_type = col["data_type"]
 
             if is_warehouse:
                 entity = {
@@ -485,9 +520,8 @@ class PurviewSync:
                     },
                 }
 
-            col_desc = col.get("description", "")
-            if col_desc:
-                entity["attributes"]["userDescription"] = col_desc
+            if col["description"]:
+                entity["attributes"]["userDescription"] = col["description"]
 
             col_entities.append(entity)
 
