@@ -1,5 +1,5 @@
-from dbt.tests.adapter.utils.test_escape_single_quotes import BaseEscapeSingleQuotesQuote
+from dbt.tests.adapter.utils.test_escape_single_quotes import BaseEscapeSingleQuotesBackslash
 
 
-class TestEscapeSingleQuotesQuoteFabricSpark(BaseEscapeSingleQuotesQuote):
+class TestEscapeSingleQuotesBackslashFabricSpark(BaseEscapeSingleQuotesBackslash):
     pass
