@@ -231,9 +231,16 @@ class PurviewClient:
         }
 
     def _api_request(
-        self, url: str, method: str = "get", body: dict | list | None = None
+        self,
+        url: str,
+        method: str = "get",
+        body: dict | list | None = None,
+        expected_statuses: set[int] | None = None,
     ) -> requests.Response:
-        """Send an HTTP request with auth headers, automatic 429 retry, and error handling."""
+        """Send an HTTP request with auth headers, automatic 429 retry, and error handling.
+
+        When expected_statuses is provided, those status codes are returned without raising.
+        """
         parsed = urlparse(url)
         params = parse_qs(parsed.query)
         params["api-version"] = [_API_VERSION]
@@ -255,6 +262,9 @@ class PurviewClient:
             raise dbt_common.exceptions.DbtRuntimeError(
                 f"Purview {method.upper()} {url} rate limited after {retries} retries"
             )
+
+        if expected_statuses and response.status_code in expected_statuses:
+            return response
 
         if not (200 <= response.status_code < 300):
             raise dbt_common.exceptions.DbtRuntimeError(
@@ -450,23 +460,19 @@ class PurviewClient:
         """
         for base in (_TYPEDEF_BY_NAME_API, _BM_TYPEDEF_BY_NAME_API):
             url = f"{self._endpoint}{base}/name/{name}"
-            try:
-                response = self._api_get(url)
-                result = response.json()
-                if result is not None:
-                    return result
-            except dbt_common.exceptions.DbtRuntimeError:
+            response = self._api_request(url, expected_statuses={404})
+            if response.status_code == 404:
                 continue
+            result = response.json()
+            if result is not None:
+                return result
         return None
 
     def delete_type_def_by_name(self, name: str) -> bool:
-        """Delete a type definition by name. Returns True if deleted or not found."""
+        """Delete a type definition by name. Returns True if deleted, False if not found."""
         url = f"{self._endpoint}{_TYPEDEF_BY_NAME_API}/name/{name}"
-        try:
-            self._api_request(url, method="delete")
-            return True
-        except dbt_common.exceptions.DbtRuntimeError:
-            return False
+        response = self._api_request(url, method="delete", expected_statuses={404})
+        return response.status_code != 404
 
     def delete_business_metadata(self, guid: str, bm_name: str) -> None:
         """Remove all attributes of a business metadata type from an entity."""
