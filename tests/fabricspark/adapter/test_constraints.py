@@ -1,16 +1,25 @@
 import pytest
 
 from dbt.tests.adapter.constraints.fixtures import (
+    constrained_model_schema_yml,
+    foreign_key_model_sql,
+    model_fk_constraint_schema_yml,
+    model_schema_yml,
+    my_incremental_model_sql,
     my_model_incremental_wrong_name_sql,
+    my_model_incremental_wrong_order_depends_on_fk_sql,
     my_model_incremental_wrong_order_sql,
+    my_model_sql,
     my_model_wrong_name_sql,
+    my_model_wrong_order_depends_on_fk_sql,
     my_model_wrong_order_sql,
 )
 from dbt.tests.adapter.constraints.test_constraints import (
-    BaseConstraintsColumnsEqual,
     BaseConstraintsRollback,
     BaseConstraintsRuntimeDdlEnforcement,
     BaseIncrementalConstraintsColumnsEqual,
+    BaseIncrementalConstraintsRollback,
+    BaseIncrementalConstraintsRuntimeDdlEnforcement,
     BaseModelConstraintsRuntimeEnforcement,
     BaseTableConstraintsColumnsEqual,
 )
@@ -98,6 +107,30 @@ models:
         data_type: string
 """
 
+fabricspark_constraints_yml = model_schema_yml.replace("text", "string").replace("primary key", "")
+fabricspark_model_fk_constraint_schema_yml = model_fk_constraint_schema_yml.replace(
+    "text", "string"
+).replace("primary key", "")
+fabricspark_model_constraints_yml = constrained_model_schema_yml.replace("text", "string")
+
+_expected_sql_fabricspark = """
+create or replace table <model_identifier>
+    using delta
+    as
+select
+  id,
+  color,
+  date_day
+from
+
+(
+    -- depends_on: <foreign_key_model_identifier>
+    select
+    'blue' as color,
+    1 as id,
+    '2019-01-01' as date_day ) as model_subq
+"""
+
 
 class FabricSparkConstraintsTypesMixin:
     @pytest.fixture
@@ -127,8 +160,8 @@ class FabricSparkConstraintsTypesMixin:
         ]
 
 
-class TestViewConstraintsColumnsEqualFabricSpark(
-    FabricSparkConstraintsTypesMixin, BaseConstraintsColumnsEqual
+class TestTableConstraintsColumnsEqualFabricSpark(
+    FabricSparkConstraintsTypesMixin, BaseTableConstraintsColumnsEqual
 ):
     @pytest.fixture(scope="class")
     def models(self):
@@ -138,12 +171,12 @@ class TestViewConstraintsColumnsEqualFabricSpark(
             "constraints_schema.yml": spark_model_schema_yml,
         }
 
-    @pytest.mark.skip("TODO: Delta Lake does not support NOT NULL constraints in CTAS")
+    @pytest.mark.skip("Delta Lake does not support NOT NULL constraints in CTAS")
     def test__constraints_wrong_column_order(self, project):
         pass
 
     @pytest.mark.skip(
-        "TODO: Delta Lake does not support NOT NULL constraints in CTAS,"
+        "Delta Lake does not support NOT NULL constraints in CTAS,"
         " preventing data type mismatch detection"
     )
     def test__constraints_wrong_column_data_types(
@@ -163,12 +196,12 @@ class TestIncrementalConstraintsColumnsEqualFabricSpark(
             "constraints_schema.yml": spark_model_schema_yml,
         }
 
-    @pytest.mark.skip("TODO: Delta Lake does not support NOT NULL constraints in CTAS")
+    @pytest.mark.skip("Delta Lake does not support NOT NULL constraints in CTAS")
     def test__constraints_wrong_column_order(self, project):
         pass
 
     @pytest.mark.skip(
-        "TODO: Delta Lake does not support NOT NULL constraints in CTAS,"
+        "Delta Lake does not support NOT NULL constraints in CTAS,"
         " preventing data type mismatch detection"
     )
     def test__constraints_wrong_column_data_types(
@@ -177,63 +210,102 @@ class TestIncrementalConstraintsColumnsEqualFabricSpark(
         pass
 
 
-class TestTableConstraintsColumnsEqualFabricSpark(
-    FabricSparkConstraintsTypesMixin, BaseTableConstraintsColumnsEqual
+class FabricSparkConstraintsDdlEnforcementSetup:
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {
+            "models": {
+                "+file_format": "delta",
+            }
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_sql(self):
+        return _expected_sql_fabricspark
+
+
+class TestTableConstraintsRuntimeDdlEnforcementFabricSpark(
+    FabricSparkConstraintsDdlEnforcementSetup, BaseConstraintsRuntimeDdlEnforcement
 ):
     @pytest.fixture(scope="class")
     def models(self):
         return {
-            "my_model_wrong_order.sql": my_model_wrong_order_sql,
-            "my_model_wrong_name.sql": my_model_wrong_name_sql,
-            "constraints_schema.yml": spark_model_schema_yml,
+            "my_model.sql": my_model_wrong_order_depends_on_fk_sql,
+            "foreign_key_model.sql": foreign_key_model_sql,
+            "constraints_schema.yml": fabricspark_model_fk_constraint_schema_yml,
         }
 
-    @pytest.mark.skip("TODO: Delta Lake does not support NOT NULL constraints in CTAS")
-    def test__constraints_wrong_column_order(self, project):
-        pass
 
-    @pytest.mark.skip(
-        "TODO: Delta Lake does not support NOT NULL constraints in CTAS,"
-        " preventing data type mismatch detection"
-    )
-    def test__constraints_wrong_column_data_types(
-        self, project, string_type, int_type, schema_string_type, schema_int_type, data_types
-    ):
-        pass
-
-
-@pytest.mark.skip(
-    "TODO: FabricSpark DDL constraint syntax differs from default, needs expected_sql override"
-)
-class TestTableConstraintsRuntimeDdlEnforcementFabricSpark(BaseConstraintsRuntimeDdlEnforcement):
-    pass
-
-
-@pytest.mark.skip(
-    "TODO: FabricSpark DDL constraint syntax differs from default, needs expected_sql override"
-)
 class TestIncrementalConstraintsRuntimeDdlEnforcementFabricSpark(
-    BaseConstraintsRuntimeDdlEnforcement
+    FabricSparkConstraintsDdlEnforcementSetup, BaseIncrementalConstraintsRuntimeDdlEnforcement
 ):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model.sql": my_model_incremental_wrong_order_depends_on_fk_sql,
+            "foreign_key_model.sql": foreign_key_model_sql,
+            "constraints_schema.yml": fabricspark_model_fk_constraint_schema_yml,
+        }
 
 
-@pytest.mark.skip(
-    "TODO: FabricSpark DDL constraint syntax differs from default, needs expected_sql override"
-)
-class TestModelConstraintsRuntimeEnforcementFabricSpark(BaseModelConstraintsRuntimeEnforcement):
-    pass
+class TestModelConstraintsRuntimeEnforcementFabricSpark(
+    FabricSparkConstraintsDdlEnforcementSetup, BaseModelConstraintsRuntimeEnforcement
+):
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model.sql": my_model_wrong_order_depends_on_fk_sql,
+            "foreign_key_model.sql": foreign_key_model_sql,
+            "constraints_schema.yml": fabricspark_model_constraints_yml,
+        }
 
 
-@pytest.mark.skip(
-    "TODO: FabricSpark does not enforce NOT NULL constraints at runtime for rollback testing"
-)
-class TestTableConstraintsRollbackFabricSpark(BaseConstraintsRollback):
-    pass
+class FabricSparkConstraintsRollbackSetup:
+    @pytest.fixture(scope="class")
+    def project_config_update(self):
+        return {
+            "models": {
+                "+file_format": "delta",
+            }
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_error_messages(self):
+        return [
+            "violate the new CHECK constraint",
+            "DELTA_NEW_CHECK_CONSTRAINT_VIOLATION",
+            "DELTA_NEW_NOT_NULL_VIOLATION",
+            "violate the new NOT NULL constraint",
+            "(id > 0) violated by row with values:",
+            "DELTA_VIOLATE_CONSTRAINT_WITH_VALUES",
+            "NOT NULL constraint violated for col",
+        ]
+
+    def assert_expected_error_messages(self, error_message, expected_error_messages):
+        assert any(msg in error_message for msg in expected_error_messages)
 
 
-@pytest.mark.skip(
-    "TODO: FabricSpark does not enforce NOT NULL constraints at runtime for rollback testing"
-)
-class TestIncrementalConstraintsRollbackFabricSpark(BaseConstraintsRollback):
-    pass
+class TestTableConstraintsRollbackFabricSpark(
+    FabricSparkConstraintsRollbackSetup, BaseConstraintsRollback
+):
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model.sql": my_model_sql,
+            "constraints_schema.yml": fabricspark_constraints_yml,
+        }
+
+    @pytest.fixture(scope="class")
+    def expected_color(self):
+        return "red"
+
+
+class TestIncrementalConstraintsRollbackFabricSpark(
+    FabricSparkConstraintsRollbackSetup, BaseIncrementalConstraintsRollback
+):
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "my_model.sql": my_incremental_model_sql,
+            "constraints_schema.yml": fabricspark_constraints_yml,
+        }
