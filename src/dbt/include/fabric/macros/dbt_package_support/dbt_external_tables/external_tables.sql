@@ -86,7 +86,7 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 
 
 {% macro fabric__resolve_file_format(external) %}
-    {%- set file_format = external.get('file_format', '') | lower -%}
+    {%- set file_format = (external.get('file_format', '') or '') | lower -%}
 
     {%- if file_format -%}
         {%- if file_format in ['parquet', 'csv', 'jsonl'] -%}

@@ -66,6 +66,23 @@ Macros call dispatch explicitly:
 {% endmacro %}
 ```
 
+### Overriding community package macros via dispatch
+
+Community packages like dbt-external-tables ship their own `fabric__*` macros (e.g., Synapse-style `CREATE EXTERNAL TABLE`). To override these with adapter-internal macros (e.g., our OPENROWSET-based implementation), users configure dispatch in `dbt_project.yml`:
+
+```yaml
+dispatch:
+  - macro_namespace: dbt_external_tables
+    search_order: ['dbt', 'dbt_external_tables']
+```
+
+The key insight is that `'dbt'` is the `GLOBAL_PROJECT_NAME` constant in dbt-core. When `get_from_package("dbt", macro_name)` is called during dispatch, it searches the `global_project_namespace` — which contains all adapter-internal macros (everything under `src/dbt/include/fabric/macros/`). This means putting `'dbt'` first in the `search_order` makes dbt find our `fabric__create_external_table` before the package's version.
+
+When adding override macros for a community package:
+1. Place the override macros in `src/dbt/include/fabric/macros/dbt_package_support/<package_name>/`
+2. Only override leaf macros that the package dispatches to — don't override orchestration macros that already use dispatched calls
+3. Document the required `dispatch` config in the docs page for that feature
+
 ### Class hierarchy
 
 ```
