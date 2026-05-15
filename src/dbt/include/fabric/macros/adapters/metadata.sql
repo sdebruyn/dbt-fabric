@@ -78,10 +78,11 @@
 
 {% macro fabric__get_relation_last_modified(information_schema, relations) -%}
   {%- call statement('last_modified', fetch_result=True) -%}
+        {{ get_use_database_sql(information_schema.database) }}
         select
             o.name as [identifier]
             , s.name as [schema]
-            , o.modify_date as last_modified
+            , CAST(o.modify_date AS datetime2(6)) as last_modified
             , current_timestamp as snapshotted_at
         from sys.objects o
         inner join sys.schemas s on o.schema_id = s.schema_id and [type] = 'U'
