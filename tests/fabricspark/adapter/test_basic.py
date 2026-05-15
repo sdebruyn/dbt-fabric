@@ -122,7 +122,18 @@ class TestEmptySpark(BaseEmpty):
 
 
 class TestEphemeralSpark(BaseEphemeral):
-    pass
+    @pytest.fixture(scope="class")
+    def models(self):
+        return {
+            "ephemeral.sql": files.base_ephemeral_sql,
+            "view_model.sql": """
+  {{ config(materialized="table") }}
+
+  select * from {{ ref('ephemeral') }}
+""",
+            "table_model.sql": files.ephemeral_table_sql,
+            "schema.yml": files.schema_base_yml,
+        }
 
 
 class TestIncrementalSpark(BaseIncremental):
