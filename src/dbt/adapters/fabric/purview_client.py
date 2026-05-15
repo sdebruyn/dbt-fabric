@@ -76,7 +76,23 @@ _DBT_TRANSFORMATION_TYPE_DEF = {
 
 
 class PurviewClient:
-    """Low-level client for the Microsoft Purview Data Map REST API."""
+    """Low-level client for the Microsoft Purview Data Map REST API.
+
+    This client handles authentication, retry logic, and batching for all Purview
+    interactions. It is used by PurviewSync, which orchestrates the higher-level
+    dbt-to-Purview sync workflow.
+
+    Typical usage flow:
+        1. ensure_type_definitions() — registers custom types (dbt_metadata, dbt_transformation)
+        2. search_entities() — finds Purview entities matching dbt model names
+        3. update_entity_description() / update_column_descriptions() — pushes dbt descriptions
+        4. set_business_metadata() — attaches dbt tags, materialization, test results
+        5. bulk_create_or_update() — creates lineage process entities
+
+    All HTTP requests go through _api_request(), which handles auth headers and
+    retries on 429 (rate limit). Batch operations (bulk_create_or_update) split
+    payloads into chunks of 50 per Purview API limits.
+    """
 
     def __init__(self, endpoint: str, token_provider: FabricTokenProvider) -> None:
         self._endpoint = endpoint.rstrip("/")
@@ -211,10 +227,11 @@ class PurviewClient:
         self._api_post(url, attrs)
 
     def ensure_type_definitions(self) -> None:
-        """Register the dbt_metadata business metadata type and dbt_transformation entity type.
+        """Register or update the dbt_metadata business metadata type and dbt_transformation
+        entity type in Purview.
 
-        Tries POST first, falls back to PUT if the type already exists (409 conflict).
-        Only runs once per client instance.
+        Uses PUT (idempotent create-or-update) so that definition changes in future adapter
+        versions are always applied. Only runs once per client instance.
         """
         if self._types_ensured:
             return
@@ -223,27 +240,17 @@ class PurviewClient:
 
         bm_ok = False
         try:
-            self._api_post(url, _DBT_BUSINESS_METADATA_DEF)
+            self._api_put(url, _DBT_BUSINESS_METADATA_DEF)
             bm_ok = True
         except dbt_common.exceptions.DbtRuntimeError:
-            logger.debug("dbt_metadata business metadata type already exists or update failed")
-            try:
-                self._api_put(url, _DBT_BUSINESS_METADATA_DEF)
-                bm_ok = True
-            except dbt_common.exceptions.DbtRuntimeError:
-                logger.debug("dbt_metadata business metadata type update also failed, continuing")
+            logger.warning("Failed to register dbt_metadata business metadata type in Purview")
 
         entity_ok = False
         try:
-            self._api_post(url, _DBT_TRANSFORMATION_TYPE_DEF)
+            self._api_put(url, _DBT_TRANSFORMATION_TYPE_DEF)
             entity_ok = True
         except dbt_common.exceptions.DbtRuntimeError:
-            logger.debug("dbt_transformation entity type already exists or update failed")
-            try:
-                self._api_put(url, _DBT_TRANSFORMATION_TYPE_DEF)
-                entity_ok = True
-            except dbt_common.exceptions.DbtRuntimeError:
-                logger.debug("dbt_transformation entity type update also failed, continuing")
+            logger.warning("Failed to register dbt_transformation entity type in Purview")
 
         self._types_ensured = bm_ok and entity_ok
 
