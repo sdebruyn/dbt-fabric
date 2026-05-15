@@ -120,7 +120,7 @@ class TestPurviewEnsureTypeDefinitions:
 
 _BASE_MODEL_SQL = """
 {{ config(materialized='table') }}
-SELECT 1 AS id, 'hello' AS name, GETDATE() AS created_at
+SELECT 1 AS id, 'hello' AS name, CAST(GETDATE() AS datetime2(6)) AS created_at
 """
 _DERIVED_MODEL_SQL = """
 {{ config(materialized='table') }}

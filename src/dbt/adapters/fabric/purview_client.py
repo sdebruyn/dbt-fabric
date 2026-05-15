@@ -24,6 +24,8 @@ _ENTITY_API = "/datamap/api/atlas/v2/entity"
 _ENTITY_BULK_API = "/datamap/api/atlas/v2/entity/bulk"
 _RELATIONSHIP_API = "/datamap/api/atlas/v2/relationship"
 _TYPEDEF_API = "/datamap/api/atlas/v2/types/typedefs"
+_TYPEDEF_BY_NAME_API = "/datamap/api/atlas/v2/types/typedef"
+_BM_TYPEDEF_BY_NAME_API = "/datamap/api/atlas/v2/types/businessmetadatadef"
 _BUSINESS_METADATA_API = (
     "/datamap/api/atlas/v2/entity/guid/{guid}/businessmetadata/{bm_name}?isOverwrite=true"
 )
@@ -447,17 +449,25 @@ class PurviewClient:
         return self._types_ensured
 
     def get_type_def_by_name(self, name: str) -> dict | None:
-        """Fetch a type definition by name. Returns None if not found."""
-        url = f"{self._endpoint}{_TYPEDEF_API}/name/{name}"
-        try:
-            response = self._api_get(url)
-            return response.json()
-        except dbt_common.exceptions.DbtRuntimeError:
-            return None
+        """Fetch a type definition by name. Returns None if not found.
+
+        Tries the entity/relationship typedef endpoint first, then falls back to the
+        business metadata endpoint (Purview uses separate endpoints per type category).
+        """
+        for base in (_TYPEDEF_BY_NAME_API, _BM_TYPEDEF_BY_NAME_API):
+            url = f"{self._endpoint}{base}/name/{name}"
+            try:
+                response = self._api_get(url)
+                result = response.json()
+                if result is not None:
+                    return result
+            except dbt_common.exceptions.DbtRuntimeError:
+                continue
+        return None
 
     def delete_type_def_by_name(self, name: str) -> bool:
         """Delete a type definition by name. Returns True if deleted or not found."""
-        url = f"{self._endpoint}{_TYPEDEF_API}/name/{name}"
+        url = f"{self._endpoint}{_TYPEDEF_BY_NAME_API}/name/{name}"
         try:
             self._api_request(url, method="delete")
             return True
