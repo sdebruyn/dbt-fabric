@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
@@ -255,7 +257,11 @@ class TestPurviewSync:
     def warehouse_info(self, fabric_api_client: FabricApiClient, project):
         workspace_id = fabric_api_client.get_workspace_id()
         warehouses = fabric_api_client.get_warehouses()
-        warehouse_id = next(wh["id"] for wh in warehouses if wh["displayName"] == project.database)
+        warehouse_id = next(
+            (wh["id"] for wh in warehouses if wh["displayName"] == project.database),
+            None,
+        )
+        assert warehouse_id, f"Warehouse '{project.database}' not found in workspace"
         return workspace_id, warehouse_id
 
     @pytest.fixture(scope="class")
@@ -409,8 +415,6 @@ class TestPurviewSync:
         retries for up to 3 minutes. If the index still hasn't converged, it skips
         rather than failing, since this is a Purview infrastructure limitation.
         """
-        import time
-
         _, warehouse_id = warehouse_info
         results = []
         for attempt in range(12):

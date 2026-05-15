@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
-from dbt.adapters.fabric.purview_client import PurviewClient
+from dbt.adapters.fabric.purview_client import PurviewClient, _qualifiedname_matches
 from dbt.adapters.fabric.purview_types import (
     AtlasEntity,
     BulkResponse,
@@ -196,8 +196,7 @@ class PurviewSync:
 
         lower_ids = [i.lower() for i in db_ids]
         for r in results:
-            qn = r.get("qualifiedName", "").lower()
-            if any(i in qn for i in lower_ids):
+            if _qualifiedname_matches(r.get("qualifiedName", ""), lower_ids):
                 return r
 
         return results[0]
@@ -227,8 +226,8 @@ class PurviewSync:
                 continue
 
             item = self._resolve_item(database) if database else None
+            db_ids = [item[1]] if item else None
             if item:
-                db_ids = [item[1]]
                 results = self._client.search_entities(name=name, database_identifiers=db_ids)
             else:
                 results = []
