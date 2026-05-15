@@ -267,13 +267,25 @@ class PurviewSync:
         )
         return resolved.get(cache_key)
 
-    def push_descriptions(self, models: list, resolved: dict) -> None:
-        """Sync model and column descriptions from dbt to Purview userDescription fields.
+    def push_metadata(
+        self,
+        models: list,
+        resolved: dict,
+        results: list | None = None,
+        sync_descriptions: bool = True,
+        sync_metadata: bool = True,
+    ) -> None:
+        """Push descriptions, business metadata, and labels to Purview in a single bulk call.
 
-        Respects the persist_docs config: only pushes model descriptions when
-        persist_docs.relation is true, and column descriptions when persist_docs.columns
-        is true.
+        Combines model descriptions (userDescription), business metadata (dbt_metadata),
+        and labels (dbt tags) into one entity update per model, then sends them all in a
+        single bulk API call. Column descriptions still require separate calls since they
+        need to fetch referred entities first.
         """
+        test_results = self._collect_test_results(models, results) if sync_metadata else {}
+        entity_updates: list[dict] = []
+        column_work: list[tuple] = []
+
         for model in models:
             entity = self._resolve_entity_for_node(model, resolved)
             if entity is None:
@@ -292,84 +304,105 @@ class PurviewSync:
                 persist_relation = _get_attr(persist_docs, "relation", False)
                 persist_columns = _get_attr(persist_docs, "columns", False)
 
-            if persist_relation:
+            update: dict = {
+                "typeName": entity["entityType"],
+                "guid": entity["id"],
+                "attributes": {
+                    "qualifiedName": entity["qualifiedName"],
+                    "name": entity.get("name", _get_node_name(model)),
+                },
+            }
+
+            if sync_descriptions and persist_relation:
                 description = _get_attr(model, "description", "")
                 if description:
-                    self._client.update_entity_description(
-                        guid=entity["id"],
-                        type_name=entity["entityType"],
-                        qualified_name=entity["qualifiedName"],
-                        name=entity.get("name", _get_node_name(model)),
-                        description=description,
-                    )
+                    update["attributes"]["userDescription"] = description
 
-            if persist_columns:
-                columns = _get_attr(model, "columns", {})
-                if hasattr(columns, "values"):
-                    col_iter = columns.values()
-                elif isinstance(columns, dict):
-                    col_iter = columns.values()
-                else:
-                    col_iter = columns if isinstance(columns, list) else []
+            if sync_metadata:
+                unique_id = _get_attr(model, "unique_id", "")
+                bm_attrs = self._build_business_metadata_attrs(model, unique_id, test_results)
+                update["businessAttributes"] = {"dbt_metadata": bm_attrs}
 
-                col_descriptions: dict[str, str] = {}
-                for col in col_iter:
-                    col_name = _get_attr(col, "name", "")
-                    col_desc = _get_attr(col, "description", "")
-                    if col_name and col_desc:
-                        col_descriptions[col_name] = col_desc
+                tags = _get_attr(model, "tags", [])
+                if tags:
+                    update["labels"] = list(tags) if isinstance(tags, list) else [str(tags)]
 
-                if col_descriptions:
-                    self._client.update_column_descriptions(entity["id"], col_descriptions)
-
-    def push_business_metadata(
-        self, models: list, resolved: dict, results: list | None = None
-    ) -> None:
-        """Sync dbt model metadata (tags, materialization, tests, etc.) as Purview business metadata."""
-        test_results = self._collect_test_results(models, results)
-
-        for model in models:
-            entity = self._resolve_entity_for_node(model, resolved)
-            if entity is None:
-                continue
-
-            unique_id = _get_attr(model, "unique_id", "")
-            tags = _get_attr(model, "tags", [])
-            config = _get_attr(model, "config", {})
-            materialization = (
-                _get_attr(config, "materialized", "")
-                if not isinstance(config, dict)
-                else config.get("materialized", "")
+            has_content = (
+                "userDescription" in update["attributes"]
+                or "businessAttributes" in update
+                or "labels" in update
             )
-            meta = _get_attr(model, "meta", {})
-            if isinstance(meta, dict) and not meta:
-                meta_str = ""
-            else:
-                meta_str = json.dumps(meta) if meta else ""
+            if has_content:
+                entity_updates.append(update)
 
-            test_names = self._get_test_names_for_model(unique_id)
+            if sync_descriptions and persist_columns:
+                column_work.append((model, entity))
 
-            model_test_results = test_results.get(unique_id, {})
-            test_status = self._format_test_status(model_test_results)
+        has_bm = any("businessAttributes" in u for u in entity_updates)
+        if entity_updates:
+            self._client.bulk_create_or_update(entity_updates, merge_business_attrs=has_bm)
 
-            attrs: dict[str, str] = {
-                "dbt_model_id": unique_id,
-                "dbt_last_sync": datetime.now(timezone.utc).isoformat(),
-            }
-            if tags:
-                attrs["dbt_tags"] = ",".join(tags) if isinstance(tags, list) else str(tags)
-            if materialization:
-                attrs["dbt_materialization"] = str(materialization)
-            if meta_str:
-                attrs["dbt_meta"] = meta_str
-            if test_names:
-                attrs["dbt_tests"] = (
-                    ",".join(test_names) if isinstance(test_names, list) else str(test_names)
-                )
-            if test_status:
-                attrs["dbt_test_status"] = test_status
+        for model, entity in column_work:
+            col_descriptions = self._extract_column_descriptions(model)
+            if col_descriptions:
+                self._client.update_column_descriptions(entity["id"], col_descriptions)
 
-            self._client.set_business_metadata(entity["id"], "dbt_metadata", attrs)
+    def _extract_column_descriptions(self, model) -> dict[str, str]:
+        """Extract column name → description mapping from a dbt model node."""
+        columns = _get_attr(model, "columns", {})
+        if hasattr(columns, "values"):
+            col_iter = columns.values()
+        elif isinstance(columns, dict):
+            col_iter = columns.values()
+        else:
+            col_iter = columns if isinstance(columns, list) else []
+
+        col_descriptions: dict[str, str] = {}
+        for col in col_iter:
+            col_name = _get_attr(col, "name", "")
+            col_desc = _get_attr(col, "description", "")
+            if col_name and col_desc:
+                col_descriptions[col_name] = col_desc
+        return col_descriptions
+
+    def _build_business_metadata_attrs(
+        self, model, unique_id: str, test_results: dict[str, dict[str, str]]
+    ) -> dict[str, str]:
+        """Build the dbt_metadata business metadata attributes dict for a model."""
+        tags = _get_attr(model, "tags", [])
+        config = _get_attr(model, "config", {})
+        materialization = (
+            _get_attr(config, "materialized", "")
+            if not isinstance(config, dict)
+            else config.get("materialized", "")
+        )
+        meta = _get_attr(model, "meta", {})
+        if isinstance(meta, dict) and not meta:
+            meta_str = ""
+        else:
+            meta_str = json.dumps(meta) if meta else ""
+
+        test_names = self._get_test_names_for_model(unique_id)
+        model_test_results = test_results.get(unique_id, {})
+        test_status = self._format_test_status(model_test_results)
+
+        attrs: dict[str, str] = {
+            "dbt_model_id": unique_id,
+            "dbt_last_sync": datetime.now(timezone.utc).isoformat(),
+        }
+        if tags:
+            attrs["dbt_tags"] = ",".join(tags) if isinstance(tags, list) else str(tags)
+        if materialization:
+            attrs["dbt_materialization"] = str(materialization)
+        if meta_str:
+            attrs["dbt_meta"] = meta_str
+        if test_names:
+            attrs["dbt_tests"] = (
+                ",".join(test_names) if isinstance(test_names, list) else str(test_names)
+            )
+        if test_status:
+            attrs["dbt_test_status"] = test_status
+        return attrs
 
     def push_lineage(self, models: list, resolved: dict, is_full_sync: bool = False) -> None:
         """Create dbt_transformation process entities in Purview to represent data lineage.

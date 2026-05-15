@@ -336,9 +336,10 @@ class TestResolveEntities:
         client.search_entities.assert_called_once()
 
 
-class TestPushDescriptions:
-    def test_pushes_model_description_when_persist_docs_relation(self):
+class TestPushMetadata:
+    def test_pushes_description_via_bulk_when_persist_docs_relation(self):
         client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
@@ -348,15 +349,13 @@ class TestPushDescriptions:
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        sync.push_descriptions([node], resolved)
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
-        client.update_entity_description.assert_called_once_with(
-            guid="guid-1",
-            type_name="fabric_lakehouse_table",
-            qualified_name="https://app.fabric.microsoft.com/groups/a1b2c3d4/lakehouses/b2c3d4e5/tables/my_model",
-            name="my_model",
-            description="This model tracks user events",
-        )
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert len(entities) == 1
+        assert entities[0]["attributes"]["userDescription"] == "This model tracks user events"
+        assert entities[0]["typeName"] == "fabric_lakehouse_table"
         client.update_column_descriptions.assert_not_called()
 
     def test_skips_description_when_persist_docs_not_set(self):
@@ -367,9 +366,9 @@ class TestPushDescriptions:
         node = _make_node(description="This model tracks user events")
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        sync.push_descriptions([node], resolved)
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
-        client.update_entity_description.assert_not_called()
+        client.bulk_create_or_update.assert_not_called()
         client.update_column_descriptions.assert_not_called()
 
     def test_skips_description_when_persist_docs_relation_false(self):
@@ -383,11 +382,11 @@ class TestPushDescriptions:
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        sync.push_descriptions([node], resolved)
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
-        client.update_entity_description.assert_not_called()
+        client.bulk_create_or_update.assert_not_called()
 
-    def test_pushes_column_descriptions_when_persist_docs_columns(self):
+    def test_pushes_column_descriptions_separately(self):
         client = MagicMock()
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
@@ -404,37 +403,16 @@ class TestPushDescriptions:
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        sync.push_descriptions([node], resolved)
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
 
-        client.update_entity_description.assert_not_called()
+        client.bulk_create_or_update.assert_not_called()
         client.update_column_descriptions.assert_called_once_with(
             "guid-1", {"user_id": "Primary key"}
         )
 
-    def test_pushes_both_when_persist_docs_fully_enabled(self):
+    def test_pushes_business_metadata_via_bulk(self):
         client = MagicMock()
-        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
-
-        entity = _make_purview_entity()
-        node = _make_node(
-            description="Full docs",
-            columns={"user_id": {"name": "user_id", "description": "Primary key"}},
-            config={
-                "materialized": "table",
-                "persist_docs": {"relation": True, "columns": True},
-            },
-        )
-        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
-
-        sync.push_descriptions([node], resolved)
-
-        client.update_entity_description.assert_called_once()
-        client.update_column_descriptions.assert_called_once()
-
-
-class TestPushBusinessMetadata:
-    def test_pushes_metadata(self):
-        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
@@ -445,20 +423,51 @@ class TestPushBusinessMetadata:
         )
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        sync.push_business_metadata([node], resolved)
+        sync.push_metadata([node], resolved, sync_descriptions=False, sync_metadata=True)
 
-        call_args = client.set_business_metadata.call_args
-        assert call_args[0][0] == "guid-1"
-        assert call_args[0][1] == "dbt_metadata"
-        attrs = call_args[0][2]
-        assert attrs["dbt_model_id"] == "model.test.my_model"
-        assert attrs.get("dbt_last_sync")
-        assert attrs["dbt_tags"] == "finance,daily"
-        assert attrs["dbt_materialization"] == "incremental"
-        assert "owner" in attrs["dbt_meta"]
+        client.bulk_create_or_update.assert_called_once()
+        assert client.bulk_create_or_update.call_args[1]["merge_business_attrs"] is True
 
-    def test_includes_test_results(self):
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert len(entities) == 1
+        bm = entities[0]["businessAttributes"]["dbt_metadata"]
+        assert bm["dbt_model_id"] == "model.test.my_model"
+        assert bm.get("dbt_last_sync")
+        assert bm["dbt_tags"] == "finance,daily"
+        assert bm["dbt_materialization"] == "incremental"
+        assert "owner" in bm["dbt_meta"]
+
+    def test_sets_labels_from_tags(self):
         client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(tags=["finance", "daily"])
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=False, sync_metadata=True)
+
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert entities[0]["labels"] == ["finance", "daily"]
+
+    def test_no_labels_when_no_tags(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(tags=[])
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=False, sync_metadata=True)
+
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert "labels" not in entities[0]
+
+    def test_includes_test_results_in_metadata(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
 
         entity = _make_purview_entity()
@@ -471,18 +480,18 @@ class TestPushBusinessMetadata:
             status="pass",
         )
         test_result["node"]["depends_on"] = {"nodes": ["model.test.my_model"]}
-
         model_result = _make_result(unique_id="model.test.my_model")
         results = [model_result, test_result]
 
-        sync.push_business_metadata([node], resolved, results)
+        sync.push_metadata([node], resolved, results, sync_descriptions=False, sync_metadata=True)
 
-        call_args = client.set_business_metadata.call_args
-        attrs = call_args[0][2]
-        assert attrs["dbt_test_status"] == "all_passed"
+        entities = client.bulk_create_or_update.call_args[0][0]
+        bm = entities[0]["businessAttributes"]["dbt_metadata"]
+        assert bm["dbt_test_status"] == "all_passed"
 
     def test_includes_test_names_from_graph(self):
         client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
         graph = _make_graph(
             nodes={
                 "model.test.my_model": _make_node(),
@@ -496,12 +505,54 @@ class TestPushBusinessMetadata:
         node = _make_node()
         resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
 
-        sync.push_business_metadata([node], resolved)
+        sync.push_metadata([node], resolved, sync_descriptions=False, sync_metadata=True)
 
-        call_args = client.set_business_metadata.call_args
-        attrs = call_args[0][2]
-        test_names = set(attrs["dbt_tests"].split(","))
+        entities = client.bulk_create_or_update.call_args[0][0]
+        bm = entities[0]["businessAttributes"]["dbt_metadata"]
+        test_names = set(bm["dbt_tests"].split(","))
         assert test_names == {"not_null_id", "unique_id"}
+
+    def test_combined_descriptions_and_metadata(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(
+            description="Full docs",
+            columns={"user_id": {"name": "user_id", "description": "Primary key"}},
+            tags=["finance"],
+            config={
+                "materialized": "table",
+                "persist_docs": {"relation": True, "columns": True},
+            },
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=True)
+
+        client.bulk_create_or_update.assert_called_once()
+        entities = client.bulk_create_or_update.call_args[0][0]
+        assert entities[0]["attributes"]["userDescription"] == "Full docs"
+        assert "dbt_metadata" in entities[0]["businessAttributes"]
+        assert entities[0]["labels"] == ["finance"]
+        client.update_column_descriptions.assert_called_once()
+
+    def test_no_merge_flag_when_descriptions_only(self):
+        client = MagicMock()
+        client.bulk_create_or_update.return_value = {"mutatedEntities": {}, "guidAssignments": {}}
+        sync = PurviewSync(client, _make_fabric_client(), _make_graph())
+
+        entity = _make_purview_entity()
+        node = _make_node(
+            description="Desc",
+            config={"materialized": "table", "persist_docs": {"relation": True}},
+        )
+        resolved = {"model.test.my_model": entity, "my_db.dbo.my_model": entity}
+
+        sync.push_metadata([node], resolved, sync_descriptions=True, sync_metadata=False)
+
+        assert client.bulk_create_or_update.call_args[1]["merge_business_attrs"] is False
 
 
 class TestPushLineage:

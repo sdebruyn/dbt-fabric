@@ -287,6 +287,57 @@ class TestDeleteEntity:
         assert "guid-1" in call_args[0][1]
 
 
+class TestLabels:
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_set_labels(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_request.return_value = mock_response
+
+        client.set_labels("guid-1", ["finance", "daily"])
+
+        call_args = mock_request.call_args
+        assert call_args[0][0] == "post"
+        call_url = call_args[0][1]
+        assert "guid-1" in call_url
+        assert "labels" in call_url
+        assert call_args[1]["json"] == ["finance", "daily"]
+
+
+class TestBulkMergeBusinessAttrs:
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_merge_business_attrs_adds_query_param(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "mutatedEntities": {},
+            "guidAssignments": {},
+        }
+        mock_request.return_value = mock_response
+
+        entities = [{"typeName": "t", "attributes": {"qualifiedName": "q"}}]
+        client.bulk_create_or_update(entities, merge_business_attrs=True)
+
+        call_url = mock_request.call_args[0][1]
+        assert "businessAttributeUpdateBehavior=merge" in call_url
+
+    @patch("dbt.adapters.fabric.purview_client.requests.request")
+    def test_no_merge_by_default(self, mock_request, client):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "mutatedEntities": {},
+            "guidAssignments": {},
+        }
+        mock_request.return_value = mock_response
+
+        entities = [{"typeName": "t", "attributes": {"qualifiedName": "q"}}]
+        client.bulk_create_or_update(entities)
+
+        call_url = mock_request.call_args[0][1]
+        assert "businessAttributeUpdateBehavior" not in call_url
+
+
 class TestUpdateColumnDescriptions:
     @patch("dbt.adapters.fabric.purview_client.requests.request")
     def test_updates_matching_columns(self, mock_request, client):
