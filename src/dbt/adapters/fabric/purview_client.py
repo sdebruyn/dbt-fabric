@@ -314,9 +314,11 @@ class PurviewClient:
         while True:
             response = self._api_post(url, body)
             data = response.json()
-            results.extend(data.get("value", []))
-            total_count = data.get("@search.count", 0)
-            if len(results) >= total_count or "continuationToken" not in data:
+            page = data.get("value", [])
+            if not page:
+                break
+            results.extend(page)
+            if "continuationToken" not in data:
                 break
             body["continuationToken"] = data["continuationToken"]
 
