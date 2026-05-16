@@ -13,7 +13,8 @@ The dbt-fabric-samdebruyn adapter supports a variety of authentication methods s
     | Scenario | Recommended method |
     | --- | --- |
     | Local development | [`CLI`](#azure-cli) or [`auto`](#automatic-defaultazurecredential) |
-    | CI/CD pipelines | [`environment`](#environment-variables) or [`ActiveDirectoryServicePrincipal`](#service-principal) |
+    | CI/CD pipelines (OIDC) | [`workload_identity`](#workload-identity-federated-credentials) |
+    | CI/CD pipelines (secret) | [`environment`](#environment-variables) or [`ActiveDirectoryServicePrincipal`](#service-principal) |
     | Fabric Notebook | [`environment`](#environment-variables) or [`ActiveDirectoryServicePrincipal`](#service-principal) |
     | Custom token source | [`token_credential`](#custom-token-credential) |
 
@@ -181,6 +182,65 @@ default:
 ```
 
 This method keeps your `profiles.yml` completely free of secrets, which is an advantage over the explicit `ActiveDirectoryServicePrincipal` method.
+
+### Workload Identity (federated credentials)
+
+Use `workload_identity` to authenticate with [Workload Identity Federation](https://learn.microsoft.com/entra/workload-id/workload-identity-federation?WT.mc_id=MVP_310840) — no client secret needed. The adapter uses [`ClientAssertionCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.clientassertioncredential?view=azure-python&WT.mc_id=MVP_310840) under the hood, fetching a fresh federated token on each Azure token refresh.
+
+This works with any identity provider that issues OIDC tokens: GitHub Actions, Kubernetes, or any custom OIDC endpoint.
+
+**Prerequisites:**
+
+- A registered application in Microsoft Entra ID with a [federated credential](https://learn.microsoft.com/entra/workload-id/workload-identity-federation-create-trust?pivots=identity-wif-apps-methods-azp&WT.mc_id=MVP_310840) configured for your identity provider
+- The application must have access to your Fabric workspace
+- You need the **client ID** and **tenant ID** (no client secret)
+
+=== "GitHub Actions"
+
+    ```yaml
+    default:
+      target: ci
+      outputs:
+        ci:
+          type: fabric
+          database: my_data_warehouse
+          schema: dbt
+          workspace: My Workspace
+          authentication: workload_identity
+          tenant_id: "{{ env_var('AZURE_TENANT_ID') }}"
+          client_id: "{{ env_var('AZURE_CLIENT_ID') }}"
+          federated_token_url: "{{ env_var('ACTIONS_ID_TOKEN_REQUEST_URL') }}&audience=api://AzureADTokenExchange"
+          federated_token_header: "bearer {{ env_var('ACTIONS_ID_TOKEN_REQUEST_TOKEN') }}"
+    ```
+
+    Your workflow needs `permissions: id-token: write` to make the OIDC token endpoint available.
+
+=== "Kubernetes"
+
+    ```yaml
+    default:
+      target: ci
+      outputs:
+        ci:
+          type: fabric
+          database: my_data_warehouse
+          schema: dbt
+          workspace: My Workspace
+          authentication: workload_identity
+          tenant_id: "{{ env_var('AZURE_TENANT_ID') }}"
+          client_id: "{{ env_var('AZURE_CLIENT_ID') }}"
+          federated_token_file: /var/run/secrets/azure/tokens/azure-identity-token
+    ```
+
+    The kubelet automatically refreshes the token file, and the adapter re-reads it on each Azure token refresh.
+
+!!! info "No client secret required"
+
+    Unlike `ActiveDirectoryServicePrincipal`, this method does not need a `client_secret`. Authentication is based on the trust relationship between Microsoft Entra ID and your identity provider's OIDC tokens.
+
+!!! tip "Token lifetime"
+
+    The adapter automatically refreshes Azure access tokens (valid ~60-90 minutes) by calling the federated token source again. This works for long-running jobs — the GitHub Actions request token stays valid for the entire job duration (up to 6 hours).
 
 ---
 

@@ -229,6 +229,12 @@ Alias: `SynapseSpark`
 
 This authentication methods works inside a Fabric or Synapse notebook. It uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to get an access token for the current user.
 
+#### `workload_identity`
+
+Authenticate with [Workload Identity Federation](https://learn.microsoft.com/entra/workload-id/workload-identity-federation?WT.mc_id=MVP_310840) using a federated OIDC token. No client secret needed. Works with GitHub Actions, Kubernetes, and any OIDC provider. See the [authentication guide](authentication.md#workload-identity-federated-credentials) for examples.
+
+Requires [`tenant_id`](#tenant_id), [`client_id`](#client_id), and exactly one of [`federated_token_url`](#federated_token_url) or [`federated_token_file`](#federated_token_file).
+
 #### `token_credential`
 
 Load any [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840) implementation by its dotted import path. This is useful when the built-in methods don't cover your scenario -- for example, when using a custom OAuth flow, a token broker, or Workload Identity Federation with a non-standard setup. See the [authentication guide](authentication.md#custom-token-credential) for a full walkthrough.
@@ -315,6 +321,28 @@ credential_kwargs:
 ```
 
 A dictionary of keyword arguments passed to the constructor of the class specified in [`credential_class`](#credential_class). This is optional and can only be used when [`authentication`](#authentication) is set to `token_credential`.
+
+### `federated_token_url`
+
+Example value: `https://token.actions.githubusercontent.com`
+
+The URL to fetch a federated OIDC token from. The adapter performs a GET request to this URL and reads the token from the `value` field of the JSON response. Can only be used when [`authentication`](#authentication) is set to `workload_identity`.
+
+Mutually exclusive with [`federated_token_file`](#federated_token_file) — exactly one must be set.
+
+### `federated_token_header`
+
+Example value: `bearer ghs_xxxxxxxxxxxxxxxxxxxx`
+
+The value for the `Authorization` header when fetching the federated token from [`federated_token_url`](#federated_token_url). Can only be used together with `federated_token_url`, not with `federated_token_file`.
+
+### `federated_token_file`
+
+Example value: `/var/run/secrets/azure/tokens/azure-identity-token`
+
+Path to a file containing a federated OIDC token. The adapter re-reads this file each time it needs a fresh token, so external processes (like kubelet) can refresh it. Can only be used when [`authentication`](#authentication) is set to `workload_identity`.
+
+Mutually exclusive with [`federated_token_url`](#federated_token_url) — exactly one must be set.
 
 ### `schema_auth`
 
