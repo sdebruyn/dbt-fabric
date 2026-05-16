@@ -162,6 +162,7 @@ Possible values (case insensitive):
 - [`environment`](#environment)
 - [`notebookutils`](#notebookutils)
 - [`token_credential`](#token_credential)
+- [`workload_identity`](#workload_identity)
 
 The adapter supports an authentication method for every use case. The default is `auto`, which will try to use the best available method depending on your environment.
 
