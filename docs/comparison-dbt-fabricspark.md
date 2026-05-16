@@ -48,7 +48,7 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 |---|---|---|
 | **Table** | Yes (via dbt-spark) | Yes (custom implementation) |
 | **View** | No (Fabric Lakehouse does not support Spark SQL views with schemas enabled) | Yes |
-| **Incremental** | append, merge, insert_overwrite | append, merge, insert_overwrite, microbatch |
+| **Incremental** | append, merge, insert_overwrite, microbatch | append, merge, insert_overwrite, microbatch |
 | **Snapshot** | Yes | Yes |
 | **Ephemeral** | Yes | Yes |
 | **Materialized View / Lake View** | Yes (standard dbt MV pattern) | Yes (Fabric-specific MLV with REST API refresh) |
@@ -57,8 +57,7 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 
 Notable differences:
 
-- **View**: The upstream supports Spark SQL views. This adapter deliberately excludes them because Fabric Lakehouse with schemas enabled does not support views.
-- **Microbatch**: The upstream has partition-based micro-batch with `MERGE ... WHEN MATCHED THEN DELETE`. This adapter does not implement it yet.
+- **View**: The upstream supports Spark SQL views, but these are [not supported in schema-enabled Lakehouses](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-schemas?WT.mc_id=MVP_310840). This adapter deliberately targets schema-enabled Lakehouses (Microsoft's recommended configuration) and therefore excludes view support.
 - **Materialized Lake View**: The upstream uses Fabric REST API for on-demand and scheduled refresh. This adapter uses standard `CREATE OR REPLACE` without REST API calls.
 
 ### Authentication methods
@@ -103,8 +102,7 @@ Notable differences:
 | **OneLake shortcuts** | `ShortcutClient` for shortcut CRUD |
 | **Fabric Notebook auth** | Ambient auth inside notebooks |
 | **Local Livy mode** | Connect to local Livy for development |
-| **Spark SQL views** | `CREATE OR REPLACE VIEW` support |
-| **Microbatch incremental** | Partition-based micro-batch strategy |
+| **Spark SQL views** | `CREATE OR REPLACE VIEW` support (not available in schema-enabled Lakehouses) |
 | **Cross-workspace 4-part naming** | Full read+write for `workspace.lakehouse.schema.table` |
 | **Credential validation** | UUID format, HTTPS domain whitelist |
 
@@ -175,8 +173,53 @@ Both repositories use the MIT License and the hatchling build system.
 
 ---
 
+## Code quality
+
+A detailed review of the upstream's Python source code reveals several significant issues that affect reliability and maintainability.
+
+### Global mutable state
+
+The upstream stores critical runtime state in module-level and class-level global variables:
+
+- **Authentication token** (`livysession.py` line 35): A single `accessToken: AccessToken = None` global shared by all threads. While a `_token_lock` protects the refresh path, other code reads `accessToken.token` after releasing the lock, creating a data race in multi-threaded dbt runs.
+- **Livy session** (`livysession.py` line 1327): `LivySessionManager.livy_global_session` is a class variable mutated from multiple threads. The lock only protects `connect()`/`disconnect()`, but `is_new_session_required` is set outside the lock at multiple call sites.
+- **Connection managers** (`connections.py` line 93): A class-level `connection_managers = {}` dict mutated at runtime, with no cleanup between test runs.
+- **Relation state** (`relation.py` lines 44-45): `_schemas_enabled` and `_identifier_prefix` are `ClassVar` attributes mutated at connection time, meaning all relation instances across all threads share the same value.
+
+This adapter uses proper instance-based encapsulation: `FabricTokenProvider` (per-scope token caching), `FabricApiClient` (singleton with thread-safe session lock), and no module-level mutable state.
+
+### atexit handler for session cleanup
+
+The upstream registers an `atexit` handler at module import time (`livysession.py` lines 1314-1322) to delete Livy sessions on process exit. This is fragile: `atexit` handlers run in undefined order, logging/network may already be torn down, and merely importing the module registers the handler even if no session was created.
+
+This adapter manages session lifecycle through dbt's normal connection manager `close()` path.
+
+### Exception swallowing
+
+Both `LivySession.__exit__` and `LivyCursor.__exit__` return `True` (`livysession.py` lines 489-495, 855-859), which suppresses all exceptions — including database errors, timeouts, and `KeyboardInterrupt` — inside any `with` block using these objects.
+
+### Misleading security comment with actual regex bug
+
+`_getLivySQL()` (`livysession.py` lines 980-988) contains alarming security comments ("repurcursions of code injection... arbritary Python code") about code that now just strips SQL block comments. The comment was left behind from a previous implementation. Additionally, `re.sub(r"\s*/\*(.|\n)*?\*/\s*", "\n", sql, re.DOTALL)` passes `re.DOTALL` (integer value 16) as the `count` parameter instead of as `flags=re.DOTALL`, meaning it limits replacements to 16 instead of enabling dotall mode.
+
+### Dead code and copy-paste artifacts
+
+- **Thrift exception handling** (`connections.py` lines 97-113): References `thrift_resp.status.errorMessage`, a pattern from Apache Thrift used by dbt-spark. This adapter uses Livy over HTTP, not Thrift — this code path is dead.
+- **AWS logging** (`connections.py` lines 39-46): Sets `botocore` and `boto3` (AWS libraries) to DEBUG level at import time. These are leftovers from a Spark/Databricks ancestor.
+- **Hardcoded 2028 timestamp** (`livysession.py` lines 194-198): The `int_tests` auth path creates a token with `expires_on = 1845972874` (a date in 2028), bypassing all token refresh logic.
+- **Duplicated functions**: `_parse_retry_after` is copied identically in both `livysession.py` and `mlv_api.py`, using the deprecated `datetime.utcnow()`.
+- **Dead parameter**: `get_headers()` has a `tokenPrint` parameter that logs the full bearer token when `True`, but is never called with `True`.
+
+### Inconsistent style
+
+The upstream mixes camelCase (`tokenPrint`, `accessToken`, `_submitLivyCode`, `_getLivySQL`) with snake_case throughout. Pre-3.9 typing aliases (`Dict`, `List`, `Optional`, `Union`) are used despite targeting Python 3.13.
+
+---
+
 ## Summary
 
-This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented).
+This adapter deliberately targets **schema-enabled Lakehouses**, which is [Microsoft's recommended Lakehouse configuration](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-schemas?WT.mc_id=MVP_310840). This means some upstream features that only work without schemas (e.g., Spark SQL views) are intentionally not supported.
 
-The upstream has more Fabric-specific features (MLV REST API refresh, OneLake shortcuts, cross-workspace 4-part naming, local Livy mode), while this adapter offers broader dbt ecosystem integration (dbt-spark inheritance, Purview, capability declarations, shared T-SQL + Spark in one package).
+This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented). The fork's approach results in dramatically less code (749 LOC vs 4,387 LOC) with proper instance-based lifecycle management and no global mutable state.
+
+The upstream has more Fabric-specific features (MLV REST API refresh, OneLake shortcuts, cross-workspace 4-part naming, local Livy mode), while this adapter offers broader dbt ecosystem integration (dbt-spark inheritance, Purview, capability declarations, shared T-SQL + Spark in one package) and significantly higher code quality.
