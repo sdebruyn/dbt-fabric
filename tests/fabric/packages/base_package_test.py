@@ -45,8 +45,22 @@ class BaseDbtPackageTests:
         return {}
 
     @pytest.fixture(scope="class")
+    def project_vars(self):
+        return {"dbt_date:time_zone": "UTC"}
+
+    @pytest.fixture(scope="class")
+    def extra_dispatches(self):
+        return []
+
+    @pytest.fixture(scope="class")
     def project_config_update(
-        self, package_name: str, models_config: dict, seeds_config: dict, tests_config: dict
+        self,
+        package_name: str,
+        models_config: dict,
+        seeds_config: dict,
+        tests_config: dict,
+        project_vars: dict,
+        extra_dispatches: list,
     ):
         dispatches = [
             {
@@ -69,10 +83,11 @@ class BaseDbtPackageTests:
                     ],
                 }
             )
+        dispatches.extend(extra_dispatches)
 
         return {
             "name": "test_dbt_package",
-            "vars": {"dbt_date:time_zone": "UTC"},
+            "vars": project_vars,
             "dispatch": dispatches,
             "seeds": seeds_config,
             "models": models_config,

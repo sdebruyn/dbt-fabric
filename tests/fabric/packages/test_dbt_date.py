@@ -44,32 +44,21 @@ class TestDbtDate(BaseDbtPackageTests):
         }
 
     @pytest.fixture(scope="class")
-    def project_config_update(self, package_name, models_config, seeds_config, tests_config):
-        return {
-            "name": "test_dbt_package",
-            "vars": {"dbt_date:time_zone": "America/Los_Angeles"},
-            "dispatch": [
-                {
-                    "macro_namespace": "dbt_date",
-                    "search_order": ["test_dbt_package", "dbt", "dbt_date"],
-                },
-                {
-                    "macro_namespace": "dbt_utils",
-                    "search_order": ["test_dbt_package", "dbt", "dbt_utils"],
-                },
-                {
-                    "macro_namespace": "dbt_date_integration_tests",
-                    "search_order": [
-                        "test_dbt_package",
-                        "dbt",
-                        "dbt_date_integration_tests",
-                    ],
-                },
-            ],
-            "seeds": seeds_config,
-            "models": models_config,
-            "tests": tests_config,
-        }
+    def project_vars(self):
+        return {"dbt_date:time_zone": "America/Los_Angeles"}
+
+    @pytest.fixture(scope="class")
+    def extra_dispatches(self):
+        return [
+            {
+                "macro_namespace": "dbt_date_integration_tests",
+                "search_order": [
+                    "test_dbt_package",
+                    "dbt",
+                    "dbt_date_integration_tests",
+                ],
+            }
+        ]
 
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
