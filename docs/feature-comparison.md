@@ -159,12 +159,12 @@ This adapter supports 11 authentication methods via a unified token provider, in
 
 ### [Community package support](community-packages.md)
 
-This adapter includes **58 macro overrides** across 6 popular dbt packages to make them work with Fabric's T-SQL dialect:
+This adapter includes **59 macro overrides** across 6 popular dbt packages to make them work with Fabric's T-SQL dialect:
 
 | Package | Macro overrides | Tested version |
 |---|---|---|
 | [dbt-utils](https://github.com/dbt-labs/dbt-utils) | 16 | 1.3.0 |
-| [dbt-date](https://github.com/godatadriven/dbt-date) | 15 | 0.17.2 |
+| [dbt-date](https://github.com/godatadriven/dbt-date) | 16 | 0.17.2 |
 | [dbt-expectations](https://github.com/calogica/dbt-expectations) | 10 | — |
 | [insert_by_period](https://github.com/dbt-labs/dbt-labs-experimental-features/tree/main/insert_by_period) | 7 | — |
 | [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper) | 5 | — |

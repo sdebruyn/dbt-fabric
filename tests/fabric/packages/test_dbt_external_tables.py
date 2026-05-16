@@ -209,9 +209,11 @@ class BaseExternalTableTest(BaseDbtPackageTests):
         return "0.11.0"
 
     @pytest.fixture(scope="class")
-    def packages(self, package_revision: str):
+    def packages(self, package_repo: str, package_revision: str):
         return {
-            "packages": [{"package": "dbt-labs/dbt_external_tables", "version": package_revision}]
+            "packages": [
+                {"git": package_repo, "revision": package_revision},
+            ]
         }
 
     def test_package(self, project, dbt_core_bug_workaround):

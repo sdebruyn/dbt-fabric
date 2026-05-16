@@ -5,11 +5,11 @@ import pytest
 from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
-_FISCAL_PERIODS_MACRO = (
+_FISCAL_PERIODS_PATH = (
     Path(__file__).resolve().parents[3]
     / "src/dbt/include/fabric/macros/dbt_package_support/dbt_date/fiscal_date"
     / "get_fiscal_periods.sql"
-).read_text()
+)
 
 _TEST_DATES_SQL = "{{ get_test_dates() }}"
 
@@ -62,7 +62,7 @@ class TestDbtDate(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
     def macros(self):
         return {
-            "get_fiscal_periods.sql": _FISCAL_PERIODS_MACRO,
+            "get_fiscal_periods.sql": _FISCAL_PERIODS_PATH.read_text(),
             "fabric_test_helpers.sql": """
 {% macro get_test_week_of_year() -%}
     {{ return([49, 49]) }}
