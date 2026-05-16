@@ -5,8 +5,10 @@ import sys
 from pathlib import Path
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
-from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
+from dbt.adapters.fabricspark.fabricspark_credentials import (
+    FabricSparkCredentials,
+)
 from tests.conftest import _auth_kwargs_from_env
 from tests.spark_remote.spark_job_client import SparkJobClient, SparkJobResult
 from tests.spark_remote.sync import ProjectSync, check_prerequisites
@@ -34,12 +36,11 @@ class RemoteTestOrchestrator:
 
         job_name = os.environ.get("FABRIC_TEST_SPARK_JOB_NAME", "dbt-fabric-tests")
 
-        creds = FabricCredentials(
-            database="",
+        creds = FabricSparkCredentials(
+            database=os.getenv("FABRIC_TEST_LAKEHOUSE_NAME", ""),
             schema="dbo",
             workspace_name=os.getenv("FABRIC_TEST_WORKSPACE_NAME"),
             workspace_id=os.getenv("FABRIC_TEST_WORKSPACE_ID"),
-            lakehouse=os.getenv("FABRIC_TEST_LAKEHOUSE_NAME"),
             **_auth_kwargs_from_env(),
         )
         token_provider = FabricTokenProvider(creds)
