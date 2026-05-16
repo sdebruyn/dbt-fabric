@@ -1,6 +1,5 @@
 import pytest
 
-from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 
@@ -18,7 +17,15 @@ class TestDbtExpectations(BaseDbtPackageTests):
         return "0.10.10"
 
     @pytest.fixture(scope="class")
-    def packages(self, package_name: str, package_repo: str, package_revision: str):
+    def packages(
+        self,
+        package_name: str,
+        package_repo: str,
+        package_revision: str,
+        dbt_utils_version: str,
+        dbt_date_repo: str,
+        dbt_date_revision: str,
+    ):
         return {
             "packages": [
                 {"git": package_repo, "revision": package_revision},
@@ -27,11 +34,8 @@ class TestDbtExpectations(BaseDbtPackageTests):
                     "revision": package_revision,
                     "subdirectory": "integration_tests",
                 },
-                {"package": "dbt-labs/dbt_utils", "version": "1.3.0"},
-                {
-                    "git": "https://github.com/godatadriven/dbt-date",
-                    "revision": "0.17.2",
-                },
+                {"package": "dbt-labs/dbt_utils", "version": dbt_utils_version},
+                {"git": dbt_date_repo, "revision": dbt_date_revision},
             ]
         }
 
@@ -47,8 +51,3 @@ class TestDbtExpectations(BaseDbtPackageTests):
                 "search_order": ["test_dbt_package", "dbt", "dbt_date"],
             },
         ]
-
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["run"])
-        run_dbt(["test"])
