@@ -4,6 +4,8 @@ import os
 import sys
 from pathlib import Path
 
+from dbt.adapters.fabric.fabric_credentials import FabricCredentials
+from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 from tests.spark_remote.spark_job_client import SparkJobClient, SparkJobResult
 from tests.spark_remote.sync import ProjectSync, check_prerequisites
 
@@ -14,6 +16,7 @@ class RemoteTestOrchestrator:
         workspace_id: str,
         lakehouse_id: str,
         project_root: Path,
+        token_provider: FabricTokenProvider,
         job_name: str = "dbt-fabric-tests",
     ):
         self._workspace_id = workspace_id
@@ -22,6 +25,7 @@ class RemoteTestOrchestrator:
         self._job_name = job_name
 
         self._sync = ProjectSync(workspace_id, lakehouse_id, project_root)
+        self._token_provider = token_provider
         self._job_client = SparkJobClient(workspace_id, self._get_token)
         self._local_results_dir = project_root / "remote-test-results"
 
@@ -45,11 +49,32 @@ class RemoteTestOrchestrator:
         if missing:
             raise ValueError(f"Required env vars not set: {', '.join(missing)}")
 
+        auth_kwargs: dict[str, str] = {}
+        auth = os.getenv("FABRIC_TEST_AUTH")
+        if auth:
+            auth_kwargs["authentication"] = auth
+        for key in ("tenant_id", "client_id", "federated_token_url", "federated_token_file"):
+            val = os.getenv(f"FABRIC_TEST_{key.upper()}")
+            if val:
+                auth_kwargs[key] = val
+        federated_header = os.getenv("FABRIC_TEST_FEDERATED_TOKEN_HEADER")
+        if federated_header:
+            auth_kwargs["federated_token_header"] = federated_header
+
+        creds = FabricCredentials(
+            database="",
+            schema="dbo",
+            workspace_id=workspace_id,
+            **auth_kwargs,
+        )
+        token_provider = FabricTokenProvider(creds)
+
         project_root = Path(__file__).resolve().parent.parent.parent
         return cls(
             workspace_id=workspace_id,
             lakehouse_id=lakehouse_id,
             project_root=project_root,
+            token_provider=token_provider,
             job_name=job_name,
         )
 
@@ -90,8 +115,4 @@ class RemoteTestOrchestrator:
         return self._sync.download_artifacts(self._local_results_dir)
 
     def _get_token(self) -> str:
-        from azure.identity import AzureCliCredential
-
-        credential = AzureCliCredential()
-        token = credential.get_token("https://analysis.windows.net/powerbi/api/.default")
-        return token.token
+        return self._token_provider.get_access_token()

@@ -18,6 +18,9 @@ ARTIFACTS_DIR = f"{LAKEHOUSE_ROOT}/Files/dbt-test-artifacts"
 
 
 def main() -> None:
+    if os.path.isdir(ARTIFACTS_DIR):
+        for f in os.listdir(ARTIFACTS_DIR):
+            os.remove(os.path.join(ARTIFACTS_DIR, f))
     os.makedirs(ARTIFACTS_DIR, exist_ok=True)
 
     requirements_file = f"{PROJECT_DIR}/requirements-remote.txt"

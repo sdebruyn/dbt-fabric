@@ -45,6 +45,10 @@ def _build_remote_args(session: pytest.Session) -> list[str]:
     if config.getoption("-x", default=False):
         args.append("-x")
 
+    positional = config.args
+    if positional:
+        args.extend(positional)
+
     args.append("--junitxml=/lakehouse/default/Files/dbt-test-artifacts/results.xml")
 
     return args

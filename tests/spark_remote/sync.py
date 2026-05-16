@@ -83,6 +83,13 @@ class ProjectSync:
             "FABRIC_TEST_SPARK_EXEC_MODE": "remote",
         }
 
+        secret_prefixes = (
+            "FABRIC_TEST_CLIENT_SECRET",
+            "FABRIC_TEST_FEDERATED_TOKEN",
+            "FABRIC_TEST_TENANT_ID",
+            "FABRIC_TEST_CLIENT_ID",
+        )
+
         lines = []
         if test_env_path.exists():
             for line in test_env_path.read_text().splitlines():
@@ -92,6 +99,8 @@ class ProjectSync:
                     continue
                 key = stripped.split("=", 1)[0]
                 if key in overrides:
+                    continue
+                if key.startswith(secret_prefixes):
                     continue
                 lines.append(line)
 

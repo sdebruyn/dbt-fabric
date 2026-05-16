@@ -3,9 +3,9 @@ import importlib.util
 import os
 from pathlib import Path
 
-import py
 import pytest
 import yaml
+from py.path import local as LocalPath
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
@@ -232,7 +232,7 @@ def project_root(tmpdir_factory, prefix):
     path = base / prefix / "project"
     path.mkdir(parents=True, exist_ok=True)
     print(f"\n=== Test project_root: {path}")
-    return py.path.local(path)
+    return LocalPath(path)
 
 
 @pytest.fixture(scope="class")
@@ -242,7 +242,7 @@ def profiles_root(tmpdir_factory, prefix):
         return tmpdir_factory.mktemp("profile")
     path = base / prefix / "profile"
     path.mkdir(parents=True, exist_ok=True)
-    return py.path.local(path)
+    return LocalPath(path)
 
 
 @pytest.fixture(scope="session", autouse=True)
