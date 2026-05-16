@@ -17,6 +17,21 @@ pytest_plugins = ["dbt.tests.fixtures.project"]
 requires_purview = pytest.mark.requires_purview
 
 
+def _auth_kwargs_from_env() -> dict:
+    kwargs = {}
+    auth = os.getenv("FABRIC_TEST_AUTH")
+    if auth:
+        kwargs["authentication"] = auth
+    for key in ("tenant_id", "client_id", "federated_token_url", "federated_token_file"):
+        val = os.getenv(f"FABRIC_TEST_{key.upper()}")
+        if val:
+            kwargs[key] = val
+    federated_header = os.getenv("FABRIC_TEST_FEDERATED_TOKEN_HEADER")
+    if federated_header:
+        kwargs["federated_token_header"] = federated_header
+    return kwargs
+
+
 @pytest.fixture(scope="class")
 def adapter_type(request) -> str:
     tests_root = Path(__file__).parent
@@ -32,18 +47,8 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
         "workspace_id": os.getenv("FABRIC_TEST_WORKSPACE_ID"),
         "retries": 3,
         "threads": int(os.getenv("FABRIC_TEST_THREADS", 10)),
+        **_auth_kwargs_from_env(),
     }
-
-    auth = os.getenv("FABRIC_TEST_AUTH")
-    if auth:
-        target["authentication"] = auth
-    for key in ("tenant_id", "client_id", "federated_token_url", "federated_token_file"):
-        val = os.getenv(f"FABRIC_TEST_{key.upper()}")
-        if val:
-            target[key] = val
-    federated_header = os.getenv("FABRIC_TEST_FEDERATED_TOKEN_HEADER")
-    if federated_header:
-        target["federated_token_header"] = federated_header
 
     if adapter_type == "fabric":
         adapter_settings = {
@@ -206,6 +211,7 @@ def livy_session_lifecycle():
         workspace_name=workspace_name,
         workspace_id=workspace_id,
         livy_session_name=session_name,
+        **_auth_kwargs_from_env(),
     )
     token_provider = FabricTokenProvider(creds)
     client = FabricApiClient(creds, token_provider)
