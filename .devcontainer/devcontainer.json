@@ -1,0 +1,21 @@
+{
+  "name": "dbt-fabric",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {}
+  },
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libltdl7 && uv sync --all-extras --all-groups",
+  "containerEnv": {
+    "UV_LINK_MODE": "copy"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "innoverio.vscode-dbt-power-user"
+      ]
+    }
+  }
+}
