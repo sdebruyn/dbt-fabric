@@ -14,10 +14,10 @@ Use `uv run ...` to run commands inside the virtual environment, or [activate it
 
 ### System dependencies
 
-The mssql-python driver requires `libltdl7` on Linux:
+The mssql-python driver requires the following libraries on Debian/Ubuntu Linux:
 
 ```shell
-sudo apt-get install libltdl7
+sudo apt-get install libltdl7 libkrb5-3 libgssapi-krb5-2
 ```
 
 This is installed automatically in the devcontainer and CI.

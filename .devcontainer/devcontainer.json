@@ -6,7 +6,7 @@
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {}
   },
-  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libltdl7 && uv sync --all-extras --all-groups",
+  "postCreateCommand": "sudo apt-get update && sudo apt-get install -y libltdl7 libkrb5-3 libgssapi-krb5-2 && uv sync --all-extras --all-groups",
   "containerEnv": {
     "UV_LINK_MODE": "copy"
   },
