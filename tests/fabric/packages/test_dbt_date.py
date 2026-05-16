@@ -11,7 +11,7 @@ class TestDbtDate(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
-        return "https://github.com/calogica/dbt-date"
+        return "https://github.com/godatadriven/dbt-date"
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
