@@ -81,7 +81,7 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ${{ matrix.dwh_name }}
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}-${{ matrix.dwh_name }}
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
           export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
@@ -245,9 +245,10 @@ jobs:
             ARGS="$ARGS --with-python"
           fi
           if [ -n "$PYTEST_FILTER" ]; then
-            ARGS="$ARGS -k $PYTEST_FILTER"
+            uv run pytest $ARGS -k "$PYTEST_FILTER"
+          else
+            uv run pytest $ARGS
           fi
-          uv run pytest $ARGS
 
       - name: Upload test logs
         if: always()
@@ -324,9 +325,10 @@ jobs:
             ARGS="$ARGS --with-python"
           fi
           if [ -n "$PYTEST_FILTER" ]; then
-            ARGS="$ARGS -k $PYTEST_FILTER"
+            uv run pytest $ARGS -k "$PYTEST_FILTER"
+          else
+            uv run pytest $ARGS
           fi
-          uv run pytest $ARGS
 
       - name: Upload test logs
         if: always()
