@@ -177,26 +177,34 @@ jobs:
             core.setOutput('head_ref', pr.head.ref);
             core.setOutput('head_sha', pr.head.sha);
 
-      - name: Parse pytest filter
+      - name: Parse command options
         id: filter
         uses: actions/github-script@v7
         env:
           INPUT_PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
+          INPUT_WITH_PYTHON: ${{ github.event.inputs.with_python }}
         with:
           script: |
             let rawFilter = '';
+            let withPython = false;
+
             if (context.eventName === 'issue_comment') {
               const body = context.payload.comment.body;
               const match = body.match(/^\/test-dw\s+(.*)/);
               rawFilter = match ? match[1].split('\n')[0].trim() : '';
+              withPython = rawFilter.includes('--with-python');
+              rawFilter = rawFilter.replace(/--with-python/g, '').trim();
             } else {
               rawFilter = process.env.INPUT_PYTEST_FILTER || '';
+              withPython = process.env.INPUT_WITH_PYTHON === 'true';
             }
 
             const sanitized = rawFilter.replace(/[^a-zA-Z0-9 _()]/g, '');
             core.setOutput('expression', sanitized);
             core.setOutput('has_filter', sanitized.length > 0 ? 'true' : 'false');
+            core.setOutput('with_python', withPython ? 'true' : 'false');
             core.info(`Pytest filter: ${sanitized || '(none — running all DW tests)'}`);
+            core.info(`With Python: ${withPython}`);
 
       - name: Acknowledge comment
         if: github.event_name == 'issue_comment'
@@ -235,13 +243,13 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ci04
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_LIVY_SESSION_NAME: ${{ inputs.with_python && github.run_id || '' }}
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ steps.filter.outputs.with_python == 'true' && github.run_id || '' }}
           PYTEST_FILTER: ${{ steps.filter.outputs.expression }}
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
           export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
           ARGS="-ra -v --dw"
-          if [[ "${{ inputs.with_python }}" == "true" ]]; then
+          if [[ "${{ steps.filter.outputs.with_python }}" == "true" ]]; then
             ARGS="$ARGS --with-python"
           fi
           if [ -n "$PYTEST_FILTER" ]; then
