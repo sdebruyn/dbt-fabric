@@ -126,11 +126,7 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def livy_session_lifecycle(request):
-    if request.config.getoption("--dw", default=False):
-        yield
-        return
-
+def livy_session_lifecycle():
     session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
     lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
     workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
@@ -140,10 +136,8 @@ def livy_session_lifecycle(request):
         yield
         return
 
+    from dbt.adapters.fabric.base_connection_manager import BaseFabricConnectionManager
     from dbt.adapters.fabric.fabric_livy_session import LivySession
-    from dbt.adapters.fabricspark.fabricspark_connection_manager import (
-        FabricSparkConnectionManager,
-    )
 
     creds = FabricCredentials(
         database=lakehouse_name,
@@ -159,8 +153,8 @@ def livy_session_lifecycle(request):
     client.get_livy_session_id()
     LivySession(client).wait_for_session_ready()
 
-    FabricSparkConnectionManager._fabric_api_client = client
-    FabricSparkConnectionManager._fabric_token_provider = token_provider
+    BaseFabricConnectionManager._fabric_api_client = client
+    BaseFabricConnectionManager._fabric_token_provider = token_provider
 
     yield
 
