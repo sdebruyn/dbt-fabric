@@ -32,3 +32,13 @@ case when cast(count(*) as {{ dbt.type_bigint() }}) > 0 then
 null
 {%- endif -%}
 {%- endmacro -%}
+
+{%- macro fabric__measure_avg(column_name, data_type) -%}
+{%- if dbt_profiler.is_numeric_dtype(data_type) and not dbt_profiler.is_struct_dtype(data_type) -%}
+avg({{ adapter.quote(column_name) }})
+{%- elif dbt_profiler.is_logical_dtype(data_type) -%}
+avg(case when {{ adapter.quote(column_name) }} = 1 then 1 else 0 end)
+{%- else -%}
+cast(null as {{ dbt.type_numeric() }})
+{%- endif -%}
+{%- endmacro -%}
