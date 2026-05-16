@@ -45,7 +45,7 @@ class TestDbtDate(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def project_vars(self):
-        return {"dbt_date:time_zone": "America/Los_Angeles"}
+        return {"dbt_date:time_zone": "UTC"}
 
     @pytest.fixture(scope="class")
     def extra_dispatches(self):
