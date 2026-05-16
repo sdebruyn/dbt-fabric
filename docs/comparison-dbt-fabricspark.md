@@ -57,7 +57,7 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 
 Notable differences:
 
-- **View**: The upstream supports Spark SQL views, but these are [not supported in schema-enabled Lakehouses](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-schemas?WT.mc_id=MVP_310840). This adapter deliberately targets schema-enabled Lakehouses (Microsoft's recommended configuration) and therefore excludes view support.
+- **View**: The upstream supports Spark SQL views, but these are [not supported in schema-enabled Lakehouses](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-schemas?WT.mc_id=MVP_310840). Schema-enabled Lakehouses are [the default when creating new Lakehouses](https://blog.fabric.microsoft.com/en-US/blog/lakehouse-schemas-generally-available/). This adapter deliberately targets schema-enabled Lakehouses and therefore excludes view support.
 - **Materialized Lake View**: The upstream uses Fabric REST API for on-demand and scheduled refresh. This adapter uses standard `CREATE OR REPLACE` without REST API calls.
 
 ### Authentication methods
@@ -218,7 +218,7 @@ The upstream mixes camelCase (`tokenPrint`, `accessToken`, `_submitLivyCode`, `_
 
 ## Summary
 
-This adapter deliberately targets **schema-enabled Lakehouses**, which is [Microsoft's recommended Lakehouse configuration](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-schemas?WT.mc_id=MVP_310840). This means some upstream features that only work without schemas (e.g., Spark SQL views) are intentionally not supported.
+This adapter deliberately targets **schema-enabled Lakehouses**, which is [the default when creating new Lakehouses](https://blog.fabric.microsoft.com/en-US/blog/lakehouse-schemas-generally-available/) in the Fabric portal ([schemas are enabled by default](https://learn.microsoft.com/en-us/fabric/data-engineering/lakehouse-schemas?WT.mc_id=MVP_310840)). This means some upstream features that only work without schemas (e.g., Spark SQL views) are intentionally not supported.
 
 This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented). The fork's approach results in dramatically less code (749 LOC vs 4,387 LOC) with proper instance-based lifecycle management and no global mutable state.
 
