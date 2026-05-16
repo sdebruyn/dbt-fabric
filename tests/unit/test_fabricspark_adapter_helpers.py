@@ -95,7 +95,7 @@ class TestBuildSparkRelationList:
         assert result[0].identifier == "my_table"
         assert result[0].type == FabricSparkRelationType.Table
 
-    def test_skips_none_namespace(self, adapter):
+    def test_skips_none_namespace_but_processes_valid_rows(self, adapter):
         rows = self._make_rows(
             [
                 {
@@ -103,12 +103,18 @@ class TestBuildSparkRelationList:
                     "name": "temp_view",
                     "information": "",
                 },
+                {
+                    "namespace": "`ws`.`db`.`schema1`",
+                    "name": "valid_table",
+                    "information": "Type: MANAGED",
+                },
             ]
         )
         result = adapter._build_spark_relation_list(rows, self._info_func)
-        assert len(result) == 0
+        assert len(result) == 1
+        assert result[0].identifier == "valid_table"
 
-    def test_skips_empty_namespace(self, adapter):
+    def test_skips_empty_namespace_but_processes_valid_rows(self, adapter):
         rows = self._make_rows(
             [
                 {
@@ -116,10 +122,16 @@ class TestBuildSparkRelationList:
                     "name": "temp_view",
                     "information": "",
                 },
+                {
+                    "namespace": "`ws`.`db`.`schema1`",
+                    "name": "valid_table",
+                    "information": "Type: MANAGED",
+                },
             ]
         )
         result = adapter._build_spark_relation_list(rows, self._info_func)
-        assert len(result) == 0
+        assert len(result) == 1
+        assert result[0].identifier == "valid_table"
 
     def test_detects_materialized_lake_view_type(self, adapter):
         rows = self._make_rows(
@@ -135,13 +147,13 @@ class TestBuildSparkRelationList:
         assert len(result) == 1
         assert result[0].type == FabricSparkRelationType.MaterializedView
 
-    def test_falls_back_to_table_type(self, adapter):
+    def test_falls_back_to_table_type_for_unknown_type(self, adapter):
         rows = self._make_rows(
             [
                 {
                     "namespace": "`ws`.`db`.`schema1`",
                     "name": "regular_table",
-                    "information": "Type: MANAGED\nProvider: delta",
+                    "information": "Type: EXTERNAL\nProvider: delta",
                 },
             ]
         )
@@ -159,6 +171,7 @@ class TestBuildSparkRelationList:
             ]
         )
         result = adapter._build_spark_relation_list(rows, self._info_func)
+        assert result[0].catalog == "my-workspace"
         assert result[0].path.database == "my-lakehouse"
         assert result[0].path.schema == "my-schema"
 
