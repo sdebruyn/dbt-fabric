@@ -300,12 +300,23 @@ as select
 """.strip()
 
 _ASSERT_EQUAL_SQL = """
+{% macro _strip_trailing_ws(text) %}
+    {% set lines = text.split('\\n') %}
+    {% set stripped = [] %}
+    {% for line in lines %}
+        {% do stripped.append(line.rstrip()) %}
+    {% endfor %}
+    {{ return(stripped | join('\\n')) }}
+{% endmacro %}
+
 {% macro assert_equal(actual_object, expected_object) %}
+{% set actual_clean = _strip_trailing_ws(actual_object | string) %}
+{% set expected_clean = _strip_trailing_ws(expected_object | string) %}
 {% if not execute %}
 
     {# pass #}
 
-{% elif actual_object != expected_object %}
+{% elif actual_clean != expected_clean %}
 
     {% set msg %}
     Expected did not match actual
@@ -313,12 +324,12 @@ _ASSERT_EQUAL_SQL = """
     -----------
     Actual:
     -----------
-    --->{{ actual_object }}<---
+    --->{{ actual_clean }}<---
 
     -----------
     Expected:
     -----------
-    --->{{ expected_object }}<---
+    --->{{ expected_clean }}<---
 
     {% endset %}
 
