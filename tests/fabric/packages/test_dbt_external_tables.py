@@ -202,7 +202,7 @@ class BaseExternalTableTest(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
-        return "dbt-labs/dbt_external_tables"
+        return "https://github.com/dbt-labs/dbt-external-tables"
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
@@ -210,7 +210,11 @@ class BaseExternalTableTest(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def packages(self, package_repo: str, package_revision: str):
-        return {"packages": [{"package": package_repo, "version": package_revision}]}
+        return {
+            "packages": [
+                {"git": package_repo, "revision": package_revision},
+            ]
+        }
 
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
