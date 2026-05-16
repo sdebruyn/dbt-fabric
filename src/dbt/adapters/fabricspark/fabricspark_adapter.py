@@ -1,5 +1,5 @@
 from concurrent.futures import Future, as_completed
-from typing import TYPE_CHECKING, Callable, FrozenSet, Iterable, Tuple, TypeAlias
+from typing import TYPE_CHECKING, Callable, FrozenSet, Iterable, Tuple
 
 from dbt_common.clients.agate_helper import DEFAULT_TYPE_TESTER
 from dbt_common.events.functions import warn_or_error
@@ -31,9 +31,10 @@ logger = AdapterLogger("FabricSpark")
 
 
 class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
+    Column = FabricSparkColumn
     ConnectionManager = FabricSparkConnectionManager  # type: ignore
     connections: FabricSparkConnectionManager  # type: ignore
-    Relation: TypeAlias = FabricSparkRelation  # type: ignore
+    Relation = FabricSparkRelation
     RelationInfo = Tuple[str, str, str]
 
     _capabilities: CapabilityDict = CapabilityDict(

@@ -9,6 +9,10 @@ class FabricSparkColumn(SparkColumn):
     table_comment: str | None = None
     column_comment: str | None = None
 
+    @classmethod
+    def string_type(cls, _size: int) -> str:
+        return "string"
+
     def is_string(self) -> bool:
         return super().is_string() or self.dtype.lower() == "string"
 
