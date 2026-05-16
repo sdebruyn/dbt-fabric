@@ -49,8 +49,8 @@ Both Python model support for Fabric DW (via Livy sessions writing through `syna
 | Environment credentials | Yes | Yes |
 | Device Code Flow | Yes | No |
 | Managed Identity (MSI) | Yes | No |
-| Fabric Notebook (notebookutils) | Yes | Yes (`fabricnotebook`) |
-| Synapse Spark (mssparkutils) | Removed (Synapse-specific, not applicable to Fabric) | Yes (`synapsespark`) |
+| Fabric Notebook (`notebookutils`) | Yes (currently broken) | Yes (`fabricnotebook`) |
+| Synapse Spark (mssparkutils) | No (Synapse-specific, not applicable to Fabric) | Yes (`synapsespark`) |
 | ActiveDirectoryAccessToken | No (removed) | Yes |
 | Windows Login | Yes | Yes |
 | `token_credential` (custom class) | Yes | No |

@@ -279,9 +279,9 @@ default:
       client_secret: "{{ env_var('AZURE_CLIENT_SECRET') }}"
 ```
 
-!!! warning "`FabricSpark` is currently broken"
+!!! warning "`notebookutils` is currently broken"
 
-    The adapter also has a `FabricSpark` (alias `SynapseSpark`) authentication method that uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to obtain an access token from the notebook session. However, this method is **not working** at the moment because Microsoft's Runtime in the Notebooks returns a credential with a scope that is not allowed to access Data Warehouses and SQL Endpoints. Use one of the alternatives above instead.
+    The adapter also has a `notebookutils` authentication method that uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to obtain an access token from the notebook session. However, this method is **not working** at the moment because Microsoft's Runtime in the Notebooks returns a credential with a scope that is not allowed to access Data Warehouses and SQL Endpoints. Use one of the alternatives above instead.
 
 ---
 
@@ -369,4 +369,4 @@ dbt debug
 | `AADSTS700016: Application not found` | Wrong `client_id` or the app isn't registered in the correct tenant | Verify the app registration in Microsoft Entra ID |
 | `DefaultAzureCredential failed` | No valid credential source found | Make sure you are logged in (`az login` / `Connect-AzAccount`) or that environment variables are set |
 | `Token expired` when using `access_token` | The pre-acquired token has expired | Refresh the token before running dbt |
-| `notebookutils not found` | Using `FabricSpark` outside of a Fabric/Synapse notebook | Switch to a different authentication method |
+| `notebookutils not found` | Using `notebookutils` auth outside of a Fabric notebook | Switch to a different authentication method |
