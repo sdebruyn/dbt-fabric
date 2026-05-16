@@ -37,6 +37,7 @@ nav = [
     { "Statistics" = "statistics.md" },
     { "Python models" = "python-models.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
+    { "Community packages" = "community-packages.md" },
     { "External tables" = "external-tables.md" },
     { "Catalog statistics" = "catalog-stats.md" },
   ] },

@@ -157,18 +157,18 @@ Then, to run dbt against your production environment/Workspace, you can simply s
 
 This adapter supports 11 authentication methods via a unified token provider, including methods not available in Microsoft's adapters: [workload identity](authentication.md#workload-identity-federated-credentials) (federated OIDC for CI/CD) and [custom token credentials](authentication.md#bring-your-own-tokencredential). Most methods contributed to this adapter have since been added upstream, but the newer options remain exclusive.
 
-### Community package support
+### [Community package support](community-packages.md)
 
-This adapter includes **41 macro overrides** across 6 popular dbt packages to make them work with Fabric's T-SQL dialect:
+This adapter includes **58 macro overrides** across 6 popular dbt packages to make them work with Fabric's T-SQL dialect:
 
-| Package | Macro overrides |
-|---|---|
-| [dbt-utils](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) | 15 |
-| [dbt-date](https://hub.getdbt.com/calogica/dbt_date/latest/) | 12 |
-| [dbt-expectations](https://hub.getdbt.com/calogica/dbt_expectations/latest/) | 7 |
-| [dbt-audit-helper](https://hub.getdbt.com/dbt-labs/audit_helper/latest/) | 4 |
-| [insert_by_period](https://hub.getdbt.com/dbt-labs/insert_by_period/latest/) | 2 |
-| [dbt-external-tables](https://hub.getdbt.com/dbt-labs/dbt_external_tables/latest/) | 1 |
+| Package | Macro overrides | Tested version |
+|---|---|---|
+| [dbt-utils](https://github.com/dbt-labs/dbt-utils) | 16 | 1.3.0 |
+| [dbt-date](https://github.com/godatadriven/dbt-date) | 15 | 0.17.2 |
+| [dbt-expectations](https://github.com/calogica/dbt-expectations) | 10 | — |
+| [insert_by_period](https://github.com/dbt-labs/dbt-labs-experimental-features/tree/main/insert_by_period) | 7 | — |
+| [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper) | 5 | — |
+| [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) | 5 | 0.11.0 |
 
 Microsoft's dbt-fabric has a single utility macro (`get_tables_by_pattern`). Microsoft's dbt-fabricspark has no community package support.
 

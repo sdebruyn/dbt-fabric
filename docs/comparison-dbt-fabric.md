@@ -80,15 +80,15 @@ This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), M
 
 | Package | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **dbt-utils** | 15 macro overrides | 1 (`get_tables_by_pattern`) |
-| **dbt-date** | 12 macro overrides | None |
-| **dbt-expectations** | 7 macro overrides | None |
-| **dbt-audit-helper** | 4 macro overrides | None |
-| **dbt-external-tables** | 1 macro override (OPENROWSET-based) | None |
-| **insert_by_period** | 2 macro overrides | None |
-| **Integration tests** | Yes (dbt-utils, dbt-external-tables) | None |
+| **dbt-utils** | 16 macro overrides, tested v1.3.0 | 1 (`get_tables_by_pattern`) |
+| **dbt-date** | 15 macro overrides, tested v0.17.2 | None |
+| **dbt-expectations** | 10 macro overrides | None |
+| **dbt-audit-helper** | 5 macro overrides | None |
+| **dbt-external-tables** | 5 macro overrides, tested v0.11.0 | None |
+| **insert_by_period** | 7 macro overrides | None |
+| **Integration tests** | Yes (dbt-utils, dbt-date, dbt-external-tables) | None |
 
-This adapter includes community package macro overrides organized by package name. These adapt T-SQL-incompatible SQL from popular dbt packages to work with Fabric's dialect. The upstream has only a single `get_tables_by_pattern` utility macro.
+This adapter includes [community package macro overrides](community-packages.md) organized by package name. These adapt T-SQL-incompatible SQL from popular dbt packages to work with Fabric's dialect. The upstream has only a single `get_tables_by_pattern` utility macro.
 
 ## OPENROWSET / external table support
 
@@ -179,7 +179,7 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 | Cluster by | Yes | - | Yes |
 | List relations | Yes | Yes | Yes |
 | Utility functions | 28 files, 40+ classes | 28 files, 40+ classes | 5 inline |
-| Package integration tests | Yes (dbt-utils, dbt-external-tables) | - | - |
+| Package integration tests | Yes (dbt-utils, dbt-date, dbt-external-tables) | - | - |
 | OPENROWSET | No (uses dbt-external-tables) | - | Yes |
 
 ### Test infrastructure
