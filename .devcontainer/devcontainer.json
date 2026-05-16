@@ -13,8 +13,7 @@
   "customizations": {
     "vscode": {
       "extensions": [
-        "charliermarsh.ruff",
-        "innoverio.vscode-dbt-power-user"
+        "charliermarsh.ruff"
       ]
     }
   }
