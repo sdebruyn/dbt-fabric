@@ -1,4 +1,4 @@
-{% macro fabric__compare_relations(a_relation, b_relation, exclude_columns=[], primary_key=None, summarize=true) %}
+{% macro fabric__compare_relations(a_relation, b_relation, exclude_columns=[], primary_key=None, summarize=true, limit=None) %}
 
 {%- set a_columns = adapter.get_columns_in_relation(a_relation) -%}
 
@@ -20,6 +20,6 @@ select
 from {{ b_relation }}
 {% endset %}
 
-{{ fabric__compare_queries(a_query, b_query, primary_key, summarize) }}
+{{ fabric__compare_queries(a_query, b_query, primary_key, summarize, limit) }}
 
 {% endmacro %}

@@ -1,4 +1,4 @@
-{% macro fabric__compare_queries(a_query, b_query, primary_key=None, summarize=true) %}
+{% macro fabric__compare_queries(a_query, b_query, primary_key=None, summarize=true, limit=None) %}
 
 with a as (
 
@@ -76,10 +76,10 @@ summary_stats as (
 final as (
 
     select
-    *,
-    round(100.0 * count / sum(count) over (), 2) as percent_of_total
-
+        *,
+        round(100.0 * count / sum(count) over (), 2) as percent_of_total
     from summary_stats
+
 )
 
 {%- else %}
@@ -94,7 +94,10 @@ final as (
 
 {%- endif %}
 
-select *
-from final
+select * from final
+order by in_a desc, in_b desc
+{%- if limit and not summarize %}
+offset 0 rows fetch next {{ limit }} rows only
+{%- endif %}
 
 {% endmacro %}
