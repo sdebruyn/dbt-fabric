@@ -132,7 +132,7 @@ Debugging workflow:
 
 - **Formatter/linter**: [ruff](https://docs.astral.sh/ruff/) (config in `pyproject.toml`)
 - **Line length**: 99
-- **Python target**: 3.13
+- **Python target**: 3.11 (ruff target-version, must match minimum supported Python)
 - **Quote style**: double quotes
 
 Always run before committing:
@@ -204,7 +204,7 @@ GitHub Actions workflows in `.github/workflows/`:
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
 | `unit-tests.yml` | PR, push | Unit tests (no Fabric infrastructure needed) |
-| `integration-tests-dw.yml` | PR, push, manual, weekly | DW tests: Python 3.13 on PR/push, full matrix (3.11/3.12/3.13) on weekly schedule |
+| `integration-tests-dw.yml` | PR, push, manual, weekly (Sun 02:00 UTC) | DW tests: Python 3.14 only on PR/push/manual, full matrix (3.11/3.12/3.13/3.14) on weekly schedule |
 | `integration-tests-de.yml` | Weekly, PR comment, manual | DE tests: weekly on main, on-demand per PR — see below |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
 

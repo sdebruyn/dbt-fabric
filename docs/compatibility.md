@@ -18,6 +18,7 @@ The first release of this fork was version 1.10.0. The adapter follows [dbt-adap
 | 3.11 | Yes |
 | 3.12 | Yes |
 | 3.13 | Yes |
+| 3.14 | Yes |
 
 ## SQL Server driver
 

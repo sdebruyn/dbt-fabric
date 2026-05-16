@@ -7,7 +7,7 @@ license = "MIT"
 authors = [
     {name = "Sam Debruyn"}
 ]
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<3.15"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Operating System :: Microsoft :: Windows",
@@ -15,11 +15,12 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13"
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 
 dependencies = [
-    "mssql-python>=1.4.0",
+    "mssql-python>=1.4.0,<1.7.0",
     "azure-identity>=1.12.0",
     "dbt-common>=1.38.0,<2.0",
     "dbt-adapters>=1.23.0,<2.0",
@@ -70,7 +71,7 @@ env_files = ["test.env"]
 testpaths = ["tests/unit", "tests/fabric", "tests/fabricspark"]
 
 [tool.ruff]
-target-version = "py313"
+target-version = "py311"
 line-length = 99
 
 [tool.ruff.lint]
