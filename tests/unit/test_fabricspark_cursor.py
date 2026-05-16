@@ -439,7 +439,7 @@ class TestCursorContextManager:
             assert c is cursor
         assert cursor._connection is None
 
-    def test_exit_suppresses_exceptions(self):
+    def test_exit_propagates_exceptions(self):
         cursor = FabricSparkCursor(connection=object())
         result = cursor.__exit__(ValueError, ValueError("test"), None)
-        assert result is True
+        assert result is False

@@ -45,7 +45,7 @@ class FabricSparkCursor:
         exc_tb: TracebackType | None,
     ) -> bool:
         self.close()
-        return True
+        return False
 
     @staticmethod
     def _convert_value(value: Any, spark_type: str) -> Any:
