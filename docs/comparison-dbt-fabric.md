@@ -261,6 +261,11 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 | **Documentation** | Dedicated docs site | 1 page (OPENROWSET) |
 | **Type annotations** | Modern (PEP 604) | Legacy (typing module) |
 | **Linter** | ruff | pre-commit (flake8, black, mypy) |
+| **Code review** | Human-reviewed | Signs of unreviewed AI-generated code (see below) |
+
+### Code quality concerns in upstream
+
+Some recent upstream commits show signs of AI-generated code that was merged without adequate human review. For example, [PR #315](https://github.com/microsoft/dbt-fabric/pull/315) adds `timeout=getattr(credentials, "login_timeout", None)` to all `get_token()` calls in the connection manager. This is a no-op: `login_timeout` does not exist as an attribute on `FabricCredentials` (so `getattr` always returns `None`), and `get_token()` in azure-identity does not accept or use a `timeout` keyword argument — it silently disappears into `**kwargs`. The PR description is also clearly AI-generated (structured headers, numbered references). This kind of dead code adds confusion and suggests insufficient review practices.
 
 ---
 
