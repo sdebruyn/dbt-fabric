@@ -210,3 +210,10 @@ class TestNoOpMethods:
     def test_setoutputsize_with_column_is_noop(self):
         cursor = FabricSparkCursor(connection=object())
         cursor.setoutputsize(1000, column=2)
+
+
+class TestCursorContextManager:
+    def test_exit_propagates_exceptions(self):
+        cursor = FabricSparkCursor(connection=object())
+        result = cursor.__exit__(ValueError, ValueError("test"), None)
+        assert result is False
