@@ -193,42 +193,6 @@ def pytest_collection_modifyitems(config, items):
             )
 
 
-@pytest.fixture(scope="session", autouse=True)
-def livy_session_lifecycle():
-    session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
-    lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
-    workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
-    workspace_id = os.getenv("FABRIC_TEST_WORKSPACE_ID")
-
-    if not session_name or not lakehouse_name or not (workspace_name or workspace_id):
-        yield
-        return
-
-    from dbt.adapters.fabric.fabric_livy_session import LivySession
-
-    creds = FabricCredentials(
-        database=lakehouse_name,
-        schema="dbo",
-        lakehouse=lakehouse_name,
-        workspace_name=workspace_name,
-        workspace_id=workspace_id,
-        livy_session_name=session_name,
-        **_auth_kwargs_from_env(),
-    )
-    token_provider = FabricTokenProvider(creds)
-    client = FabricApiClient(creds, token_provider)
-
-    client.get_livy_session_id()
-    LivySession(client).wait_for_session_ready()
-
-    yield
-
-    try:
-        client.delete_livy_session()
-    except Exception as e:
-        print(f"\nWarning: failed to delete Livy session: {e}")
-
-
 @pytest.fixture(scope="class")
 def logs_dir(request, prefix):
     dbt_log_dir = os.path.join(request.config.rootdir, "logs", prefix)
