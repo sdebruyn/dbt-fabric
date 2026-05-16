@@ -13,13 +13,10 @@ EXCLUDE_PATTERNS = "*.pyc;*.pyo;*.egg-info"
 
 
 class ProjectSync:
-    def __init__(self, workspace_name: str, lakehouse_name: str, project_root: Path):
-        self._workspace_name = workspace_name
-        self._lakehouse_name = lakehouse_name
+    def __init__(self, workspace_id: str, lakehouse_id: str, project_root: Path):
         self._project_root = project_root
         self._onelake_base = (
-            f"https://onelake.dfs.fabric.microsoft.com"
-            f"/{workspace_name}/{lakehouse_name}.Lakehouse/Files"
+            f"https://onelake.dfs.fabric.microsoft.com/{workspace_id}/{lakehouse_id}/Files"
         )
 
     def upload(self) -> None:

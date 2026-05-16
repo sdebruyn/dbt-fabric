@@ -12,20 +12,16 @@ class RemoteTestOrchestrator:
     def __init__(
         self,
         workspace_id: str,
-        workspace_name: str,
-        lakehouse_name: str,
         lakehouse_id: str,
         project_root: Path,
         job_name: str = "dbt-fabric-tests",
     ):
         self._workspace_id = workspace_id
-        self._workspace_name = workspace_name
-        self._lakehouse_name = lakehouse_name
         self._lakehouse_id = lakehouse_id
         self._project_root = project_root
         self._job_name = job_name
 
-        self._sync = ProjectSync(workspace_name, lakehouse_name, project_root)
+        self._sync = ProjectSync(workspace_id, lakehouse_id, project_root)
         self._job_client = SparkJobClient(workspace_id, self._get_token)
         self._local_results_dir = project_root / "remote-test-results"
 
@@ -38,18 +34,12 @@ class RemoteTestOrchestrator:
             raise SystemExit(1)
 
         workspace_id = os.environ.get("FABRIC_TEST_WORKSPACE_ID", "")
-        workspace_name = os.environ.get("FABRIC_TEST_WORKSPACE_NAME", "")
-        lakehouse_name = os.environ.get("FABRIC_TEST_LAKEHOUSE_NAME", "")
         lakehouse_id = os.environ.get("FABRIC_TEST_REMOTE_LAKEHOUSE_ID", "")
         job_name = os.environ.get("FABRIC_TEST_SPARK_JOB_NAME", "dbt-fabric-tests")
 
         missing = []
         if not workspace_id:
             missing.append("FABRIC_TEST_WORKSPACE_ID")
-        if not workspace_name:
-            missing.append("FABRIC_TEST_WORKSPACE_NAME")
-        if not lakehouse_name:
-            missing.append("FABRIC_TEST_LAKEHOUSE_NAME")
         if not lakehouse_id:
             missing.append("FABRIC_TEST_REMOTE_LAKEHOUSE_ID")
         if missing:
@@ -58,8 +48,6 @@ class RemoteTestOrchestrator:
         project_root = Path(__file__).resolve().parent.parent.parent
         return cls(
             workspace_id=workspace_id,
-            workspace_name=workspace_name,
-            lakehouse_name=lakehouse_name,
             lakehouse_id=lakehouse_id,
             project_root=project_root,
             job_name=job_name,
