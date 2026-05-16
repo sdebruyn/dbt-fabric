@@ -108,7 +108,6 @@ The upstream's standalone macro additionally supports JSON path mapping and ordi
 |---|---|
 | **[Microsoft Purview integration](purview-integration.md)** | Full metadata sync to Purview: descriptions, lineage, and business metadata. Callable via `{{ purview_sync() }}` macro. |
 | **[Warehouse snapshots](warehouse-snapshots.md) (macro-based)** | Create/update/delete warehouse snapshots via Fabric REST API, controllable from `on-run-start`/`on-run-end` hooks. |
-| **Source freshness** | Custom `fabric__collect_freshness` macro using `TRY_CAST` to `datetimeoffset(6)` and `SYSDATETIMEOFFSET()`. |
 | **Fabric API client** | Full REST client for the Fabric API: workspace resolution, warehouse/lakehouse discovery, Livy session management, warehouse snapshot CRUD. |
 | **Automatic host resolution** | Auto-resolves the SQL endpoint hostname from workspace name via Fabric API, without needing the `host` config. |
 | **SQL injection protection** | `quote()` method escapes `]` as `]]` in identifiers; upstream does not. |
@@ -224,7 +223,6 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 |---|---|---|
 | **Microbatch incremental** | Yes | Yes |
 | **Cluster by** | Yes | Yes |
-| **Source freshness** | Custom macro | No custom macro |
 | **dbt show** | Yes | Yes |
 | **dbt clone** | Yes | Yes |
 | **Unit testing** | Yes | Yes (custom macros) |
