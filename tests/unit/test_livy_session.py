@@ -269,6 +269,21 @@ class TestWaitAndGetStatementResult:
         assert result.success is False
         assert result.error_message == "session crashed"
 
+    @pytest.mark.parametrize("terminal_state", ["cancelled", "cancelling"])
+    @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
+    def test_cancelled_without_evalue_uses_state_as_error_message(
+        self, mock_sleep, terminal_state, session, fabric_api_client
+    ):
+        fabric_api_client.get_livy_statement.return_value = {
+            "state": terminal_state,
+            "output": {"status": "error"},
+        }
+
+        result = session.wait_and_get_statement_result(7)
+
+        assert result.success is False
+        assert terminal_state in result.error_message
+
     @patch("dbt.adapters.fabric.fabric_livy_session.time.time")
     @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
     def test_catches_timeout_error_and_returns_failed_result(

@@ -129,13 +129,17 @@ class LivySession:
         """
         try:
             response = self.wait_for_statement_ready(statement_id)
+            output = response.get("output", {})
+            success = response["state"] == "available" and output.get("status") == "ok"
+            error_message = output.get("evalue")
+            if not success and not error_message:
+                error_message = f"Statement ended with state '{response.get('state')}'"
             return LivySessionResult(
                 statement_id=statement_id,
-                success=response["state"] == "available"
-                and response.get("output", {}).get("status") == "ok",
-                error_message=response.get("output", {}).get("evalue"),
-                status_code=response.get("output", {}).get("status"),
-                json_data=response.get("output", {}).get("data", {}).get("application/json", {}),
+                success=success,
+                error_message=error_message,
+                status_code=output.get("status"),
+                json_data=output.get("data", {}).get("application/json", {}),
             )
         except TimeoutError as e:
             logger.error(
