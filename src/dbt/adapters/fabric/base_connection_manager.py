@@ -36,9 +36,18 @@ class BaseFabricConnectionManager(SQLConnectionManager, metaclass=abc.ABCMeta):
     def get_fabric_api_client(cls, credentials: BaseFabricCredentials) -> FabricApiClient:
         """Return a shared FabricApiClient, creating one on first call.
 
+        Recreates the client if the cached instance targets a different database
+        than the passed credentials (prevents cross-adapter singleton pollution).
+
         Args:
             credentials: Fabric connection credentials used to configure the client.
         """
+        if (
+            cls._fabric_api_client is not None
+            and cls._fabric_api_client._credentials.database != credentials.database
+        ):
+            cls._fabric_api_client = None
+
         if cls._fabric_api_client is None:
             cls._fabric_api_client = FabricApiClient(
                 credentials, cls.get_fabric_token_provider(credentials)
