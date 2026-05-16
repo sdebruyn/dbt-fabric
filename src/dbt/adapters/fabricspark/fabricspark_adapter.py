@@ -31,6 +31,7 @@ logger = AdapterLogger("FabricSpark")
 
 
 class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
+    Column: TypeAlias = FabricSparkColumn  # type: ignore
     ConnectionManager = FabricSparkConnectionManager  # type: ignore
     connections: FabricSparkConnectionManager  # type: ignore
     Relation: TypeAlias = FabricSparkRelation  # type: ignore
