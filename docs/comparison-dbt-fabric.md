@@ -80,7 +80,7 @@ This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), M
 
 | Package | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **dbt-utils** | 16 macro overrides, tested v1.3.0 | 1 (`get_tables_by_pattern`) |
+| **dbt-utils** | 16 macro overrides, tested v1.3.3 | 1 (`get_tables_by_pattern`) |
 | **dbt-date** | 16 macro overrides, tested v0.17.2 | None |
 | **dbt-expectations** | 10 macro overrides | None |
 | **dbt-audit-helper** | 5 macro overrides | None |

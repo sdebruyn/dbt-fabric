@@ -163,7 +163,7 @@ This adapter includes **59 macro overrides** across 6 popular dbt packages to ma
 
 | Package | Macro overrides | Tested version |
 |---|---|---|
-| [dbt-utils](https://github.com/dbt-labs/dbt-utils) | 16 | 1.3.0 |
+| [dbt-utils](https://github.com/dbt-labs/dbt-utils) | 16 | 1.3.3 |
 | [dbt-date](https://github.com/godatadriven/dbt-date) | 16 | 0.17.2 |
 | [dbt-expectations](https://github.com/calogica/dbt-expectations) | 10 | — |
 | [insert_by_period](https://github.com/dbt-labs/dbt-labs-experimental-features/tree/main/insert_by_period) | 7 | — |

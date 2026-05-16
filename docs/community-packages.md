@@ -30,7 +30,7 @@ Replace `your_project_name` with the `name` field from your `dbt_project.yml`. O
 
 | Package | Tested version | Macro overrides | Integration tested |
 |---|---|---|---|
-| [dbt-utils](https://github.com/dbt-labs/dbt-utils) | 1.3.0 | 16 | Yes |
+| [dbt-utils](https://github.com/dbt-labs/dbt-utils) | 1.3.3 | 16 | Yes |
 | [dbt-date](https://github.com/godatadriven/dbt-date) | 0.17.2 | 16 | Yes |
 | [dbt-expectations](https://github.com/calogica/dbt-expectations) | — | 10 | No |
 | [insert_by_period](https://github.com/dbt-labs/dbt-labs-experimental-features/tree/main/insert_by_period) | — | 7 | No |
@@ -43,7 +43,7 @@ Replace `your_project_name` with the `name` field from your `dbt_project.yml`. O
 
 ## dbt-utils
 
-**Tested version:** 1.3.0
+**Tested version:** 1.3.3
 
 Overrides cover common T-SQL incompatibilities: `LIMIT` → `TOP`, `BOOLEAN` → `BIT`, string functions, date functions, and type casting.
 
