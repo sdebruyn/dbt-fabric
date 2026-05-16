@@ -42,12 +42,6 @@ def _build_remote_args(session: pytest.Session) -> list[str]:
     if config.getoption("--de", default=False):
         args.append("--de")
 
-    if config.getoption("--with-grants", default=False):
-        args.append("--with-grants")
-
-    if config.getoption("--with-python", default=False):
-        args.append("--with-python")
-
     if config.getoption("-x", default=False):
         args.append("-x")
 
