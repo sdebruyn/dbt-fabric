@@ -3,6 +3,7 @@ import importlib.util
 import os
 from pathlib import Path
 
+import py
 import pytest
 import yaml
 
@@ -49,11 +50,6 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
         "threads": int(os.getenv("FABRIC_TEST_THREADS", 10)),
         **_auth_kwargs_from_env(),
     }
-
-    if base_api_uri := os.getenv("FABRIC_TEST_BASE_API_URI"):
-        target["fabric_base_api_uri"] = base_api_uri
-    if powerbi_api_uri := os.getenv("FABRIC_TEST_POWERBI_BASE_API_URI"):
-        target["powerbi_base_api_uri"] = powerbi_api_uri
 
     if adapter_type == "fabric":
         adapter_settings = {
@@ -102,6 +98,12 @@ def pytest_addoption(parser):
     parser.addoption(
         "--dw", action="store_true", default=False, help="run only Fabric T-SQL tests"
     )
+    parser.addoption(
+        "--remote",
+        action="store_true",
+        default=False,
+        help="Run FabricSpark tests as a remote Spark job on Fabric infrastructure",
+    )
 
 
 def pytest_configure(config):
@@ -119,7 +121,9 @@ def _requires_spark(collection_path, tests_root):
         return False
     if parts[0] == "fabricspark":
         return True
-    return "fabricspark" in collection_path.name
+    if "fabricspark" in collection_path.name:
+        return True
+    return False
 
 
 @functools.lru_cache(maxsize=1)
@@ -140,12 +144,13 @@ def pytest_ignore_collect(collection_path, config):
 
     top_dir = parts[0]
 
-    if config.getoption("--dw", default=False) and _requires_spark(collection_path, tests_root):
-        return True
+    if config.getoption("--dw", default=False):
+        if _requires_spark(collection_path, tests_root):
+            return True
     if config.getoption("--de", default=False) and top_dir == "fabric":
         return True
 
-    if _requires_spark(collection_path, tests_root) and not _spark_extra_available():  # noqa: SIM102
+    if _requires_spark(collection_path, tests_root) and not _spark_extra_available():
         if config.getoption("--de", default=False):
             pytest.exit(
                 "The spark extra is required for FabricSpark tests. "
@@ -193,12 +198,98 @@ def pytest_collection_modifyitems(config, items):
             )
 
 
+def _on_fabric_project_base() -> Path | None:
+    mode = os.getenv("FABRIC_TEST_SPARK_EXEC_MODE", "").lower()
+    if mode == "remote":
+        return Path("/lakehouse/default/Files/dbt-test-artifacts")
+    elif mode == "mounted":
+        path = os.getenv("FABRIC_TEST_ONELAKE_PATH")
+        if not path:
+            raise ValueError("FABRIC_TEST_ONELAKE_PATH required when SPARK_EXEC_MODE=mounted")
+        return Path(path) / "dbt-test-artifacts"
+    return None
+
+
+def pytest_runtestloop(session):
+    if not session.config.getoption("--remote", default=False):
+        return None
+    if not session.config.getoption("--de", default=False):
+        pytest.exit("--remote requires --de (FabricSpark tests only)", returncode=4)
+    from tests.spark_remote.conftest_plugin import remote_runtestloop
+
+    return remote_runtestloop(session)
+
+
+@pytest.fixture(scope="class")
+def project_root(tmpdir_factory, prefix):
+    base = _on_fabric_project_base()
+    if base is None:
+        project_root = tmpdir_factory.mktemp("project")
+        print(f"\n=== Test project_root: {project_root}")
+        return project_root
+    path = base / prefix / "project"
+    path.mkdir(parents=True, exist_ok=True)
+    print(f"\n=== Test project_root: {path}")
+    return py.path.local(path)
+
+
+@pytest.fixture(scope="class")
+def profiles_root(tmpdir_factory, prefix):
+    base = _on_fabric_project_base()
+    if base is None:
+        return tmpdir_factory.mktemp("profile")
+    path = base / prefix / "profile"
+    path.mkdir(parents=True, exist_ok=True)
+    return py.path.local(path)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def livy_session_lifecycle():
+    session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
+    lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
+    workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
+    workspace_id = os.getenv("FABRIC_TEST_WORKSPACE_ID")
+
+    if not session_name or not lakehouse_name or not (workspace_name or workspace_id):
+        yield
+        return
+
+    from dbt.adapters.fabric.fabric_livy_session import LivySession
+
+    creds = FabricCredentials(
+        database=lakehouse_name,
+        schema="dbo",
+        lakehouse=lakehouse_name,
+        workspace_name=workspace_name,
+        workspace_id=workspace_id,
+        livy_session_name=session_name,
+        **_auth_kwargs_from_env(),
+    )
+    token_provider = FabricTokenProvider(creds)
+    client = FabricApiClient(creds, token_provider)
+
+    client.get_livy_session_id()
+    LivySession(client).wait_for_session_ready()
+
+    yield
+
+    try:
+        client.delete_livy_session()
+    except Exception as e:
+        print(f"\nWarning: failed to delete Livy session: {e}")
+
+
 @pytest.fixture(scope="class")
 def logs_dir(request, prefix):
-    dbt_log_dir = os.path.join(request.config.rootdir, "logs", prefix)
+    base = _on_fabric_project_base()
+    if base is not None:
+        dbt_log_dir = str(base / prefix / "logs")
+    else:
+        dbt_log_dir = os.path.join(request.config.rootdir, "logs", prefix)
+    os.makedirs(dbt_log_dir, exist_ok=True)
     print(f"\n=== Test logs_dir: {dbt_log_dir}\n")
-    os.environ["DBT_LOG_PATH"] = str(dbt_log_dir)
-    yield str(Path(dbt_log_dir))
+    os.environ["DBT_LOG_PATH"] = dbt_log_dir
+    yield dbt_log_dir
     del os.environ["DBT_LOG_PATH"]
 
 
@@ -236,7 +327,7 @@ def project(
                     where lower(s.name) = '{self.test_schema.lower()}'
                     """
             result = self.run_sql(sql, fetch="all")
-            return dict(result)
+            return {model_name: materialization for (model_name, materialization) in result}
 
     return TestProjInfoFabric(
         project_root=project_setup.project_root,
