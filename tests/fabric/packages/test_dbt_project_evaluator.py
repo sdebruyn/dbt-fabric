@@ -18,6 +18,15 @@ class TestDbtProjectEvaluator(BaseDbtPackageTests):
         return "v1.2.4"
 
     @pytest.fixture(scope="class")
+    def packages(self, package_repo, package_revision):
+        return {
+            "packages": [
+                {"git": package_repo, "revision": package_revision},
+                {"package": "dbt-labs/dbt_utils", "version": "1.3.0"},
+            ]
+        }
+
+    @pytest.fixture(scope="class")
     def project_vars(self):
         return {
             "max_depth_dag": 9,
