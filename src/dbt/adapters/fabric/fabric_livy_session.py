@@ -43,6 +43,8 @@ class LivySessionResult:
 class LivySession:
     _POLLING_INTERVAL = 3  # seconds
     _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
+    _FATAL_SESSION_STATES = frozenset({"dead", "killed", "error", "shutting_down"})
+    _TERMINAL_STATEMENT_STATES = frozenset({"available", "error", "cancelled", "cancelling"})
 
     def __init__(self, fabric_api_client: FabricApiClient) -> None:
         self._fabric_api_client = fabric_api_client
@@ -84,6 +86,11 @@ class LivySession:
             if state == "idle":
                 return
 
+            if state in self._FATAL_SESSION_STATES:
+                raise RuntimeError(
+                    f"Livy session entered fatal state '{state}' and cannot recover."
+                )
+
             if (
                 time.time() - start_time
                 >= self._fabric_api_client._credentials.spark_session_timeout
@@ -105,7 +112,7 @@ class LivySession:
         while True:
             statement_response = self._fabric_api_client.get_livy_statement(statement_id)
             statement_state = statement_response.get("state", "unknown")
-            if statement_state in ("available", "error"):
+            if statement_state in self._TERMINAL_STATEMENT_STATES:
                 return statement_response
             if time.time() - start_time >= self._fabric_api_client._credentials.query_timeout:
                 raise TimeoutError("Livy statement did not become available in time.")
@@ -122,13 +129,17 @@ class LivySession:
         """
         try:
             response = self.wait_for_statement_ready(statement_id)
+            output = response.get("output", {})
+            success = response["state"] == "available" and output.get("status") == "ok"
+            error_message = output.get("evalue")
+            if not success and not error_message:
+                error_message = f"Statement ended with state '{response.get('state')}'"
             return LivySessionResult(
                 statement_id=statement_id,
-                success=response["state"] == "available"
-                and response.get("output", {}).get("status") == "ok",
-                error_message=response.get("output", {}).get("evalue"),
-                status_code=response.get("output", {}).get("status"),
-                json_data=response.get("output", {}).get("data", {}).get("application/json", {}),
+                success=success,
+                error_message=error_message,
+                status_code=output.get("status"),
+                json_data=output.get("data", {}).get("application/json", {}),
             )
         except TimeoutError as e:
             logger.error(
