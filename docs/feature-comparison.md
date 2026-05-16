@@ -1,10 +1,12 @@
-# Comparison between dbt-fabric and dbt-fabric-samdebruyn
+# Comparison with Microsoft's adapters
 
-The dbt-fabric adapter was originally built by community contributors, including [Sam Debruyn](https://debruyn.dev), who continues its development and maintenance through this fork. This adapter builds on [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric) with additional features, improvements, and bugfixes. Some of these have since been contributed back upstream.
+[Sam Debruyn](https://debruyn.dev) is the original author of [dbt-fabric](https://github.com/microsoft/dbt-fabric), the first dbt adapter for Microsoft Fabric. After Microsoft took over maintenance of the repository, Sam continued development independently through this fork, adding features, bugfixes, and a second adapter for Fabric Lakehouse. Microsoft has since also published a separate [dbt-fabricspark](https://github.com/microsoft/dbt-fabricspark) package for Lakehouse.
+
+This page summarizes the key differences between this adapter (`dbt-fabric-samdebruyn`) and Microsoft's two packages (`dbt-fabric` and `dbt-fabricspark`).
 
 !!! tip "Looking for a detailed technical comparison?"
 
-    This page provides a high-level overview. For in-depth comparisons covering architecture, code quality, test suites, and dbt Core compatibility, see:
+    For in-depth comparisons covering architecture, code quality, test suites, and dbt Core compatibility, see:
 
     - [Detailed comparison with microsoft/dbt-fabric](comparison-dbt-fabric.md) (Data Warehouse / T-SQL adapter)
     - [Detailed comparison with microsoft/dbt-fabricspark](comparison-dbt-fabricspark.md) (Lakehouse / Spark SQL adapter)
@@ -23,31 +25,35 @@ Microsoft's upstream dbt-fabric adapter depends on pyODBC, which is a community-
 
 With dbt-fabric-samdebruyn, none of this manual setup is needed. Installation is a single `pip install` or `uv add` command — the bundled ODBC driver is included automatically for all supported platforms (Linux, macOS, Windows). This eliminates a common source of installation issues and makes the adapter work consistently across all platforms, including containerized environments.
 
+### dbt Core compatibility
+
+This adapter is compatible with **dbt Core 1.11 and 1.12**. Microsoft's dbt-fabric is only compatible with dbt Core 1.10, and dbt-fabricspark with 1.11.
+
+### Python version support
+
+This adapter is tested on **Python 3.11, 3.12, and 3.13**. Microsoft's dbt-fabric still lists Python 3.8-3.10 in its classifiers but does not test on 3.12 or 3.13.
+
 ## Dual engine support
 
 ### Fabric Lakehouse (Spark SQL) support
 
-This adapter supports both Fabric compute engines: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft's dbt-fabric only supports Data Warehouse.
+This adapter supports both Fabric compute engines in a single package: **Data Warehouse (T-SQL)** and **Lakehouse (Spark SQL)**. Microsoft splits this across two separate packages (`dbt-fabric` for T-SQL only, `dbt-fabricspark` for Spark only).
 
 The Lakehouse adapter (`type: fabricspark`) uses Spark SQL via Livy sessions and supports tables, materialized lake views, and Python models natively. See the [Lakehouse guide](lakehouse.md) for details.
 
-### dbt Core 1.12 support
+### Support for Python models
 
-This adapter is compatible with dbt Core 1.11 and 1.12, while Microsoft's dbt-fabric adapter is only compatible with dbt Core 1.10.
+This adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models) for both Fabric Data Warehouse and Fabric Lakehouse. Microsoft's dbt-fabric does not support Python models. To use this, just add information about your [Fabric Workspace](configuration.md#workspace_name) and [Lakehouse](configuration.md#lakehouse) to the `profiles.yml` file.
 
 ### Functions in dbt
 
-This adapter supports creating scalar functions as introduced in dbt Core 1.11, while Microsoft's dbt-fabric does not.
-
-### Support for Python models
-
-This adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models). To use this, just add information about your [Fabric Workspace](configuration.md#workspace_name) and [Lakehouse](configuration.md#lakehouse) to the `profiles.yml` file.
+This adapter supports creating [scalar functions](https://docs.getdbt.com/docs/build/functions?WT.mc_id=MVP_310840) as introduced in dbt Core 1.11, while neither of Microsoft's adapters does.
 
 ## Data governance & observability
 
 ### [Microsoft Purview integration](purview-integration.md)
 
-This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/). The integration creates all table, column, and lineage entities directly via the Purview API — **no Purview scanning or live view configuration is required**. This eliminates the need to set up and schedule Fabric scans in Purview, saving both configuration effort and [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map?WT.mc_id=MVP_310840).
+This adapter can automatically sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/?WT.mc_id=MVP_310840). The integration creates all table, column, and lineage entities directly via the Purview API — **no Purview scanning or live view configuration is required**. This eliminates the need to set up and schedule Fabric scans in Purview, saving both configuration effort and [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map?WT.mc_id=MVP_310840).
 
 - **Descriptions**: model and column descriptions from your dbt YAML files are pushed to Purview automatically after every run.
 - **Business metadata**: dbt tags, materialization type, test names, test results, custom meta, and sync timestamps are attached to table entities via a custom `dbt_metadata` business metadata type.
@@ -118,7 +124,7 @@ This works with regular tables, incremental models, and models with contract enf
 
 ### Better support for [warehouse snapshots](warehouse-snapshots.md)
 
-Both adapters support Fabric [warehouse snapshots](https://learn.microsoft.com/fabric/data-warehouse/warehouse-snapshot?WT.mc_id=MVP_310840), but Microsoft's implementation hijacks Python runtime components and does not respect the proper dbt lifecycle. This adapter exposes a macro you can call from `on-run-start`, `on-run-end`, `post-hook`, or any other Jinja context — giving you full control over when and how often snapshots are taken.
+Both adapters support Fabric [warehouse snapshots](https://learn.microsoft.com/fabric/data-warehouse/warehouse-snapshot?WT.mc_id=MVP_310840), but Microsoft's implementation hooks into Python runtime internals (`atexit` handlers and the connection manager's `open()` method) rather than using dbt's own lifecycle. This adapter exposes a macro you can call from `on-run-start`, `on-run-end`, `post-hook`, or any other Jinja context — the standard dbt mechanism for orchestrating side effects.
 
 ### Support for [dbt-external-tables](external-tables.md)
 
@@ -147,17 +153,43 @@ default:
 
 Then, to run dbt against your production environment/Workspace, you can simply set the `FABRIC_ENV` environment variable to `prod` (if your Workspaces are named accordingly).
 
-### Extended support for [authentication methods](configuration.md#authentication)
+### Extended support for [authentication methods](authentication.md)
 
-While most authentication methods have been contributed back to dbt-fabric, some newer options are only available in this adapter.
+This adapter supports 11 authentication methods via a unified token provider, including methods not available in Microsoft's adapters: [workload identity](authentication.md#workload-identity-federated-credentials) (federated OIDC for CI/CD) and [custom token credentials](authentication.md#bring-your-own-tokencredential). Most methods contributed to this adapter have since been added upstream, but the newer options remain exclusive.
 
-### Better support for popular packages
+### Community package support
 
-[dbt-utils](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) is already fully supported and more packages are being tested and added.
+This adapter includes **41 macro overrides** across 6 popular dbt packages to make them work with Fabric's T-SQL dialect:
 
-### Plenty of bugfixes
+| Package | Macro overrides |
+|---|---|
+| [dbt-utils](https://hub.getdbt.com/dbt-labs/dbt_utils/latest/) | 15 |
+| [dbt-date](https://hub.getdbt.com/calogica/dbt_date/latest/) | 12 |
+| [dbt-expectations](https://hub.getdbt.com/calogica/dbt_expectations/latest/) | 7 |
+| [dbt-audit-helper](https://hub.getdbt.com/dbt-labs/audit_helper/latest/) | 4 |
+| [insert_by_period](https://hub.getdbt.com/dbt-labs/insert_by_period/latest/) | 2 |
+| [dbt-external-tables](https://hub.getdbt.com/dbt-labs/dbt_external_tables/latest/) | 1 |
 
-The quality of this adapter is guaranteed by an extensive test suite of integration tests, which run on every change. Through this process, quite a few bugs have been found and fixed.
+Microsoft's dbt-fabric has a single utility macro (`get_tables_by_pattern`). Microsoft's dbt-fabricspark has no community package support.
+
+## Maintenance & quality
+
+### Active development
+
+| | dbt-fabric-samdebruyn | microsoft/dbt-fabric | microsoft/dbt-fabricspark |
+|---|---|---|---|
+| **Latest release** | v1.11.3b0 | v1.9.9 | v1.11.0 |
+| **Release tags** | 67+ | 20+ | 8 |
+| **Commits since Jan 2024** | 577 | 113 | ~278 |
+| **Last commit** | 2026-05-16 | 2026-03-29 | 2026-05-16 |
+| **dbt Core support** | 1.11, 1.12 | Up to 1.10 | Up to 1.11 |
+| **Documentation** | [Dedicated docs site](https://dbt-fabric.debruyn.dev) | 1 page | README only |
+
+### Test suite
+
+This adapter has **444 integration test classes** across 141 test files, covering both the Fabric and FabricSpark adapters. Tests run automatically on every pull request across Python 3.11, 3.12, and 3.13. Microsoft's dbt-fabric has 117 test classes on Python 3.11 only. Microsoft's dbt-fabricspark has 141 test classes.
+
+The test suite covers all standard dbt adapter operations plus adapter-specific features: Purview integration, Python models, warehouse snapshots, community package compatibility, and utility function overrides.
 
 ## Paid support
 
