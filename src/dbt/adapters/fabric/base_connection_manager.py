@@ -33,29 +33,12 @@ class BaseFabricConnectionManager(SQLConnectionManager, metaclass=abc.ABCMeta):
         return cls._fabric_token_provider
 
     @classmethod
-    def _credentials_match(cls, a: BaseFabricCredentials, b: BaseFabricCredentials) -> bool:
-        return (a.database, a.workspace_id, a.workspace_name) == (
-            b.database,
-            b.workspace_id,
-            b.workspace_name,
-        )
-
-    @classmethod
     def get_fabric_api_client(cls, credentials: BaseFabricCredentials) -> FabricApiClient:
         """Return a shared FabricApiClient, creating one on first call.
-
-        Recreates the client (and token provider) when the cached instance
-        targets a different database or workspace than the passed credentials.
 
         Args:
             credentials: Fabric connection credentials used to configure the client.
         """
-        if cls._fabric_api_client is not None and not cls._credentials_match(
-            cls._fabric_api_client._credentials, credentials
-        ):
-            cls._fabric_api_client = None
-            cls._fabric_token_provider = None
-
         if cls._fabric_api_client is None:
             cls._fabric_api_client = FabricApiClient(
                 credentials, cls.get_fabric_token_provider(credentials)

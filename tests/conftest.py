@@ -153,7 +153,10 @@ def livy_session_lifecycle():
     client.get_livy_session_id()
     LivySession(client).wait_for_session_ready()
 
-    BaseFabricConnectionManager._fabric_api_client = client
+    # Only cache the token provider (credential-agnostic). Don't cache the API
+    # client: it was created with lakehouse credentials and would pollute the
+    # singleton for DW tests. Each adapter creates its own client with the
+    # correct credentials and finds the pre-warmed Livy session by name.
     BaseFabricConnectionManager._fabric_token_provider = token_provider
 
     yield
