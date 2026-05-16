@@ -37,10 +37,8 @@ class TestDbtArtifacts(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
     def models_config(self) -> dict[str, Any]:
         return {
-            "dbt_artifacts": {
-                "+materialized": "table",
-                "+persist_docs": {"relation": False, "columns": False},
-                "+as_columnstore": False,
+            "dbt_fabric": {
+                "dbt_artifacts": {"+enabled": True, "+materialized": "table"},
             },
             "artifacts_integration_tests": {
                 "+persist_docs": {"relation": False, "columns": False},

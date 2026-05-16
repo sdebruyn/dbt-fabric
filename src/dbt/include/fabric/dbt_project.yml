@@ -4,3 +4,8 @@ version: 1.0
 config-version: 2
 
 macro-paths: ["macros"]
+model-paths: ["models"]
+
+models:
+  dbt_artifacts:
+    +enabled: false
