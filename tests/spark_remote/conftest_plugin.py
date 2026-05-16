@@ -29,21 +29,6 @@ def remote_runtestloop(session: pytest.Session) -> bool:
     return True
 
 
-_FORWARDED_OPTIONS = (
-    "-k",
-    "-v",
-    "--verbose",
-    "-s",
-    "--capture",
-    "--with-grants",
-    "--with-python",
-    "--de",
-    "--dw",
-    "-x",
-    "--exitfirst",
-)
-
-
 def _build_remote_args(session: pytest.Session) -> list[str]:
     args: list[str] = []
     config = session.config
