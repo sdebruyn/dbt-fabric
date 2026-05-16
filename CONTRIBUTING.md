@@ -2,13 +2,25 @@
 
 ## Getting started
 
-We recommend [uv](https://docs.astral.sh/uv/) for managing Python environments and dependencies. A single command sets up everything you need (virtual environment, all dependencies, the adapter in editable mode):
+This repository includes a [devcontainer](.devcontainer/devcontainer.json) configuration that works with GitHub Codespaces, VS Code Dev Containers, and Claude Code environments. Opening the repo in any of these platforms gives you a ready-to-use environment with Python, uv, Azure CLI, and GitHub CLI pre-installed.
+
+For local development, we recommend [uv](https://docs.astral.sh/uv/) for managing Python environments and dependencies. A single command sets up everything you need (virtual environment, all dependencies, the adapter in editable mode):
 
 ```shell
 uv sync
 ```
 
 Use `uv run ...` to run commands inside the virtual environment, or [activate it](https://docs.astral.sh/uv/pip/environments/#using-a-virtual-environment) first.
+
+### System dependencies
+
+The mssql-python driver requires the following libraries on Debian/Ubuntu Linux:
+
+```shell
+sudo apt-get install libltdl7 libkrb5-3 libgssapi-krb5-2
+```
+
+This is installed automatically in the devcontainer and CI.
 
 ## Architecture
 
@@ -191,12 +203,12 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
-| `integration-tests-dw.yml` | PR, push, manual | DW tests: Python 3.11/3.12/3.13 matrix |
+| `unit-tests.yml` | PR, push | Unit tests (no Fabric infrastructure needed) |
+| `integration-tests-dw.yml` | PR, push, manual, weekly | DW tests: Python 3.13 on PR/push, full matrix (3.11/3.12/3.13) on weekly schedule |
 | `integration-tests-de.yml` | Weekly, PR comment, manual | DE tests: weekly on main, on-demand per PR — see below |
-| `publish-docker.yml` | Manual | Build CI Docker image (`.github/CI.Dockerfile`) → ghcr.io |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
 
-CI authenticates to Azure via OIDC (federated credentials, no secrets stored). Tests run inside Docker containers with pre-installed `mssql-python` dependencies.
+CI authenticates to Azure via OIDC (federated credentials, no secrets stored). Tests run on `ubuntu-latest` runners with `libltdl7` installed (required by mssql-python).
 
 ### On-demand DE tests
 
