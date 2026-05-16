@@ -70,17 +70,17 @@ Add `statistics` to your model's config block. It accepts `true` (all columns), 
 The generated SQL for specific columns:
 
 ```sql
-CREATE STATISTICS [stats__orders__customer_id]
+CREATE STATISTICS [dbt_stats__orders__customer_id]
 ON [schema].[orders] ([customer_id]) WITH FULLSCAN;
 
-CREATE STATISTICS [stats__orders__order_date]
+CREATE STATISTICS [dbt_stats__orders__order_date]
 ON [schema].[orders] ([order_date]) WITH FULLSCAN;
 ```
 
 On subsequent runs, existing statistics are updated instead of recreated:
 
 ```sql
-UPDATE STATISTICS [schema].[orders] [stats__orders__customer_id] WITH FULLSCAN;
+UPDATE STATISTICS [schema].[orders] [dbt_stats__orders__customer_id] WITH FULLSCAN;
 ```
 
 ---
@@ -110,7 +110,7 @@ models:
 This generates:
 
 ```sql
-CREATE STATISTICS [stats__orders__customer_id]
+CREATE STATISTICS [dbt_stats__orders__customer_id]
 ON [schema].[orders] ([customer_id]) WITH SAMPLE 50 PERCENT;
 ```
 
@@ -169,7 +169,7 @@ snapshots:
 
 ## Naming convention
 
-Statistics are named `stats__<table>__<column>` (e.g., `stats__orders__customer_id`). This avoids collisions with Fabric's auto-generated `_WA_Sys_*` statistics.
+Statistics are named `dbt_stats__<table>__<column>` (e.g., `dbt_stats__orders__customer_id`). This avoids collisions with Fabric's auto-generated `_WA_Sys_*` statistics.
 
 ---
 

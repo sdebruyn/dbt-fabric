@@ -57,7 +57,7 @@ def _get_stats_names(project, adapter, table_name):
         SELECT s.name
         FROM sys.stats s
         WHERE s.object_id = OBJECT_ID(N'{schema}.{table_name}')
-          AND s.name LIKE 'stats\\_\\_%' ESCAPE '\\'
+          AND s.name LIKE 'dbt\\_stats\\_\\_%' ESCAPE '\\'
         ORDER BY s.name
     """
     result = run_sql_with_adapter(adapter, sql, fetch="all")
@@ -75,8 +75,8 @@ class TestStatisticsSpecificColumns:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats")
-        assert "stats__model_stats__id" in stats
-        assert "stats__model_stats__color" in stats
+        assert "dbt_stats__model_stats__id" in stats
+        assert "dbt_stats__model_stats__color" in stats
         assert len(stats) == 2
 
 
@@ -91,8 +91,8 @@ class TestStatisticsAllColumns:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_all")
-        assert "stats__model_stats_all__id" in stats
-        assert "stats__model_stats_all__color" in stats
+        assert "dbt_stats__model_stats_all__id" in stats
+        assert "dbt_stats__model_stats_all__color" in stats
         assert len(stats) == 2
 
 
@@ -121,7 +121,7 @@ class TestStatisticsSamplePercent:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_sample")
-        assert "stats__model_stats_sample__id" in stats
+        assert "dbt_stats__model_stats_sample__id" in stats
         assert len(stats) == 1
 
 
@@ -136,7 +136,7 @@ class TestStatisticsSingleString:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_str")
-        assert "stats__model_stats_str__id" in stats
+        assert "dbt_stats__model_stats_str__id" in stats
         assert len(stats) == 1
 
 
@@ -151,16 +151,16 @@ class TestStatisticsIncremental:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_incr")
-        assert "stats__model_stats_incr__id" in stats
-        assert "stats__model_stats_incr__color" in stats
+        assert "dbt_stats__model_stats_incr__id" in stats
+        assert "dbt_stats__model_stats_incr__color" in stats
 
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_incr")
-        assert "stats__model_stats_incr__id" in stats
-        assert "stats__model_stats_incr__color" in stats
+        assert "dbt_stats__model_stats_incr__id" in stats
+        assert "dbt_stats__model_stats_incr__color" in stats
 
 
 class TestStatisticsSnapshot:
@@ -179,6 +179,6 @@ class TestStatisticsSnapshot:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "snapshot_with_stats")
-        assert "stats__snapshot_with_stats__id" in stats
-        assert "stats__snapshot_with_stats__name" in stats
+        assert "dbt_stats__snapshot_with_stats__id" in stats
+        assert "dbt_stats__snapshot_with_stats__name" in stats
         assert len(stats) == 2

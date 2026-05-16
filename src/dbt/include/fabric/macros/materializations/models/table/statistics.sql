@@ -35,7 +35,7 @@
     {%- set relation_fqn_escaped = relation_fqn | replace("'", "''") -%}
 
     {%- for col in column_names -%}
-        {%- set stats_name = ('stats__' ~ relation.identifier ~ '__' ~ col)[:128] -%}
+        {%- set stats_name = 'dbt_stats__' ~ relation.identifier[:55] ~ '__' ~ col[:55] -%}
         {%- set stats_name_escaped = stats_name | replace("'", "''") -%}
         {%- set quoted_stats_name = '[' ~ stats_name | replace(']', ']]') ~ ']' -%}
         {%- set quoted_col = '[' ~ col | replace(']', ']]') ~ ']' -%}
