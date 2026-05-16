@@ -102,7 +102,7 @@
 
   {# Add constraints including FK relation #}
   {{ build_model_constraints(target_relation) }}
-  {{ create_or_update_statistics(target_relation) }}
+  {{ create_or_update_statistics(target_relation, existing_table=true) }}
   {{ run_hooks(post_hooks, inside_transaction=False) }}
 
   {{ return({'relations': [target_relation]}) }}

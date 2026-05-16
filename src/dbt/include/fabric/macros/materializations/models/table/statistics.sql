@@ -1,11 +1,11 @@
-{% macro create_or_update_statistics(relation) %}
-    {{ return(adapter.dispatch('create_or_update_statistics', 'dbt')(relation)) }}
+{% macro create_or_update_statistics(relation, existing_table=false) %}
+    {{ return(adapter.dispatch('create_or_update_statistics', 'dbt')(relation, existing_table)) }}
 {% endmacro %}
 
-{% macro default__create_or_update_statistics(relation) %}
+{% macro default__create_or_update_statistics(relation, existing_table=false) %}
 {% endmacro %}
 
-{% macro fabric__create_or_update_statistics(relation) %}
+{% macro fabric__create_or_update_statistics(relation, existing_table=false) %}
     {%- set statistics = config.get('statistics') -%}
     {%- if statistics is none or statistics is false -%}
         {{ return('') }}
@@ -41,6 +41,7 @@
         {%- set quoted_col = '[' ~ col | replace(']', ']]') ~ ']' -%}
 
         {% call statement('create_or_update_statistics_' ~ loop.index) %}
+            {%- if existing_table %}
             IF EXISTS (
                 SELECT 1 FROM sys.stats
                 WHERE name = N'{{ stats_name_escaped }}'
@@ -48,6 +49,7 @@
             )
                 UPDATE STATISTICS {{ relation_fqn }} {{ quoted_stats_name }} {{ with_clause }}
             ELSE
+            {%- endif %}
                 CREATE STATISTICS {{ quoted_stats_name }}
                 ON {{ relation_fqn }} ({{ quoted_col }}) {{ with_clause }}
         {% endcall %}
