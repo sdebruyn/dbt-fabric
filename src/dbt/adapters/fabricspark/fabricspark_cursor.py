@@ -139,7 +139,8 @@ class FabricSparkCursor:
         self._position = 0
 
     def cancel(self) -> None:
-        self._check_closed()
+        if self._connection is None:
+            return
         if self._statement_id is not None and self._result is None:
             self.get_livy_session()._fabric_api_client.cancel_livy_statement(self._statement_id)
             self._statement_id = None
@@ -265,7 +266,7 @@ class FabricSparkCursor:
         raise NotImplementedError
 
     def setinputsizes(self, sizes: list[Any]) -> None:
-        pass
+        self._check_closed()
 
     def setoutputsize(self, size: int, column: int | None = None) -> None:
-        pass
+        self._check_closed()

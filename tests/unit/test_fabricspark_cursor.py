@@ -1,10 +1,10 @@
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from dbt_common.exceptions import DbtDatabaseError, DbtRuntimeError
+from dbt_common.exceptions import DbtDatabaseError
 
 from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
 from dbt.adapters.fabricspark.fabricspark_cursor import FabricSparkCursor
@@ -154,13 +154,26 @@ class TestClosedCursorRaisesError:
         with pytest.raises(DbtDatabaseError, match="Cursor is closed"):
             _ = cursor.connection
 
-    def test_cancel_after_close(self):
-        cursor = FabricSparkCursor(connection=MagicMock())
+    def test_cancel_after_close_is_noop(self):
+        conn = MagicMock()
+        cursor = FabricSparkCursor(connection=conn)
         cursor._statement_id = 1
         cursor._result = None
         cursor.close()
+        cursor.cancel()
+        conn.get_livy_session.assert_not_called()
+
+    def test_setinputsizes_after_close(self):
+        cursor = FabricSparkCursor(connection=object())
+        cursor.close()
         with pytest.raises(DbtDatabaseError, match="Cursor is closed"):
-            cursor.cancel()
+            cursor.setinputsizes([100])
+
+    def test_setoutputsize_after_close(self):
+        cursor = FabricSparkCursor(connection=object())
+        cursor.close()
+        with pytest.raises(DbtDatabaseError, match="Cursor is closed"):
+            cursor.setoutputsize(1000)
 
 
 class TestConnectionProperty:
