@@ -26,6 +26,9 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
     purview_endpoint: str | None = None
     credential_class: str | None = None
     credential_kwargs: dict[str, Any] = field(default_factory=dict)
+    federated_token_url: str | None = None
+    federated_token_header: str | None = None
+    federated_token_file: str | None = None
 
     _ALIASES = {
         "trusted_connection": "windows_login",
@@ -55,6 +58,31 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
                 "with authentication: token_credential"
             )
 
+        if auth == "workload_identity":
+            if not des.get("tenant_id") or not des.get("client_id"):
+                raise ValueError(
+                    "tenant_id and client_id are required "
+                    "when authentication is 'workload_identity'"
+                )
+            has_url = bool(des.get("federated_token_url"))
+            has_file = bool(des.get("federated_token_file"))
+            if has_url == has_file:
+                raise ValueError(
+                    "Exactly one of federated_token_url or federated_token_file "
+                    "must be set when authentication is 'workload_identity'"
+                )
+        else:
+            if des.get("federated_token_url") or des.get("federated_token_file"):
+                raise ValueError(
+                    "federated_token_url and federated_token_file can only be used "
+                    "with authentication: workload_identity"
+                )
+            if des.get("federated_token_header"):
+                raise ValueError(
+                    "federated_token_header can only be used "
+                    "with authentication: workload_identity"
+                )
+
         return des
 
     @property
@@ -80,6 +108,8 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
             "powerbi_base_api_uri",
             "livy_session_name",
             "purview_endpoint",
+            "federated_token_url",
+            "federated_token_file",
         )
 
     @property

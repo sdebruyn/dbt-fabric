@@ -2,12 +2,15 @@ import importlib
 import re
 import struct
 import time
+from collections.abc import Callable
 from itertools import chain, repeat
 from typing import Any
 
+import requests
 from azure.core.credentials import AccessToken, TokenCredential
 from azure.identity import (
     AzureCliCredential,
+    ClientAssertionCredential,
     ClientSecretCredential,
     DefaultAzureCredential,
     DeviceCodeCredential,
@@ -36,6 +39,32 @@ def get_notebookutils_access_token(scope: str) -> AccessToken:
         expires_on=expires_on,
     )
     return token
+
+
+def _build_federated_token_callable(
+    credentials: BaseFabricCredentials,
+) -> Callable[[], str]:
+    if credentials.federated_token_url:
+        url = credentials.federated_token_url
+        headers = {}
+        if credentials.federated_token_header:
+            headers["Authorization"] = credentials.federated_token_header
+
+        def fetch_from_url() -> str:
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+            return response.json()["value"]
+
+        return fetch_from_url
+
+    assert credentials.federated_token_file is not None
+    path = credentials.federated_token_file
+
+    def read_from_file() -> str:
+        with open(path) as f:
+            return f.read().strip()
+
+    return read_from_file
 
 
 def load_token_credential(
@@ -150,6 +179,14 @@ class FabricTokenProvider:
             credential = EnvironmentCredential()
         elif self.credentials.authentication.lower() == "notebookutils":
             token = get_notebookutils_access_token(scope)
+        elif self.credentials.authentication.lower() == "workload_identity":
+            if self._custom_credential is None:
+                self._custom_credential = ClientAssertionCredential(
+                    tenant_id=self.credentials.tenant_id,
+                    client_id=self.credentials.client_id,
+                    func=_build_federated_token_callable(self.credentials),
+                )
+            credential = self._custom_credential
         elif self.credentials.authentication.lower() == "token_credential":
             if self._custom_credential is None:
                 assert self.credentials.credential_class is not None
