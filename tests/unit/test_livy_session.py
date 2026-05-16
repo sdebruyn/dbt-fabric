@@ -96,6 +96,31 @@ class TestWaitForSessionReady:
 
         assert fabric_api_client.get_livy_session_state.call_count == 5
 
+    @pytest.mark.parametrize("fatal_state", ["dead", "killed", "error", "shutting_down"])
+    @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
+    def test_raises_immediately_on_fatal_session_state(
+        self, mock_sleep, fatal_state, session, fabric_api_client
+    ):
+        fabric_api_client.get_livy_session_state.return_value = fatal_state
+
+        with pytest.raises(RuntimeError, match=f"fatal state '{fatal_state}'"):
+            session.wait_for_session_ready()
+
+        fabric_api_client.get_livy_session_state.assert_called_once()
+
+    @patch("dbt.adapters.fabric.fabric_livy_session.time.time")
+    @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
+    def test_raises_when_session_transitions_to_fatal_state(
+        self, mock_sleep, mock_time, session, fabric_api_client
+    ):
+        fabric_api_client.get_livy_session_state.side_effect = ["starting", "busy", "dead"]
+        mock_time.side_effect = itertools.count(0, 10)
+
+        with pytest.raises(RuntimeError, match="fatal state 'dead'"):
+            session.wait_for_session_ready()
+
+        assert fabric_api_client.get_livy_session_state.call_count == 3
+
     @patch("dbt.adapters.fabric.fabric_livy_session.time.time")
     @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
     def test_resets_error_counter_on_success(
@@ -161,6 +186,21 @@ class TestWaitForStatementReady:
 
         assert result["state"] == "available"
         assert mock_sleep.call_count == 2
+
+    @pytest.mark.parametrize("terminal_state", ["cancelled", "cancelling"])
+    @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
+    def test_returns_when_state_is_cancelled(
+        self, mock_sleep, terminal_state, session, fabric_api_client
+    ):
+        fabric_api_client.get_livy_statement.return_value = {
+            "state": terminal_state,
+            "output": {"status": "error", "evalue": "statement was cancelled"},
+        }
+
+        result = session.wait_for_statement_ready(42)
+
+        assert result["state"] == terminal_state
+        mock_sleep.assert_not_called()
 
     @patch("dbt.adapters.fabric.fabric_livy_session.time.time")
     @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
