@@ -123,7 +123,7 @@ The upstream's standalone macro additionally supports JSON path mapping and ordi
 | **Unit test macros** | Dedicated macro files for dbt unit tests. |
 | **Standalone OPENROWSET macro** | `openrowset_source()` macro usable without any package dependency, with JSON path and ordinal column mapping. |
 
-The upstream's warehouse snapshot approach hooks into the connection manager's `open()` method and uses `atexit` handlers. This adapter exposes snapshot management as an explicit macro callable from `on-run-start`/`on-run-end` hooks, giving users more control over when snapshots are taken.
+The upstream's warehouse snapshot approach hooks into the connection manager's `open()` method and uses `atexit` handlers. This is fragile and not a dbt best practice — it couples snapshot management to Python runtime internals (`atexit`) and connection lifecycle methods that are not designed for side effects. These hooks are not part of dbt's stable adapter interface and can break across dbt-core versions. This adapter instead exposes snapshot management as a Jinja macro (`{{ create_or_update_fabric_warehouse_snapshot() }}`), callable from dbt's native `on-run-start`/`on-run-end` hooks or `post-hook` — the standard, stable mechanism for orchestrating side effects in dbt.
 
 ---
 
