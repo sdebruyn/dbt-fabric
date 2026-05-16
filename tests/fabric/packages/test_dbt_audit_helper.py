@@ -36,6 +36,7 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
                     "compare_all_columns_where_clause": {"+enabled": False},
                     "compare_which_columns_differ": {"+enabled": False},
                     "compare_which_columns_differ_exclude_cols": {"+enabled": False},
+                    "compare_relation_columns": {"+materialized": "table"},
                 },
             }
         }
