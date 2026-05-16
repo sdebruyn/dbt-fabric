@@ -56,9 +56,9 @@ jobs:
       - id: set
         run: |
           if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo 'matrix=[{"python_version":"3.11","dwh_name":"ci02"},{"python_version":"3.12","dwh_name":"ci03"},{"python_version":"3.13","dwh_name":"ci04"},{"python_version":"3.14","dwh_name":"ci02"}]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=[{"python_version":"3.11","dwh_name":"ci02"},{"python_version":"3.12","dwh_name":"ci03"},{"python_version":"3.13","dwh_name":"ci04"},{"python_version":"3.14","dwh_name":"ci01"}]' >> "$GITHUB_OUTPUT"
           else
-            echo 'matrix=[{"python_version":"3.14","dwh_name":"ci04"}]' >> "$GITHUB_OUTPUT"
+            echo 'matrix=[{"python_version":"3.14","dwh_name":"ci01"}]' >> "$GITHUB_OUTPUT"
           fi
 
   integration-tests-fabric-dw:
