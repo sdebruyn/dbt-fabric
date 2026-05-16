@@ -152,15 +152,6 @@ While most authentication methods have been contributed back to dbt-fabric, some
 
 The quality of this adapter is guaranteed by an extensive test suite of integration tests, which run on every change. Through this process, quite a few bugs have been found and fixed.
 
-## More on the [roadmap](roadmap.md)
-
-See the [roadmap](roadmap.md) for ideas on future improvements, including:
-
-- Spark SQL and T-SQL models in the same project
-- External Iceberg and Delta Lake tables via OneLake shortcuts
-- External catalog integration (Unity Catalog, Dremio, Iceberg REST Catalog)
-- [Create an issue with your idea](https://github.com/sdebruyn/dbt-fabric/issues)
-
 ## Paid support
 
 For companies that want to use this adapter in production, [I offer paid support and consulting services](https://debruyn.dev/services/).
