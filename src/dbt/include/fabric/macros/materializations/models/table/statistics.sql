@@ -23,23 +23,28 @@
     {%- endif -%}
 
     {%- if statistics_sample_percent is not none -%}
-        {%- set with_clause = "WITH SAMPLE " ~ statistics_sample_percent ~ " PERCENT" -%}
+        {%- if statistics_sample_percent is not number or statistics_sample_percent < 1 or statistics_sample_percent > 100 -%}
+            {% do exceptions.raise_compiler_error("statistics_sample_percent must be a number between 1 and 100, got: " ~ statistics_sample_percent) %}
+        {%- endif -%}
+        {%- set with_clause = "WITH SAMPLE " ~ statistics_sample_percent | int ~ " PERCENT" -%}
     {%- else -%}
         {%- set with_clause = "WITH FULLSCAN" -%}
     {%- endif -%}
 
     {%- set relation_fqn = relation.render() -%}
+    {%- set relation_fqn_escaped = relation_fqn | replace("'", "''") -%}
 
     {%- for col in column_names -%}
-        {%- set stats_name = 'stats__' ~ relation.identifier ~ '__' ~ col -%}
+        {%- set stats_name = ('stats__' ~ relation.identifier ~ '__' ~ col)[:128] -%}
+        {%- set stats_name_escaped = stats_name | replace("'", "''") -%}
         {%- set quoted_stats_name = '[' ~ stats_name | replace(']', ']]') ~ ']' -%}
         {%- set quoted_col = '[' ~ col | replace(']', ']]') ~ ']' -%}
 
         {% call statement('create_or_update_statistics_' ~ loop.index) %}
             IF EXISTS (
                 SELECT 1 FROM sys.stats
-                WHERE name = N'{{ stats_name }}'
-                AND object_id = OBJECT_ID(N'{{ relation_fqn }}')
+                WHERE name = N'{{ stats_name_escaped }}'
+                AND object_id = OBJECT_ID(N'{{ relation_fqn_escaped }}')
             )
                 UPDATE STATISTICS {{ relation_fqn }} {{ quoted_stats_name }} {{ with_clause }}
             ELSE

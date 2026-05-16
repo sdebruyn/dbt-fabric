@@ -32,6 +32,24 @@ model_stats_incremental = """
 select 1 as id, 'blue' as color
 """
 
+seed_snapshot_source_csv = """id,name,updated_at
+1,Alice,2024-01-01 00:00:00
+2,Bob,2024-01-01 00:00:00
+""".lstrip()
+
+snapshot_with_stats_yml = """
+snapshots:
+  - name: snapshot_with_stats
+    relation: "ref('snapshot_source')"
+    config:
+      strategy: timestamp
+      unique_key: id
+      updated_at: updated_at
+      statistics:
+        - id
+        - name
+"""
+
 
 def _get_stats_names(project, adapter, table_name):
     schema = project.test_schema
@@ -143,3 +161,24 @@ class TestStatisticsIncremental:
         stats = _get_stats_names(project, adapter, "model_stats_incr")
         assert "stats__model_stats_incr__id" in stats
         assert "stats__model_stats_incr__color" in stats
+
+
+class TestStatisticsSnapshot:
+    @pytest.fixture(scope="class")
+    def seeds(self):
+        return {"snapshot_source.csv": seed_snapshot_source_csv}
+
+    @pytest.fixture(scope="class")
+    def snapshots(self):
+        return {"snapshot_with_stats.yml": snapshot_with_stats_yml}
+
+    def test_statistics_snapshot(self, project, adapter):
+        run_dbt(["seed"])
+        results = run_dbt(["snapshot"])
+        assert len(results) == 1
+        assert results[0].status == "success"
+
+        stats = _get_stats_names(project, adapter, "snapshot_with_stats")
+        assert "stats__snapshot_with_stats__id" in stats
+        assert "stats__snapshot_with_stats__name" in stats
+        assert len(stats) == 2
