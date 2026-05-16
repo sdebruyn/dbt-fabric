@@ -271,3 +271,4 @@ test.env
 docs_build/site
 .claude/*
 !.claude/skills/
+!.claude/mcp.json
