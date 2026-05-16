@@ -28,7 +28,7 @@ class BaseDbtPackageTests:
         ]
 
         if package_name != "dbt_utils":
-            packages.append({"package": "dbt-labs/dbt_utils", "version": "1.3.0"})
+            packages.append({"package": "dbt-labs/dbt_utils", "version": "1.3.3"})
 
         return {"packages": packages}
 
@@ -96,5 +96,4 @@ class BaseDbtPackageTests:
 
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
-        run_dbt(["seed"])
-        run_dbt(["run"])
+        run_dbt(["build"])

@@ -23,7 +23,7 @@ class TestDbtUtils(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return "1.3.0"
+        return "1.3.3"
 
     @pytest.fixture(scope="class")
     def models_config(self):
