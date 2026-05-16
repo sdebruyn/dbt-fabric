@@ -304,9 +304,14 @@ class FabricConnectionManager(BaseFabricConnectionManager):
         auto_begin: bool = True,
         bindings: Any | None = None,
         abridge_sql_log: bool = False,
-        retryable_exceptions: tuple[Type[Exception], ...] = tuple(),
-        retry_limit: int = 1,
+        retryable_exceptions: tuple[Type[Exception], ...] | None = None,
+        retry_limit: int = 3,
     ):
+        import mssql_python
+
+        if retryable_exceptions is None:
+            retryable_exceptions = (mssql_python.OperationalError, mssql_python.InternalError)
+
         if bindings is None:
             bindings = ()
         else:
