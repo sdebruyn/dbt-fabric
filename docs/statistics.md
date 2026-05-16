@@ -70,17 +70,17 @@ Add `statistics` to your model's config block. It accepts `true` (all columns), 
 The generated SQL for specific columns:
 
 ```sql
-CREATE STATISTICS [dbt_stats__orders__customer_id]
+CREATE STATISTICS [dbt_stats__fcfc231ef98cf4ae86d587235eda4cd7]
 ON [schema].[orders] ([customer_id]) WITH FULLSCAN;
 
-CREATE STATISTICS [dbt_stats__orders__order_date]
+CREATE STATISTICS [dbt_stats__62b326a5adbe56da5634fa1bcf7b579e]
 ON [schema].[orders] ([order_date]) WITH FULLSCAN;
 ```
 
 On subsequent runs, existing statistics are updated instead of recreated:
 
 ```sql
-UPDATE STATISTICS [schema].[orders] [dbt_stats__orders__customer_id] WITH FULLSCAN;
+UPDATE STATISTICS [schema].[orders] [dbt_stats__fcfc231ef98cf4ae86d587235eda4cd7] WITH FULLSCAN;
 ```
 
 ---
@@ -110,7 +110,7 @@ models:
 This generates:
 
 ```sql
-CREATE STATISTICS [dbt_stats__orders__customer_id]
+CREATE STATISTICS [dbt_stats__fcfc231ef98cf4ae86d587235eda4cd7]
 ON [schema].[orders] ([customer_id]) WITH SAMPLE 50 PERCENT;
 ```
 
@@ -169,7 +169,7 @@ snapshots:
 
 ## Naming convention
 
-Statistics are named `dbt_stats__<table>__<column>` (e.g., `dbt_stats__orders__customer_id`). This avoids collisions with Fabric's auto-generated `_WA_Sys_*` statistics.
+Statistics are named `dbt_stats__<md5_hash>` where the hash is computed from `<table>__<column>` (e.g., `dbt_stats__fcfc231ef98cf4ae86d587235eda4cd7` for column `customer_id` on table `orders`). The `dbt_stats__` prefix avoids collisions with Fabric's auto-generated `_WA_Sys_*` statistics, and hashing guarantees uniqueness regardless of identifier length.
 
 ---
 

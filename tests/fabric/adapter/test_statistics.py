@@ -75,8 +75,8 @@ class TestStatisticsSpecificColumns:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats")
-        assert "dbt_stats__model_stats__id" in stats
-        assert "dbt_stats__model_stats__color" in stats
+        assert "dbt_stats__654860f237c1a1100a59e92e008491e3" in stats
+        assert "dbt_stats__0db04178af0265b62f71f904912ae5ba" in stats
         assert len(stats) == 2
 
 
@@ -91,8 +91,8 @@ class TestStatisticsAllColumns:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_all")
-        assert "dbt_stats__model_stats_all__id" in stats
-        assert "dbt_stats__model_stats_all__color" in stats
+        assert "dbt_stats__22093bb7ed4a4384b9485ced909caa35" in stats
+        assert "dbt_stats__c8cf7ff4d87ba0b890fb58b852ea5d3e" in stats
         assert len(stats) == 2
 
 
@@ -121,7 +121,7 @@ class TestStatisticsSamplePercent:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_sample")
-        assert "dbt_stats__model_stats_sample__id" in stats
+        assert "dbt_stats__3a3d26900c39f6332a0083830a72f388" in stats
         assert len(stats) == 1
 
 
@@ -136,7 +136,7 @@ class TestStatisticsSingleString:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_str")
-        assert "dbt_stats__model_stats_str__id" in stats
+        assert "dbt_stats__c890bde6fdccca0839fe9e66745c66bb" in stats
         assert len(stats) == 1
 
 
@@ -151,16 +151,16 @@ class TestStatisticsIncremental:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_incr")
-        assert "dbt_stats__model_stats_incr__id" in stats
-        assert "dbt_stats__model_stats_incr__color" in stats
+        assert "dbt_stats__8688dd6b37d7c41f2c99346fa4ecf5f9" in stats
+        assert "dbt_stats__dd605aa100cc243ea28fd7744e7508a3" in stats
 
         results = run_dbt(["run"])
         assert len(results) == 1
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "model_stats_incr")
-        assert "dbt_stats__model_stats_incr__id" in stats
-        assert "dbt_stats__model_stats_incr__color" in stats
+        assert "dbt_stats__8688dd6b37d7c41f2c99346fa4ecf5f9" in stats
+        assert "dbt_stats__dd605aa100cc243ea28fd7744e7508a3" in stats
 
 
 class TestStatisticsSnapshot:
@@ -179,6 +179,6 @@ class TestStatisticsSnapshot:
         assert results[0].status == "success"
 
         stats = _get_stats_names(project, adapter, "snapshot_with_stats")
-        assert "dbt_stats__snapshot_with_stats__id" in stats
-        assert "dbt_stats__snapshot_with_stats__name" in stats
+        assert "dbt_stats__d8bf1e35d81c82e7363466b42a43a51e" in stats
+        assert "dbt_stats__2241f3897afe01e76defbd12d39e9578" in stats
         assert len(stats) == 2
