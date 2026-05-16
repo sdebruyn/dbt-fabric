@@ -95,8 +95,8 @@ final as (
 {%- endif %}
 
 select * from final
-order by in_a desc, in_b desc
 {%- if limit and not summarize %}
+order by {{ primary_key ~ ", " if primary_key is not none }} in_a desc, in_b desc
 offset 0 rows fetch next {{ limit }} rows only
 {%- endif %}
 
