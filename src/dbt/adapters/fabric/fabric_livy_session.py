@@ -51,7 +51,11 @@ class LivySession:
 
     def get_logs_url(self) -> str:
         """Build the Fabric Portal URL to the Spark monitor logs for this session."""
-        return f"https://app.fabric.microsoft.com/workloads/de-ds/sparkmonitor/{self._fabric_api_client.get_lakehouse_id()}/{self._fabric_api_client.get_livy_session_id()}"
+        api_uri = self._fabric_api_client._credentials.fabric_base_api_uri
+        portal_host = api_uri.replace("://api.", "://app.").split("/v")[0]
+        lakehouse_id = self._fabric_api_client.get_lakehouse_id()
+        session_id = self._fabric_api_client.get_livy_session_id()
+        return f"{portal_host}/workloads/de-ds/sparkmonitor/{lakehouse_id}/{session_id}"
 
     def wait_for_session_ready(self) -> None:
         """Poll until the Livy session reaches the idle state.

@@ -30,6 +30,30 @@ def session(fabric_api_client):
     return LivySession(fabric_api_client)
 
 
+class TestGetLogsUrl:
+    @pytest.mark.parametrize(
+        ("api_uri", "expected_host"),
+        [
+            (
+                "https://api.fabric.microsoft.com/v1",
+                "https://app.fabric.microsoft.com",
+            ),
+            (
+                "https://api.msit.fabric.microsoft.com/v1",
+                "https://app.msit.fabric.microsoft.com",
+            ),
+        ],
+    )
+    def test_derives_portal_url_from_base_api_uri(
+        self, api_uri, expected_host, session, credentials
+    ):
+        credentials.fabric_base_api_uri = api_uri
+
+        url = session.get_logs_url()
+
+        assert url == f"{expected_host}/workloads/de-ds/sparkmonitor/lakehouse-id/session-id"
+
+
 class TestWaitForSessionReady:
     @patch("dbt.adapters.fabric.fabric_livy_session.time.sleep")
     def test_returns_immediately_when_idle(self, mock_sleep, session, fabric_api_client):

@@ -50,6 +50,11 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
         **_auth_kwargs_from_env(),
     }
 
+    if base_api_uri := os.getenv("FABRIC_TEST_BASE_API_URI"):
+        target["fabric_base_api_uri"] = base_api_uri
+    if powerbi_api_uri := os.getenv("FABRIC_TEST_POWERBI_BASE_API_URI"):
+        target["powerbi_base_api_uri"] = powerbi_api_uri
+
     if adapter_type == "fabric":
         adapter_settings = {
             "type": "fabric",
