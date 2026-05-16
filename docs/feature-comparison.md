@@ -4,17 +4,17 @@ The dbt-fabric adapter was originally built by community contributors, including
 
 ## Platform & compatibility
 
-### No ODBC driver required
+### No separate ODBC driver installation required
 
-This adapter uses Microsoft's official [`mssql-python`](https://github.com/microsoft/mssql-python) driver instead of pyODBC. This is a pure Python driver for SQL Server and Microsoft Fabric that communicates over the TDS protocol natively, without requiring any system-level ODBC components.
+This adapter uses Microsoft's official [`mssql-python`](https://github.com/microsoft/mssql-python) driver instead of pyODBC. `mssql-python` is actively maintained by Microsoft and is their recommended Python driver for SQL Server and Microsoft Fabric. Under the hood, it still uses ODBC, but it **bundles the Microsoft ODBC Driver 18 for SQL Server** along with unixODBC directly in the Python package. This means there is no separate system-level installation step required.
 
-Microsoft's upstream dbt-fabric adapter depends on pyODBC, which requires:
+Microsoft's upstream dbt-fabric adapter depends on pyODBC, which is a community-maintained generic ODBC wrapper. Using pyODBC requires:
 
 - A system-level ODBC driver manager (unixODBC on Linux/macOS)
-- The Microsoft ODBC Driver for SQL Server (`msodbcsql18`)
+- The Microsoft ODBC Driver for SQL Server (`msodbcsql18`), separately installed
 - Platform-specific installation steps that vary between Linux distributions, macOS, and Windows
 
-With dbt-fabric-samdebruyn, none of this is needed. Installation is a single `pip install` or `uv add` command, with no platform-specific setup. This eliminates a common source of installation issues and makes the adapter work consistently across all platforms, including containerized environments.
+With dbt-fabric-samdebruyn, none of this manual setup is needed. Installation is a single `pip install` or `uv add` command — the bundled ODBC driver is included automatically for all supported platforms (Linux, macOS, Windows). This eliminates a common source of installation issues and makes the adapter work consistently across all platforms, including containerized environments.
 
 ## Dual engine support
 
