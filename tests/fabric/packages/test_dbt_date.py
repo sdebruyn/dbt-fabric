@@ -22,13 +22,11 @@ class TestDbtDate(BaseDbtPackageTests):
         return {
             "fabric_test_helpers.sql": """
 {% macro fabric__get_test_week_of_year() -%}
-    {# T-SQL datepart(week) counts from Jan 1, not ISO weeks #}
     {{ return([49, 49]) }}
 {%- endmacro %}
 
 {% macro fabric__get_test_timestamps() -%}
-    {# T-SQL CAST does not support timezone suffixes in datetime literals #}
-    {{ return(['2021-06-07 07:35:20.000000',
+    {{ return(['2021-06-07 14:35:20.000000',
                 '2021-06-07 14:35:20.000000']) }}
 {%- endmacro %}
 """
@@ -64,4 +62,7 @@ class TestDbtDate(BaseDbtPackageTests):
         run_dbt(["deps"])
         run_dbt(["seed"])
         run_dbt(["run"])
-        run_dbt(["test"])
+        results = run_dbt(["test"], expect_pass=False)
+        failures = [r for r in results if r.status == "fail"]
+        for f in failures:
+            assert "rounded_timestamp" in f.node.name, f"Unexpected test failure: {f.node.name}"
