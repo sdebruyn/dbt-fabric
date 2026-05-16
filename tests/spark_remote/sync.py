@@ -114,8 +114,15 @@ def check_prerequisites() -> list[str]:
             "?WT.mc_id=MVP_310840"
         )
 
-    result = subprocess.run(["az", "account", "show"], capture_output=True, text=True)
-    if result.returncode != 0:
-        errors.append("Azure CLI not logged in. Run: az login")
+    try:
+        result = subprocess.run(["az", "account", "show"], capture_output=True, text=True)
+        if result.returncode != 0:
+            errors.append("Azure CLI not logged in. Run: az login")
+    except FileNotFoundError:
+        errors.append(
+            "Azure CLI (az) not found on PATH. Install from: "
+            "https://learn.microsoft.com/en-us/cli/azure/install-azure-cli"
+            "?WT.mc_id=MVP_310840"
+        )
 
     return errors

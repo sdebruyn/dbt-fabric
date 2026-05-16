@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import shlex
 import time
 from dataclasses import dataclass
 from typing import Callable
@@ -33,14 +34,16 @@ class SparkJobClient:
             "Content-Type": "application/json",
         }
 
-    def _get(self, path: str, **kwargs) -> requests.Response:
-        url = f"{FABRIC_API_BASE}{path}"
+    def _get(self, url_or_path: str, **kwargs) -> requests.Response:
+        url = url_or_path if url_or_path.startswith("http") else f"{FABRIC_API_BASE}{url_or_path}"
         resp = requests.get(url, headers=self._headers(), **kwargs)
         resp.raise_for_status()
         return resp
 
-    def _post(self, path: str, json_data: dict | None = None, **kwargs) -> requests.Response:
-        url = f"{FABRIC_API_BASE}{path}"
+    def _post(
+        self, url_or_path: str, json_data: dict | None = None, **kwargs
+    ) -> requests.Response:
+        url = url_or_path if url_or_path.startswith("http") else f"{FABRIC_API_BASE}{url_or_path}"
         resp = requests.post(url, headers=self._headers(), json=json_data, **kwargs)
         resp.raise_for_status()
         return resp
@@ -95,7 +98,7 @@ class SparkJobClient:
         path = (
             f"/v1/workspaces/{self._workspace_id}/items/{item_id}/jobs/instances?jobType=sparkjob"
         )
-        body = {"executionData": {"commandLineArguments": " ".join(command_line_args)}}
+        body = {"executionData": {"commandLineArguments": shlex.join(command_line_args)}}
         resp = self._post(path, json_data=body)
 
         location = resp.headers.get("Location", "")

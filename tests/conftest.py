@@ -205,7 +205,9 @@ def _on_fabric_project_base() -> Path | None:
     elif mode == "mounted":
         path = os.getenv("FABRIC_TEST_ONELAKE_PATH")
         if not path:
-            raise ValueError("FABRIC_TEST_ONELAKE_PATH required when SPARK_EXEC_MODE=mounted")
+            raise ValueError(
+                "FABRIC_TEST_ONELAKE_PATH required when FABRIC_TEST_SPARK_EXEC_MODE=mounted"
+            )
         return Path(path) / "dbt-test-artifacts"
     return None
 

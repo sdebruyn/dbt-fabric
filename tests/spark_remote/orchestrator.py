@@ -43,10 +43,17 @@ class RemoteTestOrchestrator:
         lakehouse_id = os.environ.get("FABRIC_TEST_REMOTE_LAKEHOUSE_ID", "")
         job_name = os.environ.get("FABRIC_TEST_SPARK_JOB_NAME", "dbt-fabric-tests")
 
-        if not workspace_id and not workspace_name:
-            raise ValueError("FABRIC_TEST_WORKSPACE_ID or FABRIC_TEST_WORKSPACE_NAME must be set")
+        missing = []
+        if not workspace_id:
+            missing.append("FABRIC_TEST_WORKSPACE_ID")
+        if not workspace_name:
+            missing.append("FABRIC_TEST_WORKSPACE_NAME")
         if not lakehouse_name:
-            raise ValueError("FABRIC_TEST_LAKEHOUSE_NAME must be set")
+            missing.append("FABRIC_TEST_LAKEHOUSE_NAME")
+        if not lakehouse_id:
+            missing.append("FABRIC_TEST_REMOTE_LAKEHOUSE_ID")
+        if missing:
+            raise ValueError(f"Required env vars not set: {', '.join(missing)}")
 
         project_root = Path(__file__).resolve().parent.parent.parent
         return cls(
