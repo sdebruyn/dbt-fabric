@@ -1,6 +1,6 @@
 import json
 import time
-from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse, urlunparse
 
 import dbt_common.exceptions
 import requests
@@ -355,9 +355,10 @@ class PurviewClient:
         Uses the Atlas uniqueAttribute endpoint, which bypasses the search index
         and returns immediately after entity creation.
         """
+        encoded_qn = quote(qualified_name, safe="")
         url = (
             f"{self._endpoint}{_ENTITY_API}"
-            f"/uniqueAttribute/type/{type_name}?attr:qualifiedName={qualified_name}"
+            f"/uniqueAttribute/type/{type_name}?attr:qualifiedName={encoded_qn}"
         )
         response = self._api_request(url, expected_statuses={404})
         if response.status_code == 404:
