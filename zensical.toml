@@ -37,9 +37,17 @@ nav = [
     { "Statistics" = "statistics.md" },
     { "Python models" = "python-models.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
-    { "Community packages" = "community-packages.md" },
     { "External tables" = "external-tables.md" },
     { "Catalog statistics" = "catalog-stats.md" },
+  ] },
+  { "Package support" = [
+    { "Overview" = "packages/index.md" },
+    { "dbt-utils" = "packages/dbt-utils.md" },
+    { "dbt-date" = "packages/dbt-date.md" },
+    { "dbt-expectations" = "packages/dbt-expectations.md" },
+    { "dbt-audit-helper" = "packages/dbt-audit-helper.md" },
+    { "dbt-external-tables" = "packages/dbt-external-tables.md" },
+    { "insert_by_period" = "packages/insert-by-period.md" },
   ] },
 ]
 
