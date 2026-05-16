@@ -160,7 +160,7 @@ Possible values (case insensitive):
 - [`auto`](#auto) (default)
 - [`CLI`](#cli)
 - [`environment`](#environment)
-- [`FabricSpark` / `SynapseSpark`](#fabricspark)
+- [`notebookutils`](#notebookutils)
 - [`token_credential`](#token_credential)
 
 The adapter supports an authentication method for every use case. The default is `auto`, which will try to use the best available method depending on your environment.
@@ -223,11 +223,13 @@ Since the Azure CLI supports [a variety of authentication methods](https://learn
 
 Authenticate using environment variables. This works similarly to the `auto` method, but only uses environment variables. See [Microsoft Learn](https://learn.microsoft.com/python/api/azure-identity/azure.identity.environmentcredential?view=azure-python&WT.mc_id=MVP_310840) for the list of supported environment variables.
 
-#### `FabricSpark`
+#### `notebookutils`
 
-Alias: `SynapseSpark`
+This authentication method works inside a Fabric notebook. It uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to get an access token for the current user.
 
-This authentication methods works inside a Fabric or Synapse notebook. It uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to get an access token for the current user.
+!!! warning "Currently broken"
+
+    This method is **not working** at the moment because Microsoft's Runtime in the Notebooks returns a credential with a scope that is not allowed to access Data Warehouses and SQL Endpoints. Use [`environment`](#environment) or [`ActiveDirectoryServicePrincipal`](#activedirectoryserviceprincipal) inside notebooks instead.
 
 #### `workload_identity`
 
