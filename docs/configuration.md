@@ -81,12 +81,21 @@ You can leave this empty and let the adapter find it automatically by providing 
 
 **Required configuration option.**
 
-Example value: `gold_dwh`
+=== "Data Warehouse"
 
-The name of the target item in Fabric:
+    Example value: `gold_dwh`
 
-- For `type: fabric`: the name of your **Data Warehouse**.
-- For `type: fabricspark`: the name of your **Lakehouse**. The adapter uses this as the Lakehouse name for the Livy API connection.
+    The name of your **Data Warehouse** in Fabric.
+
+=== "Lakehouse"
+
+    Example value: `bronze_lakehouse`
+
+    The name of your **Lakehouse** in Fabric. The adapter uses this as the target for the Livy API connection.
+
+    !!! tip "This IS the lakehouse"
+
+        For `type: fabricspark`, the `database` field is how you specify which Lakehouse to connect to. There is no separate `lakehouse` or `lakehouse_name` option for this adapter type.
 
 It's recommended to avoid using spaces in the name, although it's supported.
 
@@ -356,11 +365,11 @@ If your dbt project is using a schema which does not exist yet, dbt will create 
 Alias: `lakehouse_name`<br>
 Example value: `My Lakehouse`
 
-The name of the Lakehouse in Fabric you wish to use for running Python models.
+!!! warning "Data Warehouse only"
 
-!!! info "Only needed for `type: fabric`"
+    This option only applies to `type: fabric`. For `type: fabricspark`, use [`database`](#database) instead — that field specifies your Lakehouse directly.
 
-    This option is only needed when using `type: fabric` (Data Warehouse) with [Python models](python-models.md). For `type: fabricspark`, the [`database`](#database) field already specifies the Lakehouse — no separate `lakehouse` option is needed.
+The name of the Lakehouse in Fabric you wish to use for running [Python models](python-models.md). This is only relevant for Data Warehouse projects that need a Lakehouse as a Spark execution environment for Python models.
 
 When using this option together with [`authentication`](#authentication) set to `ActiveDirectoryServicePrincipal`, you also need to provide the [`tenant_id`](#tenant_id) option.
 
