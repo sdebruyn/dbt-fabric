@@ -57,7 +57,11 @@ def _build_federated_token_callable(
 
         return fetch_from_url
 
-    assert credentials.federated_token_file is not None
+    if not credentials.federated_token_file:
+        raise ValueError(
+            "Either federated_token_url or federated_token_file must be configured "
+            "for workload_identity authentication"
+        )
     path = credentials.federated_token_file
 
     def read_from_file() -> str:

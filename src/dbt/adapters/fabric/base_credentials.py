@@ -71,6 +71,11 @@ class BaseFabricCredentials(Credentials, metaclass=abc.ABCMeta):
                     "Exactly one of federated_token_url or federated_token_file "
                     "must be set when authentication is 'workload_identity'"
                 )
+            if has_file and des.get("federated_token_header"):
+                raise ValueError(
+                    "federated_token_header can only be used with federated_token_url, "
+                    "not with federated_token_file"
+                )
         else:
             if des.get("federated_token_url") or des.get("federated_token_file"):
                 raise ValueError(

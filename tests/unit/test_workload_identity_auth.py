@@ -1,4 +1,3 @@
-import json
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -108,6 +107,16 @@ class TestCredentialsValidation:
             federated_token_header="bearer my-token",
         )
         assert result["federated_token_header"] == "bearer my-token"
+
+    def test_workload_identity_rejects_header_with_file(self):
+        with pytest.raises(ValueError, match="can only be used with federated_token_url"):
+            self._serialize(
+                authentication="workload_identity",
+                tenant_id="test",
+                client_id="test",
+                federated_token_file="/tmp/token",
+                federated_token_header="bearer my-token",
+            )
 
     def test_other_auth_rejects_federated_token_url(self):
         with pytest.raises(ValueError, match="can only be used.*workload_identity"):
