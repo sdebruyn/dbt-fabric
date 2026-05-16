@@ -9,7 +9,7 @@ class TestDbtUtils(BaseDbtPackageTests):
         return {
             "limit_zero.sql": """
 {% macro fabric__limit_zero() %}
-  {{ return('where 0=1') }} 
+  {{ return('where 0=1') }}
 {% endmacro %}"""
         }
 

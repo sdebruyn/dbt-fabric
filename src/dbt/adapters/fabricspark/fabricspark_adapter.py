@@ -1,5 +1,6 @@
+from collections.abc import Callable, Iterable
 from concurrent.futures import Future, as_completed
-from typing import TYPE_CHECKING, Callable, FrozenSet, Iterable, Tuple
+from typing import TYPE_CHECKING
 
 from dbt_common.clients.agate_helper import DEFAULT_TYPE_TESTER
 from dbt_common.events.functions import warn_or_error
@@ -35,7 +36,7 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
     ConnectionManager = FabricSparkConnectionManager  # type: ignore
     connections: FabricSparkConnectionManager  # type: ignore
     Relation = FabricSparkRelation
-    RelationInfo = Tuple[str, str, str]
+    RelationInfo = tuple[str, str, str]
 
     _capabilities: CapabilityDict = CapabilityDict(
         {
@@ -44,13 +45,14 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
         }
     )
 
-    def _namespace_to_parts(self, namespace: str) -> Tuple[str, str, str]:
+    def _namespace_to_parts(self, namespace: str) -> tuple[str, str, str]:
         """Convert a namespace string into its components."""
         # Example namespace: `adapter-dev`.`dbtdevlh`.`test17722693981743727771_test_basic`
-        parts = tuple(map(lambda x: x.strip("`"), namespace.split(".")))
+        parts = tuple(x.strip("`") for x in namespace.split("."))
         if len(parts) != 3:
             raise DbtRuntimeError(
-                f"Unexpected namespace format: '{namespace}'. Expected format: 'workspace.database.schema'"
+                f"Unexpected namespace format: '{namespace}'. "
+                f"Expected format: 'workspace.database.schema'"
             )
         return parts
 
@@ -120,7 +122,7 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
         self, relation: FabricSparkRelation, raw_rows: AttrDict
     ) -> list[FabricSparkColumn]:
         # Convert the Row to a dict
-        dict_rows = [dict(zip(row._keys, row._values)) for row in raw_rows]
+        dict_rows = [dict(zip(row._keys, row._values, strict=False)) for row in raw_rows]
         # Find the separator between the rows and the metadata provided
         # by the DESCRIBE TABLE EXTENDED statement
         pos = self.find_table_information_separator(dict_rows)
@@ -155,8 +157,8 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
     def get_catalog(
         self,
         relation_configs: Iterable[RelationConfig],
-        used_schemas: FrozenSet[Tuple[str, str]],
-    ) -> Tuple["agate.Table", list[Exception]]:
+        used_schemas: frozenset[tuple[str, str]],
+    ) -> tuple["agate.Table", list[Exception]]:
 
         # First, we convert the relation configs into namespace relations
         configs_as_relations = self._get_catalog_relations(relation_configs)
@@ -204,10 +206,10 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
         return catalogs, exceptions
 
     def get_catalog_by_relations(
-        self, used_schemas: FrozenSet[Tuple[str, str]], relations: set[FabricSparkRelation]
-    ) -> Tuple["agate.Table", list[Exception]]:
+        self, used_schemas: frozenset[tuple[str, str]], relations: set[FabricSparkRelation]
+    ) -> tuple["agate.Table", list[Exception]]:
         exceptions: list[Exception] = []
-        all_columns: list[FabricSparkColumn] = list()
+        all_columns: list[FabricSparkColumn] = []
 
         with executor(self.config) as tpe:
             columns_futures: list[Future[list[FabricSparkColumn]]] = []
@@ -234,7 +236,7 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
                     # exc is not None, derives from Exception, and isn't ctrl+c
                     exceptions.append(exc)
 
-        # Finally, we convert the columns into an agate table and return it with any exceptions we encountered
+        # Convert columns into an agate table and return with any exceptions
         columns_as_dicts = []
         for column in all_columns:
             as_dict = column.to_column_dict()

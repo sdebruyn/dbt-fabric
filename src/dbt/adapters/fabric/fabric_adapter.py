@@ -99,7 +99,7 @@ class FabricAdapter(BaseFabricAdapter, SQLAdapter):
         lens = [len(d.encode("utf-8")) for d in column.values_without_nulls()]
         max_len = max(lens) if lens else 64
         length = max_len if max_len > 16 else 16
-        return "varchar({})".format(length)
+        return f"varchar({length})"
 
     @classmethod
     def convert_time_type(cls, agate_table, col_idx):
@@ -151,9 +151,9 @@ class FabricAdapter(BaseFabricAdapter, SQLAdapter):
         names: list[str]
         if column_names is None:
             columns = self.get_columns_in_relation(relation_a)
-            names = sorted((self.quote(c.name) for c in columns))
+            names = sorted(self.quote(c.name) for c in columns)
         else:
-            names = sorted((self.quote(n) for n in column_names))
+            names = sorted(self.quote(n) for n in column_names)
         columns_csv = ", ".join(names)
 
         if columns_csv == "":
@@ -233,7 +233,8 @@ class FabricAdapter(BaseFabricAdapter, SQLAdapter):
         elif constraint.type == ConstraintType.foreign_key and constraint.expression:
             return (
                 constraint_prefix
-                + f"{constraint.name} foreign key({column_list}) references {constraint.expression} not enforced"
+                + f"{constraint.name} foreign key({column_list}) references "
+                + f"{constraint.expression} not enforced"
             )
         elif constraint.type == ConstraintType.custom and constraint.expression:
             return f"{constraint_prefix}{constraint.expression}"

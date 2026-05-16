@@ -1,5 +1,5 @@
+import builtins
 from dataclasses import dataclass, field
-from typing import Type
 
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.fabric.relation_configs import FabricQuotePolicy, FabricRelationType
@@ -16,7 +16,7 @@ class FabricRelation(BaseRelation):
         return "[{}]".format(identifier.replace("]", "]]"))
 
     @classproperty
-    def get_relation_type(cls) -> Type[FabricRelationType]:
+    def get_relation_type(cls) -> builtins.type[FabricRelationType]:
         return FabricRelationType
 
     def render_limited(self) -> str:

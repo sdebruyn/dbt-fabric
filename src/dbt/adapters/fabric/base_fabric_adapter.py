@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Type
+from typing import Any
 
 from dbt.adapters.base import available
 from dbt.adapters.base.impl import PythonJobHelper
@@ -19,7 +19,7 @@ class BaseFabricAdapter(SQLAdapter, metaclass=abc.ABCMeta):
         return "livy"
 
     @property
-    def python_submission_helpers(self) -> dict[str, Type[PythonJobHelper]]:
+    def python_submission_helpers(self) -> dict[str, type[PythonJobHelper]]:
         return {
             "livy": FabricLivyHelper,
         }

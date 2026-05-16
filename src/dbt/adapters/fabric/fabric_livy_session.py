@@ -143,7 +143,8 @@ class LivySession:
             )
         except TimeoutError as e:
             logger.error(
-                f"Timeout (> {self._fabric_api_client._credentials.query_timeout}s) while waiting for Livy statement to be ready. Logs URL: {self.get_logs_url()}"
+                f"Timeout (> {self._fabric_api_client._credentials.query_timeout}s) while waiting "
+                f"for Livy statement to be ready. Logs URL: {self.get_logs_url()}"
             )
             logger.exception(e)
             return LivySessionResult(
@@ -151,7 +152,8 @@ class LivySession:
             )
         except Exception as e:
             logger.error(
-                f"Error while waiting for Livy statement to be ready. Logs URL: {self.get_logs_url()}"
+                f"Error while waiting for Livy statement to be ready. "
+                f"Logs URL: {self.get_logs_url()}"
             )
             logger.exception(e)
             return LivySessionResult(

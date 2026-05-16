@@ -211,7 +211,7 @@ class FabricApiClient:
             return self._warehouse_connection_string
 
         raise dbt_common.exceptions.DbtRuntimeError(
-            f"No Data Warehouses or Lakehouses found in workspace"
+            "No Data Warehouses or Lakehouses found in workspace"
         )
 
     def get_lakehouse_id(self) -> str:
@@ -288,7 +288,8 @@ class FabricApiClient:
             snapshot_name: Display name for the new snapshot.
             description: Optional description for the snapshot.
         """
-        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehouseSnapshots"
+        ws_id = self.get_workspace_id()
+        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{ws_id}/warehouseSnapshots"
         body = {
             "displayName": snapshot_name,
             "creationPayload": {"parentWarehouseId": self.get_warehouse_id()},
@@ -315,7 +316,11 @@ class FabricApiClient:
             snapshot_name: Display name (used to track the long-running operation).
             description: New description, or None to leave unchanged.
         """
-        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehouseSnapshots/{snapshot_id}"
+        ws_id = self.get_workspace_id()
+        url = (
+            f"{self._credentials.fabric_base_api_uri}"
+            f"/workspaces/{ws_id}/warehouseSnapshots/{snapshot_id}"
+        )
         # Empty properties triggers a "snapshot now"; omitting it causes a bad request
         body: dict[str, Any] = {"properties": {}}
         if description is not None:
@@ -339,8 +344,10 @@ class FabricApiClient:
         timer = time.time()
         while True:
             if time.time() - timer > self._WAREHOUSE_SNAPSHOT_TIMEOUT_SECONDS:
+                timeout = self._WAREHOUSE_SNAPSHOT_TIMEOUT_SECONDS
                 raise dbt_common.exceptions.DbtRuntimeError(
-                    f"Timed out waiting for Warehouse Snapshot operation to complete after {self._WAREHOUSE_SNAPSHOT_TIMEOUT_SECONDS} seconds."
+                    f"Timed out waiting for Warehouse Snapshot operation "
+                    f"to complete after {timeout} seconds."
                 )
 
             response = self._api_get(operation_uri)
@@ -406,7 +413,10 @@ class FabricApiClient:
         """Build the Livy API base URI for the configured lakehouse."""
         workspace_id = self.get_workspace_id()
         lakehouse_id = self.get_lakehouse_id()
-        return f"{self._credentials.fabric_base_api_uri}/workspaces/{workspace_id}/lakehouses/{lakehouse_id}/livyapi/versions/{self._LIVY_API_VERSION}"
+        return (
+            f"{self._credentials.fabric_base_api_uri}/workspaces/{workspace_id}"
+            f"/lakehouses/{lakehouse_id}/livyapi/versions/{self._LIVY_API_VERSION}"
+        )
 
     def get_existing_livy_session(self) -> str | None:
         """Find an active Livy session matching the configured name, or return None."""
@@ -446,8 +456,8 @@ class FabricApiClient:
                 last_exception = e
                 wait_time = backoff_seconds * (2 ** (attempt - 1))
                 logger.warning(
-                    f"Livy session creation returned a transient error (attempt {attempt}/{max_attempts}), "
-                    f"retrying in {wait_time}s: {e}"
+                    f"Livy session creation returned a transient error "
+                    f"(attempt {attempt}/{max_attempts}), retrying in {wait_time}s: {e}"
                 )
                 time.sleep(wait_time)
 

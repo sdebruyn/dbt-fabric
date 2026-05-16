@@ -1,3 +1,4 @@
+import contextlib
 import os
 
 import pytest
@@ -19,10 +20,8 @@ def _build_lakehouse_table_qn(
 def _delete_entity_if_exists(client: PurviewClient, type_name: str, qualified_name: str) -> None:
     result = client.get_entity_by_qualified_name(type_name, qualified_name)
     if result and "entity" in result:
-        try:
+        with contextlib.suppress(Exception):
             client.delete_entity_by_guid(result["entity"]["guid"])
-        except Exception:
-            pass
 
 
 def _cleanup_lakehouse_entities(
@@ -46,14 +45,10 @@ def _cleanup_lakehouse_entities(
                 if full and "entity" in full:
                     for ref in full.get("referredEntities", {}).values():
                         if ref.get("typeName") == "fabric_lakehouse_table_column":
-                            try:
+                            with contextlib.suppress(Exception):
                                 client.delete_entity_by_guid(ref["guid"])
-                            except Exception:
-                                pass
-                try:
+                with contextlib.suppress(Exception):
                     client.delete_entity_by_guid(guid)
-                except Exception:
-                    pass
 
     # Direct QN-based cleanup for the current schema
     for name in table_names:
@@ -62,10 +57,8 @@ def _cleanup_lakehouse_entities(
         if table_result and "entity" in table_result:
             for ref in table_result.get("referredEntities", {}).values():
                 if ref.get("typeName") == "fabric_lakehouse_table_column":
-                    try:
+                    with contextlib.suppress(Exception):
                         client.delete_entity_by_guid(ref["guid"])
-                    except Exception:
-                        pass
 
     for name in table_names:
         table_qn = _build_lakehouse_table_qn(workspace_id, lakehouse_id, schema, name)

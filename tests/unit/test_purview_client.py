@@ -5,8 +5,6 @@ import pytest
 
 from dbt.adapters.fabric.purview_client import (
     _API_VERSION,
-    _DBT_BUSINESS_METADATA_DEF,
-    _DBT_TRANSFORMATION_TYPE_DEF,
     _PURVIEW_SCOPE,
     PurviewClient,
 )

@@ -68,7 +68,7 @@ def _get_onelake_urls():
         )
         resp.raise_for_status()
         lakehouses = resp.json().get("value", [])
-        lh = next((l for l in lakehouses if l["displayName"] == lakehouse_name), None)
+        lh = next((lh for lh in lakehouses if lh["displayName"] == lakehouse_name), None)
         if not lh:
             return None
         lakehouse_id = lh["id"]
@@ -111,7 +111,7 @@ def _skip_without_lakehouse():
 
 
 def _build_csv_sources_yml(csv_url):
-    return """
+    return f"""
 version: 2
 sources:
   - name: test_external
@@ -150,11 +150,11 @@ sources:
             data_type: "decimal(10,2)"
           - name: sale_date
             data_type: date
-""".format(csv_url=csv_url)
+"""
 
 
 def _build_jsonl_sources_yml(jsonl_url):
-    return """
+    return f"""
 version: 2
 sources:
   - name: test_external
@@ -173,7 +173,7 @@ sources:
             data_type: "decimal(10,2)"
           - name: sale_date
             data_type: date
-""".format(jsonl_url=jsonl_url)
+"""
 
 
 csv_model_sql = """

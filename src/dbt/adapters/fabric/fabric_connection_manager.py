@@ -2,7 +2,7 @@ import datetime as dt
 import re
 import struct
 from contextlib import contextmanager
-from typing import Any, Type
+from typing import Any
 
 import agate
 import dbt_common.exceptions
@@ -10,7 +10,6 @@ from dbt_common.clients.agate_helper import empty_table
 
 from dbt.adapters.contracts.connection import AdapterResponse, Connection, ConnectionState
 from dbt.adapters.events.logging import AdapterLogger
-from dbt.adapters.fabric import __version__
 from dbt.adapters.fabric.base_connection_manager import BaseFabricConnectionManager
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 
@@ -98,7 +97,7 @@ class FabricConnectionManager(BaseFabricConnectionManager):
             yield
 
         except mssql_python.DatabaseError as e:
-            logger.debug("Database error: {}".format(str(e)))
+            logger.debug(f"Database error: {str(e)}")
 
             try:
                 # attempt to release the connection
@@ -118,7 +117,7 @@ class FabricConnectionManager(BaseFabricConnectionManager):
                 # useful information, so raise it without modification.
                 raise
 
-            raise dbt_common.exceptions.DbtRuntimeError(e)
+            raise dbt_common.exceptions.DbtRuntimeError(e) from e
 
     @classmethod
     def get_host(cls, credentials: FabricCredentials) -> str:
@@ -188,7 +187,8 @@ class FabricConnectionManager(BaseFabricConnectionManager):
 
         except Exception as e:
             logger.debug(
-                "Retry count should be a integer value. Skipping retries in the connection string.",
+                "Retry count should be a integer value. "
+                "Skipping retries in the connection string.",
                 str(e),
             )
 
@@ -304,7 +304,7 @@ class FabricConnectionManager(BaseFabricConnectionManager):
         auto_begin: bool = True,
         bindings: Any | None = None,
         abridge_sql_log: bool = False,
-        retryable_exceptions: tuple[Type[Exception], ...] | None = None,
+        retryable_exceptions: tuple[type[Exception], ...] | None = None,
         retry_limit: int = 3,
     ):
         import mssql_python

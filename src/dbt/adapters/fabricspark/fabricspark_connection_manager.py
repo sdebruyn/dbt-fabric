@@ -19,7 +19,7 @@ class FabricSparkConnectionManager(BaseFabricConnectionManager):
             yield
 
         except Exception as exc:
-            logger.debug("Error while running:\n{}".format(sql))
+            logger.debug(f"Error while running:\n{sql}")
             logger.debug(exc)
             raise
 
@@ -30,7 +30,7 @@ class FabricSparkConnectionManager(BaseFabricConnectionManager):
     def get_response(cls, cursor: Any) -> AdapterResponse:
         msg = "\n".join(str(message) for message in cursor.messages)
         return AdapterResponse(
-            _message="OK" if not msg else msg,
+            _message=msg if msg else "OK",
             rows_affected=cursor.rowcount,
             query_id=str(cursor.statement_id),
             code=cursor.status_code,

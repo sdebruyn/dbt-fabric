@@ -11,9 +11,7 @@ from dbt.adapters.relation_configs import RelationConfigBase, RelationResults
 
 @dataclass(frozen=True, eq=True, unsafe_hash=True)
 class FabricRelationConfigBase(RelationConfigBase):
-    """
-    This base class implements a few boilerplate methods and provides some light structure for Fabric relations.
-    """
+    """Base class with boilerplate methods and light structure for Fabric relations."""
 
     @classmethod
     def include_policy(cls) -> Policy:
@@ -44,7 +42,8 @@ class FabricRelationConfigBase(RelationConfigBase):
     @classmethod
     def parse_relation_results(cls, relation_results: RelationResults) -> dict[str, Any]:
         raise NotImplementedError(
-            "`parse_relation_results()` needs to be implemented on this RelationConfigBase instance"
+            "`parse_relation_results()` needs to be implemented "
+            "on this RelationConfigBase instance"
         )
 
     @classmethod
