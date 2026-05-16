@@ -31,7 +31,7 @@ This adapter is compatible with **dbt Core 1.11 and 1.12**. Microsoft's dbt-fabr
 
 ### Python version support
 
-This adapter is tested on **Python 3.11, 3.12, and 3.13**. Microsoft's dbt-fabric still lists Python 3.8-3.10 in its classifiers but does not test on 3.12 or 3.13.
+This adapter is tested on **Python 3.11, 3.12, 3.13, and 3.14**. Microsoft's dbt-fabric still lists Python 3.8-3.10 in its classifiers but does not test on 3.12+.
 
 ## Dual engine support
 
@@ -187,7 +187,7 @@ Microsoft's dbt-fabric has a single utility macro (`get_tables_by_pattern`). Mic
 
 ### Test suite
 
-This adapter has **444 integration test classes** across 141 test files, covering both the Fabric and FabricSpark adapters. Tests run automatically on every pull request across Python 3.11, 3.12, and 3.13. Microsoft's dbt-fabric has 117 test classes on Python 3.11 only. Microsoft's dbt-fabricspark has 141 test classes.
+This adapter has **444 integration test classes** across 141 test files, covering both the Fabric and FabricSpark adapters. Tests run automatically on every pull request across Python 3.11, 3.12, 3.13, and 3.14. Microsoft's dbt-fabric has 117 test classes on Python 3.11 only. Microsoft's dbt-fabricspark has 141 test classes.
 
 The test suite covers all standard dbt adapter operations plus adapter-specific features: Purview integration, Python models, warehouse snapshots, community package compatibility, and utility function overrides.
 
