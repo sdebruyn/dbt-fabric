@@ -20,7 +20,6 @@ on:
 
 permissions:
   contents: read
-  packages: read
   pull-requests: write
   id-token: write
 
@@ -34,10 +33,11 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     environment: azure
-    container:
-      image: ghcr.io/${{ github.repository }}:CI-3.13-mssql-python
     timeout-minutes: 60
     steps:
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
+
       - name: Azure CLI Login
         uses: azure/login@v2
         with:
@@ -80,8 +80,6 @@ jobs:
        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     environment: azure
-    container:
-      image: ghcr.io/${{ github.repository }}:CI-3.13-mssql-python
     timeout-minutes: 60
 
     steps:
@@ -148,6 +146,9 @@ jobs:
               comment_id: context.payload.comment.id,
               content: 'rocket',
             });
+
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
 
       - name: Azure CLI Login
         uses: azure/login@v2
@@ -226,10 +227,11 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number == ''
     runs-on: ubuntu-latest
     environment: azure
-    container:
-      image: ghcr.io/${{ github.repository }}:CI-3.13-mssql-python
     timeout-minutes: 60
     steps:
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
+
       - name: Azure CLI Login
         uses: azure/login@v2
         with:

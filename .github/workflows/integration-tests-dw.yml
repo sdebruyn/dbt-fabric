@@ -40,7 +40,6 @@ on:
 
 permissions:
   contents: read
-  packages: read
   id-token: write
 
 concurrency:
@@ -72,9 +71,10 @@ jobs:
 
     runs-on: ubuntu-latest
     environment: azure
-    container:
-      image: ghcr.io/${{ github.repository }}:CI-${{ matrix.python_version }}-mssql-python
     steps:
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
+
       - name: Azure CLI Login
         uses: azure/login@v2
         with:
