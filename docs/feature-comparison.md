@@ -2,6 +2,13 @@
 
 The dbt-fabric adapter was originally built by community contributors, including [Sam Debruyn](https://debruyn.dev), who continues its development and maintenance through this fork. This adapter builds on [Microsoft's dbt-fabric adapter](https://github.com/microsoft/dbt-fabric) with additional features, improvements, and bugfixes. Some of these have since been contributed back upstream.
 
+!!! tip "Looking for a detailed technical comparison?"
+
+    This page provides a high-level overview. For in-depth comparisons covering architecture, code quality, test suites, and dbt Core compatibility, see:
+
+    - [Detailed comparison with microsoft/dbt-fabric](comparison-dbt-fabric.md) (Data Warehouse / T-SQL adapter)
+    - [Detailed comparison with microsoft/dbt-fabricspark](comparison-dbt-fabricspark.md) (Lakehouse / Spark SQL adapter)
+
 ## Platform & compatibility
 
 ### No separate ODBC driver installation required
