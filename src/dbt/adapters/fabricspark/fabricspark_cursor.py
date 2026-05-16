@@ -22,8 +22,12 @@ class FabricSparkCursor:
 
     @property
     def connection(self) -> Any:
-        assert self._connection is not None, "Cursor is closed"
+        self._check_closed()
         return self._connection
+
+    def _check_closed(self) -> None:
+        if self._connection is None:
+            raise DbtDatabaseError("Cursor is closed.")
 
     def close(self) -> None:
         self._connection = None
@@ -45,7 +49,7 @@ class FabricSparkCursor:
         exc_tb: TracebackType | None,
     ) -> bool:
         self.close()
-        return True
+        return False
 
     @staticmethod
     def _convert_value(value: Any, spark_type: str) -> Any:
@@ -135,6 +139,8 @@ class FabricSparkCursor:
         self._position = 0
 
     def cancel(self) -> None:
+        if self._connection is None:
+            return
         if self._statement_id is not None and self._result is None:
             self.get_livy_session()._fabric_api_client.cancel_livy_statement(self._statement_id)
             self._statement_id = None
@@ -157,6 +163,7 @@ class FabricSparkCursor:
 
     def _check_result(self) -> list[tuple[Any, ...]]:
         """Ensure a result set is available, raising an error if not."""
+        self._check_closed()
         if self._rows is None:
             raise DbtRuntimeError("No result set. Call execute() first.")
         return self._rows
@@ -259,7 +266,7 @@ class FabricSparkCursor:
         raise NotImplementedError
 
     def setinputsizes(self, sizes: list[Any]) -> None:
-        raise NotImplementedError
+        self._check_closed()
 
     def setoutputsize(self, size: int, column: int | None = None) -> None:
-        raise NotImplementedError
+        self._check_closed()
