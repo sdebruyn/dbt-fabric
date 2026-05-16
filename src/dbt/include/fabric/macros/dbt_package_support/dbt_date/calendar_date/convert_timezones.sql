@@ -1,3 +1,66 @@
+{%- macro fabric__iana_to_windows_tz(tz_name) -%}
+    {#- T-SQL AT TIME ZONE requires Windows timezone names, not IANA -#}
+    {%- set tz_map = {
+        "Africa/Cairo": "Egypt Standard Time",
+        "Africa/Johannesburg": "South Africa Standard Time",
+        "Africa/Lagos": "W. Central Africa Standard Time",
+        "America/Anchorage": "Alaskan Standard Time",
+        "America/Bogota": "SA Pacific Standard Time",
+        "America/Buenos_Aires": "Argentina Standard Time",
+        "America/Chicago": "Central Standard Time",
+        "America/Denver": "Mountain Standard Time",
+        "America/Halifax": "Atlantic Standard Time",
+        "America/Los_Angeles": "Pacific Standard Time",
+        "America/Mexico_City": "Central Standard Time (Mexico)",
+        "America/New_York": "Eastern Standard Time",
+        "America/Phoenix": "US Mountain Standard Time",
+        "America/Santiago": "Pacific SA Standard Time",
+        "America/Sao_Paulo": "E. South America Standard Time",
+        "America/Toronto": "Eastern Standard Time",
+        "America/Vancouver": "Pacific Standard Time",
+        "Asia/Bangkok": "SE Asia Standard Time",
+        "Asia/Calcutta": "India Standard Time",
+        "Asia/Colombo": "Sri Lanka Standard Time",
+        "Asia/Dubai": "Arabian Standard Time",
+        "Asia/Hong_Kong": "China Standard Time",
+        "Asia/Jakarta": "SE Asia Standard Time",
+        "Asia/Kolkata": "India Standard Time",
+        "Asia/Seoul": "Korea Standard Time",
+        "Asia/Shanghai": "China Standard Time",
+        "Asia/Singapore": "Singapore Standard Time",
+        "Asia/Tokyo": "Tokyo Standard Time",
+        "Australia/Melbourne": "AUS Eastern Standard Time",
+        "Australia/Perth": "W. Australia Standard Time",
+        "Australia/Sydney": "AUS Eastern Standard Time",
+        "Europe/Amsterdam": "W. Europe Standard Time",
+        "Europe/Berlin": "W. Europe Standard Time",
+        "Europe/Brussels": "Romance Standard Time",
+        "Europe/Dublin": "GMT Standard Time",
+        "Europe/Helsinki": "FLE Standard Time",
+        "Europe/Istanbul": "Turkey Standard Time",
+        "Europe/London": "GMT Standard Time",
+        "Europe/Madrid": "Romance Standard Time",
+        "Europe/Moscow": "Russian Standard Time",
+        "Europe/Paris": "Romance Standard Time",
+        "Europe/Rome": "W. Europe Standard Time",
+        "Europe/Stockholm": "W. Europe Standard Time",
+        "Europe/Warsaw": "Central European Standard Time",
+        "Europe/Zurich": "W. Europe Standard Time",
+        "Pacific/Auckland": "New Zealand Standard Time",
+        "Pacific/Honolulu": "Hawaiian Standard Time",
+        "US/Alaska": "Alaskan Standard Time",
+        "US/Arizona": "US Mountain Standard Time",
+        "US/Central": "Central Standard Time",
+        "US/Eastern": "Eastern Standard Time",
+        "US/Hawaii": "Hawaiian Standard Time",
+        "US/Mountain": "Mountain Standard Time",
+        "US/Pacific": "Pacific Standard Time",
+    } -%}
+    {{ tz_map.get(tz_name, tz_name) }}
+{%- endmacro -%}
+
 {% macro fabric__convert_timezone(column, target_tz, source_tz) -%}
-    CAST({{ column }} as {{ dbt.type_timestamp() }}) AT TIME ZONE '{{ source_tz }}' AT TIME ZONE '{{ target_tz }}'
+    {%- set win_source = fabric__iana_to_windows_tz(source_tz) | trim -%}
+    {%- set win_target = fabric__iana_to_windows_tz(target_tz) | trim -%}
+    CAST(CAST({{ column }} as {{ dbt.type_timestamp() }}) AT TIME ZONE '{{ win_source }}' AT TIME ZONE '{{ win_target }}' AS {{ dbt.type_timestamp() }})
 {%- endmacro -%}
