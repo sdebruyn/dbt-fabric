@@ -261,7 +261,7 @@ class FabricApiClient:
         workspace_id = self.get_workspace_id()
 
         url = (
-            f"{self._credentials.fabric_base_api_uri}/workspaces/{workspace_id}/warehousesnapshots"
+            f"{self._credentials.fabric_base_api_uri}/workspaces/{workspace_id}/warehouseSnapshots"
         )
         snapshots = []
 
@@ -288,7 +288,7 @@ class FabricApiClient:
             snapshot_name: Display name for the new snapshot.
             description: Optional description for the snapshot.
         """
-        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots"
+        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehouseSnapshots"
         body = {
             "displayName": snapshot_name,
             "creationPayload": {"parentWarehouseId": self.get_warehouse_id()},
@@ -315,12 +315,14 @@ class FabricApiClient:
             snapshot_name: Display name (used to track the long-running operation).
             description: New description, or None to leave unchanged.
         """
-        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots/{snapshot_id}"
+        url = f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehouseSnapshots/{snapshot_id}"
+        # Empty properties triggers a "snapshot now"; omitting it causes a bad request
         body: dict[str, Any] = {"properties": {}}
         if description is not None:
             body["description"] = description
         response = self._api_patch(url, body)
 
+        # Spec documents 200, but in practice updates sometimes return 202 (LRO)
         location_uri = response.headers.get("Location")
         if location_uri is not None and response.status_code == 202:
             self._warehouse_snapshot_operations[snapshot_name] = location_uri
@@ -397,7 +399,7 @@ class FabricApiClient:
         for snapshot in self.get_warehouse_snapshots():
             if snapshot["displayName"] == snapshot_name:
                 self._api_delete(
-                    f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehousesnapshots/{snapshot['id']}"
+                    f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehouseSnapshots/{snapshot['id']}"
                 )
 
     def get_livy_base_api_uri(self) -> str:
