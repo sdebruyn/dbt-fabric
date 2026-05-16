@@ -15,7 +15,7 @@ Integration tests for community dbt packages live in `tests/fabric/packages/`. T
 | `package_revision` | Git revision or tag (e.g., `1.3.0`) |
 | `packages` | Installs via git + `integration_tests` subdirectory, using `package_repo`/`package_revision` |
 | `project_config_update` | Sets up dispatch with `search_order: [test_dbt_package, dbt, <package_name>]` |
-| `test_package` | Default flow: `dbt deps` -> `dbt seed` -> `dbt run` |
+| `test_package` | Default flow: `dbt deps` -> `dbt build` |
 
 Subclasses must provide `package_name`, `package_repo`, and `package_revision`.
 
