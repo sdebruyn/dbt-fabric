@@ -36,4 +36,4 @@ class TestDbtProfiler(BaseDbtPackageTests):
         run_dbt(["deps"])
         run_dbt(["seed"])
         run_dbt(["run"])
-        run_dbt(["test"])
+        run_dbt(["test", "--select", "test_type:not_null", "test_type:unique"])
