@@ -1,4 +1,4 @@
-from typing import Iterable
+from collections.abc import Iterable
 
 from dbt.tests.adapter.simple_snapshot.test_snapshot import (
     BaseSimpleSnapshot,

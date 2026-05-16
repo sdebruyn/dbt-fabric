@@ -253,7 +253,7 @@ class FabricSparkCursor:
             for field in schema.get("fields", [])
         ]
 
-    # The following methods are part of the DB-API but not implemented in this cursor and aren't used by dbt-adapters either.
+    # DB-API methods not implemented in this cursor, unused by dbt-adapters.
     def callproc(self, procname: str, parameters: tuple[Any, ...] = ()) -> tuple[Any, ...]:
         raise NotImplementedError
 

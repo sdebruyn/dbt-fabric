@@ -1,3 +1,4 @@
+import contextlib
 import time
 
 import pytest
@@ -30,10 +31,8 @@ def _cleanup_custom_types(client: PurviewClient) -> None:
     May fail if entities of these types still exist (409 Conflict).
     """
     for name in _CUSTOM_RELATIONSHIP_TYPES + _CUSTOM_ENTITY_TYPES + _CUSTOM_BM_TYPES:
-        try:
+        with contextlib.suppress(Exception):
             client.delete_type_def_by_name(name)
-        except Exception:
-            pass
 
 
 def _build_warehouse_qn(workspace_id: str, warehouse_id: str) -> str:
@@ -62,10 +61,8 @@ def _cleanup_test_entities(
         table_result = client.get_entity_by_qualified_name("fabric_warehouse_table", table_qn)
         if table_result and "entity" in table_result:
             for col_guid in table_result.get("referredEntities", {}):
-                try:
+                with contextlib.suppress(Exception):
                     client.delete_entity_by_guid(col_guid)
-                except Exception:
-                    pass
 
     for name in table_names:
         _delete_entity_if_exists(
@@ -75,19 +72,15 @@ def _cleanup_test_entities(
     _delete_entity_if_exists(client, "fabric_warehouse_schema", f"{wh_qn}/schemas/{schema}")
 
     for proc in client.search_process_entities("dbt://model.test."):
-        try:
+        with contextlib.suppress(Exception):
             client.delete_entity_by_guid(proc["id"])
-        except Exception:
-            pass
 
 
 def _delete_entity_if_exists(client: PurviewClient, type_name: str, qualified_name: str) -> None:
     result = client.get_entity_by_qualified_name(type_name, qualified_name)
     if result and "entity" in result:
-        try:
+        with contextlib.suppress(Exception):
             client.delete_entity_by_guid(result["entity"]["guid"])
-        except Exception:
-            pass
 
 
 @requires_purview
@@ -417,7 +410,7 @@ class TestPurviewSync:
         """
         _, warehouse_id = warehouse_info
         results = []
-        for attempt in range(12):
+        for _attempt in range(12):
             results = purview_client.search_entities(
                 name="base_model", database_identifiers=[warehouse_id]
             )

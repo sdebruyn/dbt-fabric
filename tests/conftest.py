@@ -114,9 +114,7 @@ def _requires_spark(collection_path, tests_root):
         return False
     if parts[0] == "fabricspark":
         return True
-    if "fabricspark" in collection_path.name:
-        return True
-    return False
+    return "fabricspark" in collection_path.name
 
 
 @functools.lru_cache(maxsize=1)
@@ -137,13 +135,12 @@ def pytest_ignore_collect(collection_path, config):
 
     top_dir = parts[0]
 
-    if config.getoption("--dw", default=False):
-        if _requires_spark(collection_path, tests_root):
-            return True
+    if config.getoption("--dw", default=False) and _requires_spark(collection_path, tests_root):
+        return True
     if config.getoption("--de", default=False) and top_dir == "fabric":
         return True
 
-    if _requires_spark(collection_path, tests_root) and not _spark_extra_available():
+    if _requires_spark(collection_path, tests_root) and not _spark_extra_available():  # noqa: SIM102
         if config.getoption("--de", default=False):
             pytest.exit(
                 "The spark extra is required for FabricSpark tests. "
@@ -270,7 +267,7 @@ def project(
                     where lower(s.name) = '{self.test_schema.lower()}'
                     """
             result = self.run_sql(sql, fetch="all")
-            return {model_name: materialization for (model_name, materialization) in result}
+            return dict(result)
 
     return TestProjInfoFabric(
         project_root=project_setup.project_root,

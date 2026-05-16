@@ -75,7 +75,14 @@ line-length = 99
 
 [tool.ruff.lint]
 select = [
+    "F",   # pyflakes
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
     "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # bugbear
+    "SIM", # simplify
+    "C4",  # flake8-comprehensions
     "ERA", # no commented code
 ]
 
@@ -83,7 +90,7 @@ select = [
 known-first-party = ["dbt", "tests"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**/*" = ["ARG", "PLR0913"]
+"tests/**/*" = ["ARG", "PLR0913", "E501"]
 
 [tool.ruff.format]
 quote-style = "double"

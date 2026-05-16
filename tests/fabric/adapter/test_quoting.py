@@ -57,9 +57,7 @@ class TestBracketQuotingReservedWords:
         assert results[0].status.value == "success"
 
         result = project.run_sql(
-            "select [order], [select], [group] from {schema}.reserved_columns".format(
-                schema=project.test_schema
-            ),
+            f"select [order], [select], [group] from {project.test_schema}.reserved_columns",
             fetch="one",
         )
         assert result[0] == "hello"
@@ -84,9 +82,7 @@ class TestBracketQuotingSchemaChange:
         assert results[0].status.value == "success"
 
         result = project.run_sql(
-            "select [order], [select], [group], [table] from {schema}.incremental_reserved".format(
-                schema=project.test_schema
-            ),
+            f"select [order], [select], [group], [table] from {project.test_schema}.incremental_reserved",
             fetch="one",
         )
         assert result[0] == "hello"

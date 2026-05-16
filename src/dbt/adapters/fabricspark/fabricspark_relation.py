@@ -1,5 +1,5 @@
+import builtins
 from dataclasses import dataclass, field
-from typing import FrozenSet, Type
 
 from dbt_common.dataclass_schema import StrEnum
 
@@ -46,14 +46,14 @@ class FabricSparkRelation(BaseRelation):
     quote_character: str = "`"
     require_alias: bool = False
     information: str | None = None
-    replaceable_relations: FrozenSet[FabricSparkRelationType] = field(
+    replaceable_relations: frozenset[FabricSparkRelationType] = field(
         default_factory=lambda: frozenset(
             {
                 FabricSparkRelationType.MaterializedView,
             }
         )
     )
-    renameable_relations: FrozenSet[FabricSparkRelationType] = field(
+    renameable_relations: frozenset[FabricSparkRelationType] = field(
         default_factory=lambda: frozenset(
             {
                 FabricSparkRelationType.MaterializedView,
@@ -76,7 +76,7 @@ class FabricSparkRelation(BaseRelation):
                 return None
 
     @classproperty
-    def get_relation_type(cls) -> Type[FabricSparkRelationType]:
+    def get_relation_type(cls) -> builtins.type[FabricSparkRelationType]:
         return FabricSparkRelationType
 
     def information_schema(self, view_name=None) -> InformationSchema:

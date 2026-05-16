@@ -27,7 +27,7 @@ class FabricColumn(Column):
         return f"varchar({size if size > 0 else 'max'})"
 
     def literal(self, value: Any) -> str:
-        return "cast('{}' as {})".format(value, self.data_type)
+        return f"cast('{value}' as {self.data_type})"
 
     def is_integer(self):
         return super().is_integer() or self.dtype.lower() == "int"

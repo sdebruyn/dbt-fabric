@@ -341,7 +341,7 @@ class TestResolveEntities:
         sync = PurviewSync(client, _make_fabric_client(), _make_graph())
         node_a = _make_node(unique_id="model.test.my_model")
         node_b = _make_node(unique_id="model.other.my_model")
-        resolved = sync.resolve_entities([node_a, node_b])
+        sync.resolve_entities([node_a, node_b])
 
         client.search_entities.assert_called_once()
 

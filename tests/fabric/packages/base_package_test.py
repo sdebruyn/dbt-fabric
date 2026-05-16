@@ -52,7 +52,7 @@ class BaseDbtPackageTests:
             {
                 "macro_namespace": package_name,
                 "search_order": [
-                    f"test_dbt_package",
+                    "test_dbt_package",
                     "dbt",
                     package_name,
                 ],
@@ -63,7 +63,7 @@ class BaseDbtPackageTests:
                 {
                     "macro_namespace": "dbt_utils",
                     "search_order": [
-                        f"test_dbt_package",
+                        "test_dbt_package",
                         "dbt",
                         "dbt_utils",
                     ],

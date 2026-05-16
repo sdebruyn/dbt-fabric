@@ -162,7 +162,8 @@ class FabricTokenProvider:
                 ]
             ):
                 raise ValueError(
-                    "client_id, client_secret, and tenant_id must be provided for ActiveDirectoryServicePrincipal authentication."
+                    "client_id, client_secret, and tenant_id must be provided "
+                    "for ActiveDirectoryServicePrincipal authentication."
                 )
             credential = ClientSecretCredential(
                 client_id=self.credentials.client_id,  # type: ignore

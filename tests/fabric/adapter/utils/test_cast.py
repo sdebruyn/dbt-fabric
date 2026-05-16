@@ -1,6 +1,6 @@
 import pytest
 
-from dbt.tests.adapter.utils import base_utils, fixture_cast_bool_to_text
+from dbt.tests.adapter.utils import fixture_cast_bool_to_text
 from dbt.tests.adapter.utils.test_cast import BaseCast
 from dbt.tests.adapter.utils.test_cast_bool_to_text import BaseCastBoolToText
 from dbt.tests.adapter.utils.test_safe_cast import BaseSafeCast

@@ -648,7 +648,7 @@ class BaseSnapshotInvalidColumnNames:
         assert len(results) == 1
         manifest = get_manifest(project.project_root)
         snapshot_node = manifest.nodes["snapshot.test.snapshot_actual"]
-        snapshot_node.config.snapshot_meta_column_names == {
+        assert snapshot_node.config.snapshot_meta_column_names == {
             "dbt_valid_to": "test_valid_to",
             "dbt_valid_from": "test_valid_from",
             "dbt_scd_id": "test_scd_id",

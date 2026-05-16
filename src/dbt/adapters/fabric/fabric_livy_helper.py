@@ -32,6 +32,8 @@ class FabricLivyHelper(PythonJobHelper):
         assert isinstance(result, LivySessionResult)
         if not result.success:
             raise DbtRuntimeError(
-                f"Python statement execution failed. Logs URL: {self._livy_session.get_logs_url()}. Error: {result.error_message}"
+                f"Python statement execution failed. "
+                f"Logs URL: {self._livy_session.get_logs_url()}. "
+                f"Error: {result.error_message}"
             )
         return result.to_submission_result(compiled_code)

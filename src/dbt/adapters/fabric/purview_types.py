@@ -2,7 +2,7 @@ from typing import Any, NotRequired, TypedDict
 
 
 class PurviewEntityRef(TypedDict):
-    """Lightweight reference to a Purview entity, as returned by search and used throughout sync."""
+    """Lightweight reference to a Purview entity, as returned by search."""
 
     id: str
     name: str

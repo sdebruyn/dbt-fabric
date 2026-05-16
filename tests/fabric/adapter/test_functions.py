@@ -17,7 +17,6 @@ from dbt.tests.adapter.functions.test_udfs import (
     PythonUDFRuntimeVersionRequired,
     PythonUDFSupported,
     PythonUDFVolatilitySupport,
-    SqlUDFDefaultArgSupport,
     StableUDF,
     UDFsBasic,
 )
