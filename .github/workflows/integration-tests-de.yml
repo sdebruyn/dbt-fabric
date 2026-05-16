@@ -38,13 +38,6 @@ jobs:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
 
-      - name: Azure CLI Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
       - uses: actions/checkout@v6
 
       - name: Install uv
@@ -57,11 +50,17 @@ jobs:
 
       - name: Run DE integration tests
         env:
+          FABRIC_TEST_AUTH: workload_identity
+          FABRIC_TEST_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
-        run: uv run pytest -ra -v --de --with-python
+        run: |
+          export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
+          export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          uv run pytest -ra -v --de --with-python
 
       - name: Upload test logs
         if: always()
@@ -150,13 +149,6 @@ jobs:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
 
-      - name: Azure CLI Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
       - uses: actions/checkout@v6
         with:
           ref: ${{ steps.pr.outputs.head_sha }}
@@ -173,12 +165,17 @@ jobs:
       - name: Run DE integration tests
         id: tests
         env:
+          FABRIC_TEST_AUTH: workload_identity
+          FABRIC_TEST_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
           PYTEST_FILTER: ${{ steps.filter.outputs.expression }}
         run: |
+          export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
+          export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
           if [ -n "$PYTEST_FILTER" ]; then
             uv run pytest -ra -v --de -k "$PYTEST_FILTER"
           else
@@ -232,13 +229,6 @@ jobs:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
 
-      - name: Azure CLI Login
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          allow-no-subscriptions: true
-
       - uses: actions/checkout@v6
 
       - name: Install uv
@@ -251,12 +241,17 @@ jobs:
 
       - name: Run DE integration tests
         env:
+          FABRIC_TEST_AUTH: workload_identity
+          FABRIC_TEST_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
           PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
         run: |
+          export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
+          export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
           if [ -n "$PYTEST_FILTER" ]; then
             uv run pytest -ra -v --de -k "$PYTEST_FILTER"
           else

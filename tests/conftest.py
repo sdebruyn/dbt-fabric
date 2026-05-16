@@ -34,6 +34,17 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
         "threads": int(os.getenv("FABRIC_TEST_THREADS", 10)),
     }
 
+    auth = os.getenv("FABRIC_TEST_AUTH")
+    if auth:
+        target["authentication"] = auth
+    for key in ("tenant_id", "client_id", "federated_token_url", "federated_token_file"):
+        val = os.getenv(f"FABRIC_TEST_{key.upper()}")
+        if val:
+            target[key] = val
+    federated_header = os.getenv("FABRIC_TEST_FEDERATED_TOKEN_HEADER")
+    if federated_header:
+        target["federated_token_header"] = federated_header
+
     if adapter_type == "fabric":
         adapter_settings = {
             "type": "fabric",
