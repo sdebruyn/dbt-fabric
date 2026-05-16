@@ -1,3 +1,4 @@
+import itertools
 import json
 from unittest.mock import MagicMock, patch
 
@@ -45,7 +46,7 @@ class TestWaitForSessionReady:
         self, mock_sleep, mock_time, session, fabric_api_client
     ):
         fabric_api_client.get_livy_session_state.side_effect = ["starting", "busy", "idle"]
-        mock_time.side_effect = [0, 10, 20, 30]
+        mock_time.side_effect = itertools.count(0, 10)
 
         session.wait_for_session_ready()
 
@@ -59,7 +60,7 @@ class TestWaitForSessionReady:
     ):
         credentials.spark_session_timeout = 30
         fabric_api_client.get_livy_session_state.return_value = "starting"
-        mock_time.side_effect = [0, 31]
+        mock_time.side_effect = itertools.chain([0], itertools.repeat(31))
 
         with pytest.raises(TimeoutError, match="did not become idle"):
             session.wait_for_session_ready()
@@ -76,7 +77,7 @@ class TestWaitForSessionReady:
             json.JSONDecodeError("bad json", "", 0),
             "idle",
         ]
-        mock_time.side_effect = [0, 5, 10, 15, 20]
+        mock_time.side_effect = itertools.count(0, 5)
 
         session.wait_for_session_ready()
 
@@ -112,7 +113,7 @@ class TestWaitForSessionReady:
             requests.exceptions.ConnectionError("err8"),
             "idle",
         ]
-        mock_time.side_effect = [0, 5, 10, 15, 20, 25, 30, 35, 40]
+        mock_time.side_effect = itertools.count(0, 5)
 
         session.wait_for_session_ready()
 
@@ -154,7 +155,7 @@ class TestWaitForStatementReady:
             {"state": "running"},
             {"state": "available", "output": {"status": "ok"}},
         ]
-        mock_time.side_effect = [0, 10, 20, 30]
+        mock_time.side_effect = itertools.count(0, 10)
 
         result = session.wait_for_statement_ready(42)
 
@@ -168,7 +169,7 @@ class TestWaitForStatementReady:
     ):
         credentials.query_timeout = 60
         fabric_api_client.get_livy_statement.return_value = {"state": "running"}
-        mock_time.side_effect = [0, 61]
+        mock_time.side_effect = itertools.chain([0], itertools.repeat(61))
 
         with pytest.raises(TimeoutError, match="did not become available"):
             session.wait_for_statement_ready(42)
@@ -235,7 +236,7 @@ class TestWaitAndGetStatementResult:
     ):
         credentials.query_timeout = 10
         fabric_api_client.get_livy_statement.return_value = {"state": "running"}
-        mock_time.side_effect = [0, 11]
+        mock_time.side_effect = itertools.chain([0], itertools.repeat(11))
 
         result = session.wait_and_get_statement_result(7)
 
