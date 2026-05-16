@@ -1,3 +1,5 @@
+import functools
+import importlib.util
 import os
 from pathlib import Path
 
@@ -87,6 +89,54 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "requires_purview: skip unless FABRIC_TEST_PURVIEW_ENDPOINT is set"
     )
+
+
+def _requires_spark(collection_path, tests_root):
+    rel = collection_path.relative_to(tests_root)
+    parts = rel.parts
+    if not parts:
+        return False
+    if parts[0] == "fabricspark":
+        return True
+    if "fabricspark" in collection_path.name:
+        return True
+    return False
+
+
+@functools.lru_cache(maxsize=1)
+def _spark_extra_available():
+    return importlib.util.find_spec("dbt.adapters.spark") is not None
+
+
+def pytest_ignore_collect(collection_path, config):
+    tests_root = Path(__file__).parent
+    try:
+        rel = collection_path.relative_to(tests_root)
+    except ValueError:
+        return None
+
+    parts = rel.parts
+    if not parts:
+        return None
+
+    top_dir = parts[0]
+
+    if config.getoption("--dw", default=False):
+        if _requires_spark(collection_path, tests_root):
+            return True
+    if config.getoption("--de", default=False) and top_dir == "fabric":
+        return True
+
+    if _requires_spark(collection_path, tests_root) and not _spark_extra_available():
+        if config.getoption("--de", default=False):
+            pytest.exit(
+                "The spark extra is required for FabricSpark tests. "
+                "Install with: uv sync --extra spark",
+                returncode=4,
+            )
+        return True
+
+    return None
 
 
 def pytest_collection_modifyitems(config, items):
