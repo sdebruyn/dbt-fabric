@@ -15,7 +15,7 @@ class TestDbtDate(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return "0.10.1"
+        return "0.17.2"
 
     @pytest.fixture(scope="class")
     def macros(self):

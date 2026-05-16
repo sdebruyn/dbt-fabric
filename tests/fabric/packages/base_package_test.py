@@ -10,7 +10,7 @@ class BaseDbtPackageTests:
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
-        raise NotImplementedError("Subclasses must implement package_repo")
+        raise NotImplementedError("Subclasses must provide a git URL for the package repo")
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
