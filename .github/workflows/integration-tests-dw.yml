@@ -3,6 +3,8 @@ name: "DW integration tests"
 on:
   schedule:
     - cron: "0 2 * * 0"
+  issue_comment:
+    types: [created]
   workflow_dispatch:
     inputs:
       pytest_filter:
@@ -15,17 +17,11 @@ on:
         required: false
         type: boolean
         default: false
-  pull_request:
-    branches:
-      - main
-    paths:
-      - 'src/dbt/adapters/fabric/**'
-      - 'src/dbt/include/fabric/**'
-      - 'tests/fabric/**'
-      - 'tests/conftest.py'
-      - 'pyproject.toml'
-      - 'uv.lock'
-      - '.github/workflows/integration-tests-dw.yml'
+      pr_number:
+        description: "PR number to test (leave empty for current branch)"
+        required: false
+        type: string
+        default: ""
   push:
     branches:
       - main
@@ -40,35 +36,27 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
   id-token: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: dw-${{ github.event.issue.number || github.event.inputs.pr_number || 'main' }}
   cancel-in-progress: false
 
 jobs:
-  resolve-matrix:
-    name: Resolve Python matrix
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set.outputs.matrix }}
-    steps:
-      - id: set
-        run: |
-          if [[ "${{ github.event_name }}" == "schedule" ]]; then
-            echo 'matrix=[{"python_version":"3.11","dwh_name":"ci02"},{"python_version":"3.12","dwh_name":"ci03"},{"python_version":"3.13","dwh_name":"ci04"}]' >> "$GITHUB_OUTPUT"
-          else
-            echo 'matrix=[{"python_version":"3.13","dwh_name":"ci04"}]' >> "$GITHUB_OUTPUT"
-          fi
-
-  integration-tests-fabric-dw:
-    name: DW tests (Python ${{ matrix.python_version }})
-    needs: resolve-matrix
+  scheduled-dw-tests:
+    name: DW tests (scheduled, Python ${{ matrix.python_version }})
+    if: github.event_name == 'schedule'
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJson(needs.resolve-matrix.outputs.matrix) }}
-
+        include:
+          - python_version: "3.11"
+            dwh_name: ci02
+          - python_version: "3.12"
+            dwh_name: ci03
+          - python_version: "3.13"
+            dwh_name: ci04
     runs-on: ubuntu-latest
     environment: azure
     steps:
@@ -93,23 +81,254 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_DWH_NAME: ${{ matrix.dwh_name }}
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_LIVY_SESSION_NAME: ${{ (github.event_name == 'schedule' || inputs.with_python) && github.run_id || '' }}
-          PYTEST_FILTER: ${{ inputs.pytest_filter || '' }}
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}-${{ matrix.dwh_name }}
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
           export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
-          ARGS="-ra -v --dw"
-          if [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.with_python }}" == "true" ]]; then
-            ARGS="$ARGS --with-python"
-          fi
-          if [ -n "$PYTEST_FILTER" ]; then
-            ARGS="$ARGS -k $PYTEST_FILTER"
-          fi
-          uv run pytest $ARGS
+          uv run pytest -ra -v --dw --with-python
 
       - name: Upload test logs
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: logs-dw-${{ matrix.python_version }}-${{ matrix.dwh_name }}
+          path: logs/
+
+  push-dw-tests:
+    name: DW tests (push to main)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment: azure
+    steps:
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
+
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Run DW integration tests
+        env:
+          FABRIC_TEST_AUTH: workload_identity
+          FABRIC_TEST_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          FABRIC_TEST_WORKSPACE_NAME: adapter-ci
+          FABRIC_TEST_DWH_NAME: ci04
+          FABRIC_TEST_LAKEHOUSE_NAME: cilh
+        run: |
+          export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
+          export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          uv run pytest -ra -v --dw
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-dw-push
+          path: logs/
+
+  on-demand-dw-tests:
+    name: DW tests (on-demand)
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number != '') ||
+      (github.event_name == 'issue_comment'
+       && github.event.issue.pull_request
+       && (github.event.comment.body == '/test-dw' || startsWith(github.event.comment.body, '/test-dw '))
+       && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
+    runs-on: ubuntu-latest
+    environment: azure
+    timeout-minutes: 60
+
+    steps:
+      - name: Resolve PR metadata
+        id: pr
+        uses: actions/github-script@v7
+        env:
+          INPUT_PR_NUMBER: ${{ github.event.inputs.pr_number }}
+        with:
+          script: |
+            const prNumber = context.eventName === 'issue_comment'
+              ? context.issue.number
+              : parseInt(process.env.INPUT_PR_NUMBER);
+
+            if (!prNumber) {
+              core.setFailed('No PR number provided');
+              return;
+            }
+
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            if (pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) {
+              core.setFailed('Cannot run tests on PRs from forks');
+              return;
+            }
+
+            core.setOutput('number', prNumber);
+            core.setOutput('head_ref', pr.head.ref);
+            core.setOutput('head_sha', pr.head.sha);
+
+      - name: Parse pytest filter
+        id: filter
+        uses: actions/github-script@v7
+        env:
+          INPUT_PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
+        with:
+          script: |
+            let rawFilter = '';
+            if (context.eventName === 'issue_comment') {
+              const body = context.payload.comment.body;
+              const match = body.match(/^\/test-dw\s+(.*)/);
+              rawFilter = match ? match[1].split('\n')[0].trim() : '';
+            } else {
+              rawFilter = process.env.INPUT_PYTEST_FILTER || '';
+            }
+
+            const sanitized = rawFilter.replace(/[^a-zA-Z0-9 _()]/g, '');
+            core.setOutput('expression', sanitized);
+            core.setOutput('has_filter', sanitized.length > 0 ? 'true' : 'false');
+            core.info(`Pytest filter: ${sanitized || '(none — running all DW tests)'}`);
+
+      - name: Acknowledge comment
+        if: github.event_name == 'issue_comment'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket',
+            });
+
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.pr.outputs.head_sha }}
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Run DW integration tests
+        id: tests
+        env:
+          FABRIC_TEST_AUTH: workload_identity
+          FABRIC_TEST_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          FABRIC_TEST_WORKSPACE_NAME: adapter-ci
+          FABRIC_TEST_DWH_NAME: ci04
+          FABRIC_TEST_LAKEHOUSE_NAME: cilh
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+          PYTEST_FILTER: ${{ steps.filter.outputs.expression }}
+        run: |
+          export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
+          export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          if [ -n "$PYTEST_FILTER" ]; then
+            uv run pytest -ra -v --dw --with-python -k "$PYTEST_FILTER"
+          else
+            uv run pytest -ra -v --dw --with-python
+          fi
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-dw-on-demand-${{ steps.pr.outputs.number }}
+          path: logs/
+
+      - name: Report results
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          FILTER_EXPR: ${{ steps.filter.outputs.expression }}
+          TEST_OUTCOME: ${{ steps.tests.outcome }}
+        with:
+          script: |
+            const prNumber = ${{ steps.pr.outputs.number }};
+            const success = process.env.TEST_OUTCOME === 'success';
+            const filter = process.env.FILTER_EXPR || '(all DW tests)';
+            const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+
+            const emoji = success ? ':white_check_mark:' : ':x:';
+            const status = success ? 'passed' : 'failed';
+
+            const body = [
+              `${emoji} **DW integration tests ${status}**`,
+              ``,
+              `**Filter:** \`${filter}\``,
+              `**Run:** ${runUrl}`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              body,
+            });
+
+  dispatch-dw-tests:
+    name: DW tests (dispatch, no PR)
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number == ''
+    runs-on: ubuntu-latest
+    environment: azure
+    timeout-minutes: 60
+    steps:
+      - name: Install mssql-python system dependencies
+        run: sudo apt-get update && sudo apt-get install -y libltdl7
+
+      - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --all-groups
+
+      - name: Run DW integration tests
+        env:
+          FABRIC_TEST_AUTH: workload_identity
+          FABRIC_TEST_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          FABRIC_TEST_WORKSPACE_NAME: adapter-ci
+          FABRIC_TEST_DWH_NAME: ci04
+          FABRIC_TEST_LAKEHOUSE_NAME: cilh
+          FABRIC_TEST_LIVY_SESSION_NAME: ${{ inputs.with_python && github.run_id || '' }}
+          PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
+        run: |
+          export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
+          export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
+          ARGS="-ra -v --dw"
+          if [[ "${{ inputs.with_python }}" == "true" ]]; then
+            ARGS="$ARGS --with-python"
+          fi
+          if [ -n "$PYTEST_FILTER" ]; then
+            uv run pytest $ARGS -k "$PYTEST_FILTER"
+          else
+            uv run pytest $ARGS
+          fi
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: logs-dw-dispatch
           path: logs/
