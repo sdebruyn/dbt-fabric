@@ -1,7 +1,29 @@
+from pathlib import Path
+
 import pytest
 
 from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+
+_FISCAL_PERIODS_MACRO = (
+    Path(__file__).resolve().parents[3]
+    / "src/dbt/include/fabric/macros/dbt_package_support/dbt_date/fiscal_date"
+    / "get_fiscal_periods.sql"
+).read_text()
+
+_DIM_DATE_FISCAL_SQL = "{{ get_fiscal_periods(ref('dates'), year_end_month=1, week_start_day=1) }}"
+
+_DIM_DATE_SQL = """
+select
+    d.*,
+    f.fiscal_week_of_year,
+    f.fiscal_week_of_period,
+    f.fiscal_period_number,
+    f.fiscal_quarter_number,
+    f.fiscal_period_of_quarter
+from {{ ref("dates") }} d
+left join {{ ref("dim_date_fiscal") }} f on d.date_day = f.date_day
+""".strip()
 
 
 class TestDbtDate(BaseDbtPackageTests):
@@ -18,18 +40,10 @@ class TestDbtDate(BaseDbtPackageTests):
         return "0.17.2"
 
     @pytest.fixture(scope="class")
-    def macros(self):
+    def models(self):
         return {
-            "fabric_test_helpers.sql": """
-{% macro fabric__get_test_week_of_year() -%}
-    {{ return([49, 49]) }}
-{%- endmacro %}
-
-{% macro fabric__get_test_timestamps() -%}
-    {{ return(['2021-06-07 14:35:20.000000',
-                '2021-06-07 14:35:20.000000']) }}
-{%- endmacro %}
-"""
+            "dim_date.sql": _DIM_DATE_SQL,
+            "dim_date_fiscal.sql": _DIM_DATE_FISCAL_SQL,
         }
 
     @pytest.fixture(scope="class")
@@ -39,6 +53,22 @@ class TestDbtDate(BaseDbtPackageTests):
                 "dim_date": {"+enabled": False},
                 "dim_date_fiscal": {"+enabled": False},
             }
+        }
+
+    @pytest.fixture(scope="class")
+    def macros(self):
+        return {
+            "get_fiscal_periods.sql": _FISCAL_PERIODS_MACRO,
+            "fabric_test_helpers.sql": """
+{% macro fabric__get_test_week_of_year() -%}
+    {{ return([49, 49]) }}
+{%- endmacro %}
+
+{% macro fabric__get_test_timestamps() -%}
+    {{ return(['2021-06-07 14:35:20.000000',
+                '2021-06-07 14:35:20.000000']) }}
+{%- endmacro %}
+""",
         }
 
     @pytest.fixture(scope="class")
