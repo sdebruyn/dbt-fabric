@@ -1,4 +1,5 @@
 import functools
+import importlib.util
 import os
 from pathlib import Path
 
@@ -104,12 +105,7 @@ def _requires_spark(collection_path, tests_root):
 
 @functools.lru_cache(maxsize=1)
 def _spark_extra_available():
-    try:
-        import dbt.adapters.spark  # noqa: F401
-
-        return True
-    except ModuleNotFoundError:
-        return False
+    return importlib.util.find_spec("dbt.adapters.spark") is not None
 
 
 def pytest_ignore_collect(collection_path, config):
