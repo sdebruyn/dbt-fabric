@@ -10,7 +10,7 @@ class FabricSparkColumn(SparkColumn):
     column_comment: str | None = None
 
     @classmethod
-    def string_type(cls, size: int) -> str:
+    def string_type(cls, _size: int) -> str:
         return "string"
 
     def is_string(self) -> bool:
