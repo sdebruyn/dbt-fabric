@@ -34,6 +34,7 @@ nav = [
     { "Lakehouse (Spark SQL)" = "lakehouse.md" },
     { "Microsoft Purview integration" = "purview-integration.md" },
     { "CLUSTER BY" = "cluster-by.md" },
+    { "Statistics" = "statistics.md" },
     { "Python models" = "python-models.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
     { "External tables" = "external-tables.md" },
