@@ -3,6 +3,7 @@ import importlib.util
 import os
 from pathlib import Path
 
+import py
 import pytest
 import yaml
 
@@ -96,6 +97,12 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "--dw", action="store_true", default=False, help="run only Fabric T-SQL tests"
+    )
+    parser.addoption(
+        "--remote",
+        action="store_true",
+        default=False,
+        help="Run FabricSpark tests as a remote Spark job on Fabric infrastructure",
     )
 
 
@@ -191,6 +198,51 @@ def pytest_collection_modifyitems(config, items):
             )
 
 
+def _on_fabric_project_base() -> Path | None:
+    mode = os.getenv("FABRIC_TEST_SPARK_EXEC_MODE", "").lower()
+    if mode == "remote":
+        return Path("/lakehouse/default/Files/dbt-test-artifacts")
+    elif mode == "mounted":
+        path = os.getenv("FABRIC_TEST_ONELAKE_PATH")
+        if not path:
+            raise ValueError("FABRIC_TEST_ONELAKE_PATH required when SPARK_EXEC_MODE=mounted")
+        return Path(path) / "dbt-test-artifacts"
+    return None
+
+
+def pytest_runtestloop(session):
+    if not session.config.getoption("--remote", default=False):
+        return None
+    if not session.config.getoption("--de", default=False):
+        pytest.exit("--remote requires --de (FabricSpark tests only)", returncode=4)
+    from tests.spark_remote.conftest_plugin import remote_runtestloop
+
+    return remote_runtestloop(session)
+
+
+@pytest.fixture(scope="class")
+def project_root(tmpdir_factory, prefix):
+    base = _on_fabric_project_base()
+    if base is None:
+        project_root = tmpdir_factory.mktemp("project")
+        print(f"\n=== Test project_root: {project_root}")
+        return project_root
+    path = base / prefix / "project"
+    path.mkdir(parents=True, exist_ok=True)
+    print(f"\n=== Test project_root: {path}")
+    return py.path.local(path)
+
+
+@pytest.fixture(scope="class")
+def profiles_root(tmpdir_factory, prefix):
+    base = _on_fabric_project_base()
+    if base is None:
+        return tmpdir_factory.mktemp("profile")
+    path = base / prefix / "profile"
+    path.mkdir(parents=True, exist_ok=True)
+    return py.path.local(path)
+
+
 @pytest.fixture(scope="session", autouse=True)
 def livy_session_lifecycle():
     session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
@@ -229,10 +281,15 @@ def livy_session_lifecycle():
 
 @pytest.fixture(scope="class")
 def logs_dir(request, prefix):
-    dbt_log_dir = os.path.join(request.config.rootdir, "logs", prefix)
+    base = _on_fabric_project_base()
+    if base is not None:
+        dbt_log_dir = str(base / prefix / "logs")
+    else:
+        dbt_log_dir = os.path.join(request.config.rootdir, "logs", prefix)
+    os.makedirs(dbt_log_dir, exist_ok=True)
     print(f"\n=== Test logs_dir: {dbt_log_dir}\n")
-    os.environ["DBT_LOG_PATH"] = str(dbt_log_dir)
-    yield str(Path(dbt_log_dir))
+    os.environ["DBT_LOG_PATH"] = dbt_log_dir
+    yield dbt_log_dir
     del os.environ["DBT_LOG_PATH"]
 
 
