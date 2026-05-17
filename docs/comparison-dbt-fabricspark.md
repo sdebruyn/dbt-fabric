@@ -194,7 +194,7 @@ This adapter uses proper instance-based encapsulation: `FabricTokenProvider` (pe
 
 The upstream registers `atexit` handlers at module import time (in both `singleton_livy.py` and `concurrent_livy.py`) to delete Livy sessions and HC sessions on process exit. This is fragile: `atexit` handlers run in undefined order, logging/network may already be torn down, and merely importing the module registers the handler even if no session was created. The HC implementation adds a second `atexit` handler with a global `_active_sessions` set, compounding the global mutable state problem.
 
-This adapter manages session lifecycle through dbt's normal connection manager `close()` path — both for singleton Livy sessions and high-concurrency sessions.
+This adapter manages session lifecycle through dbt's normal connection manager `close()` path.
 
 ### Exception swallowing
 

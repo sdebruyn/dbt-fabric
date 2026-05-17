@@ -241,15 +241,6 @@ class HighConcurrencyLivySession:
                 status_code=output.get("status"),
                 json_data=output.get("data", {}).get("application/json", {}),
             )
-        except TimeoutError as e:
-            logger.error(
-                f"Timeout (> {self._fabric_api_client._credentials.query_timeout}s) while "
-                f"waiting for HC statement to be ready. Logs URL: {self.get_logs_url()}"
-            )
-            logger.exception(e)
-            return LivySessionResult(
-                statement_id=statement_id, success=False, error_message=str(e)
-            )
         except FabricApiError as e:
             if e.status_code == 404:
                 self._state.is_dead = True

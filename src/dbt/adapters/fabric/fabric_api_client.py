@@ -569,41 +569,43 @@ class FabricApiClient:
         response = self._api_get(url)
         return response.json()
 
-    def submit_hc_sql_statement(self, session_id: str, repl_id: str, code: str) -> int:
+    def submit_hc_sql_statement(self, livy_session_id: str, repl_id: str, code: str) -> int:
         """Submit a SQL statement via an HC REPL. Returns the statement ID."""
         url = (
             self.get_livy_base_api_uri()
-            + f"/highConcurrencySessions/{session_id}"
+            + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements"
         )
         response = self._api_post(url, {"code": code, "kind": "sql"})
         return response.json()["id"]
 
-    def submit_hc_python_statement(self, session_id: str, repl_id: str, code: str) -> int:
+    def submit_hc_python_statement(self, livy_session_id: str, repl_id: str, code: str) -> int:
         """Submit a Python statement via an HC REPL. Returns the statement ID."""
         url = (
             self.get_livy_base_api_uri()
-            + f"/highConcurrencySessions/{session_id}"
+            + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements"
         )
         response = self._api_post(url, {"code": code, "kind": "pyspark"})
         return response.json()["id"]
 
-    def get_hc_statement(self, session_id: str, repl_id: str, statement_id: int) -> dict[str, Any]:
+    def get_hc_statement(
+        self, livy_session_id: str, repl_id: str, statement_id: int
+    ) -> dict[str, Any]:
         """Fetch the status and output of an HC REPL statement."""
         url = (
             self.get_livy_base_api_uri()
-            + f"/highConcurrencySessions/{session_id}"
+            + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements/{statement_id}"
         )
         response = self._api_get(url)
         return response.json()
 
-    def cancel_hc_statement(self, session_id: str, repl_id: str, statement_id: int) -> str:
+    def cancel_hc_statement(self, livy_session_id: str, repl_id: str, statement_id: int) -> str:
         """Cancel a running HC REPL statement."""
         url = (
             self.get_livy_base_api_uri()
-            + f"/highConcurrencySessions/{session_id}"
+            + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements/{statement_id}/cancel"
         )
         response = self._api_post(url, {})
