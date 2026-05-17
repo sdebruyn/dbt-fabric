@@ -42,7 +42,7 @@ class TestDbtArtifacts(BaseDbtPackageTests):
         return {
             "dbt_artifacts": {
                 "+file_format": "delta",
-            }
+            },
         }
 
     def test_package(self, project, dbt_core_bug_workaround):
