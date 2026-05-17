@@ -43,7 +43,7 @@ year_week_ends as (
         weeks d
     where
         d.month_of_year = {{ year_end_month }}
-    {#- Upstream: GROUP BY 1,2 -#}
+    {#- Upstream uses GROUP BY 1,2. T-SQL doesn't support positional GROUP BY. -#}
     group by
         d.year_number - {{ shift_year }},
         d.week_end_date

@@ -12,23 +12,8 @@
 {%- set end_date = dbt_date.tomorrow() -%}
 {%- endif -%}
 
-{#- Upstream calls get_base_dates() as nested subquery. Fabric can't nest CTEs, so we inline date_spine + base_dates. -#}
-with date_spine as
-(
-
-    {{ dbt_date.date_spine(
-        datepart=datepart,
-        start_date=start_date,
-        end_date=end_date,
-       )
-    }}
-
-),
-base_dates as (
-    select
-        cast(d.date_{{ datepart }} as {{ dbt.type_timestamp() }}) as date_{{ datepart }}
-    from
-        date_spine d
+with base_dates as (
+    {{ dbt_date.get_base_dates(start_date, end_date) }}
 ),
 dates_with_prior_year_dates as (
 
