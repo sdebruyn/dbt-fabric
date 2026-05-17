@@ -36,6 +36,7 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 |---|---|---|
 | [dbt-utils](dbt-utils.md) | 1.3.3 | Yes |
 | [dbt-date](dbt-date.md) | 0.17.2 | Yes |
+| [dbt-codegen](dbt-codegen.md) | 0.14.1 | Yes |
 | [dbt-expectations](dbt-expectations.md) | 0.10.10 | Yes |
 | [dbt-audit-helper](dbt-audit-helper.md) | -- | No |
 | [dbt-external-tables](dbt-external-tables.md) | 0.11.0 | Yes |

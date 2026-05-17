@@ -18,6 +18,15 @@ class TestDbtCodegen(BaseDbtPackageTests):
         return "0.14.1"
 
     @pytest.fixture(scope="class")
+    def packages(self, package_repo, package_revision, dbt_utils_version):
+        return {
+            "packages": [
+                {"git": package_repo, "revision": package_revision},
+                {"package": "dbt-labs/dbt_utils", "version": dbt_utils_version},
+            ]
+        }
+
+    @pytest.fixture(scope="class")
     def models(self):
         return {
             "model_data_a.sql": "select * from {{ ref('data__a_relation') }}",
@@ -32,6 +41,10 @@ class TestDbtCodegen(BaseDbtPackageTests):
             "data__a_relation.csv": "col_a,col_b\n1,a\n2,b\n",
             "data__b_relation.csv": "col_a,col_b\n3,c\n4,d\n",
         }
+
+    @pytest.fixture(scope="class")
+    def seeds_config(self):
+        return {"+schema": "raw_data"}
 
     @pytest.fixture(scope="class")
     def tests(self):
@@ -52,31 +65,13 @@ class TestDbtCodegen(BaseDbtPackageTests):
         }
 
     @pytest.fixture(scope="class")
-    def packages(self, package_repo, package_revision):
-        return {
-            "packages": [
-                {"git": package_repo, "revision": package_revision},
-                {"package": "dbt-labs/dbt_utils", "version": "1.3.0"},
-            ]
-        }
-
-    @pytest.fixture(scope="class")
-    def project_config_update(self, project_vars):
-        return {
-            "name": "test_dbt_package",
-            "vars": project_vars,
-            "seeds": {"+schema": "raw_data"},
-            "dispatch": [
-                {
-                    "macro_namespace": "dbt_utils",
-                    "search_order": ["test_dbt_package", "dbt", "dbt_utils"],
-                },
-                {
-                    "macro_namespace": "codegen",
-                    "search_order": ["test_dbt_package", "dbt", "codegen"],
-                },
-            ],
-        }
+    def extra_dispatches(self):
+        return [
+            {
+                "macro_namespace": "codegen",
+                "search_order": ["test_dbt_package", "dbt", "codegen"],
+            }
+        ]
 
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
@@ -179,7 +174,7 @@ models:
         description: ""
 
       - name: col_b
-        data_type: varchar
+        data_type: varchar(16)
         description: ""
 
 {% endset %}
