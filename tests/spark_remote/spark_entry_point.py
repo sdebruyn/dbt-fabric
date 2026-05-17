@@ -1,9 +1,9 @@
 """Entry point for remote pytest execution on Fabric Spark.
 
-This script is submitted as a Spark Job Definition. It installs the project
-and its dependencies, then runs pytest with the provided arguments. Results
-are written to junitxml on the lakehouse filesystem for the local pytest
-session to parse.
+This script is submitted as a Spark Job Definition. It receives a run ID
+as its first argument (used to locate the per-run project and artifacts
+directories on the lakehouse), installs the project and its dependencies,
+then runs pytest with the remaining arguments.
 """
 
 from __future__ import annotations
@@ -13,35 +13,40 @@ import subprocess
 import sys
 
 LAKEHOUSE_ROOT = "/lakehouse/default"
-PROJECT_DIR = f"{LAKEHOUSE_ROOT}/Files/dbt-fabric-tests"
-ARTIFACTS_DIR = f"{LAKEHOUSE_ROOT}/Files/dbt-test-artifacts"
 
 
 def main() -> None:
     """Install dependencies, configure env, run pytest, and write exit code.
 
-    Reads command-line arguments from sys.argv (forwarded by the Spark Job Definition)
-    and passes them to pytest. Ensures --junitxml is set so results can be collected.
+    The first positional argument is the run ID, which determines the project
+    and artifacts paths on the lakehouse. All remaining arguments are forwarded
+    to pytest. Ensures --junitxml is set so results can be collected.
 
     Raises:
         subprocess.CalledProcessError: If pip install fails.
         SystemExit: Always exits with the pytest exit code.
     """
-    if os.path.isdir(ARTIFACTS_DIR):
-        for f in os.listdir(ARTIFACTS_DIR):
-            os.remove(os.path.join(ARTIFACTS_DIR, f))
-    os.makedirs(ARTIFACTS_DIR, exist_ok=True)
+    run_id = sys.argv[1]
+    pytest_args = sys.argv[2:]
 
-    requirements_file = f"{PROJECT_DIR}/requirements-remote.txt"
+    project_dir = f"{LAKEHOUSE_ROOT}/Files/dbt-remote-runs/{run_id}/project"
+    artifacts_dir = f"{LAKEHOUSE_ROOT}/Files/dbt-remote-runs/{run_id}/artifacts"
+
+    if os.path.isdir(artifacts_dir):
+        for f in os.listdir(artifacts_dir):
+            os.remove(os.path.join(artifacts_dir, f))
+    os.makedirs(artifacts_dir, exist_ok=True)
+
+    requirements_file = f"{project_dir}/requirements-remote.txt"
     subprocess.check_call(
         [sys.executable, "-m", "pip", "install", "-r", requirements_file, "--quiet"],
     )
 
     subprocess.check_call(
-        [sys.executable, "-m", "pip", "install", "-e", PROJECT_DIR, "--no-deps", "--quiet"],
+        [sys.executable, "-m", "pip", "install", "-e", project_dir, "--no-deps", "--quiet"],
     )
 
-    env_file = f"{PROJECT_DIR}/test.env.remote"
+    env_file = f"{project_dir}/test.env.remote"
     if os.path.exists(env_file):
         from dotenv import load_dotenv
 
@@ -49,18 +54,16 @@ def main() -> None:
 
     os.environ["FABRIC_TEST_SPARK_EXEC_MODE"] = "remote"
 
-    pytest_args = sys.argv[1:]
-
     has_junitxml = any(arg.startswith("--junitxml") for arg in pytest_args)
     if not has_junitxml:
-        pytest_args.extend(["--junitxml", f"{ARTIFACTS_DIR}/results.xml"])
+        pytest_args.extend(["--junitxml", f"{artifacts_dir}/results.xml"])
 
     exit_code = subprocess.call(
         [sys.executable, "-m", "pytest"] + pytest_args,
-        cwd=PROJECT_DIR,
+        cwd=project_dir,
     )
 
-    exit_code_file = f"{ARTIFACTS_DIR}/exit_code.txt"
+    exit_code_file = f"{artifacts_dir}/exit_code.txt"
     with open(exit_code_file, "w") as f:
         f.write(str(exit_code))
 

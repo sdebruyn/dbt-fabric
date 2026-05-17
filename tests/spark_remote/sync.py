@@ -7,28 +7,34 @@ from pathlib import Path
 EXCLUDE_PATHS = (
     ".venv;.git;__pycache__;.cache;.claude;logs;.ruff_cache;"
     ".pytest_cache;.eggs;dist;build;site;.vscode;node_modules;"
-    "remote-test-results;dbt-test-artifacts"
+    "remote-test-results"
 )
 EXCLUDE_PATTERNS = "*.pyc;*.pyo;*.egg-info"
 
 
 class ProjectSync:
-    """Syncs the local project to/from a lakehouse on OneLake via azcopy.
+    """Syncs the local project to/from a per-run lakehouse directory via azcopy.
+
+    Each run gets isolated paths on OneLake to allow concurrent execution:
+    ``dbt-remote-runs/{run_id}/project/`` for the project and
+    ``dbt-remote-runs/{run_id}/artifacts/`` for test results.
 
     Args:
         workspace_id: Fabric workspace GUID.
         lakehouse_id: Lakehouse item GUID.
         project_root: Local path to the dbt-fabric project root.
+        run_id: Unique identifier for this test run.
     """
 
-    def __init__(self, workspace_id: str, lakehouse_id: str, project_root: Path):
+    def __init__(self, workspace_id: str, lakehouse_id: str, project_root: Path, run_id: str):
         self._project_root = project_root
+        self._run_id = run_id
         self._onelake_base = (
             f"https://onelake.dfs.fabric.microsoft.com/{workspace_id}/{lakehouse_id}/Files"
         )
 
     def upload(self) -> None:
-        """Upload the project directory to the lakehouse, excluding build artifacts.
+        """Upload the project directory to a per-run lakehouse path.
 
         Generates a requirements file and sanitized test.env before syncing.
 
@@ -38,7 +44,7 @@ class ProjectSync:
         self._generate_requirements()
         self._generate_test_env_remote()
 
-        target = f"{self._onelake_base}/dbt-fabric-tests"
+        target = f"{self._onelake_base}/dbt-remote-runs/{self._run_id}/project"
         print(f"  Syncing: {self._project_root} -> {target}")
 
         cmd = [
@@ -58,7 +64,7 @@ class ProjectSync:
         print("  Sync complete.")
 
     def download_artifacts(self, local_dir: Path) -> Path | None:
-        """Download test artifacts (junitxml) from the lakehouse.
+        """Download test artifacts (junitxml) from the per-run lakehouse path.
 
         Args:
             local_dir: Local directory to sync artifacts into.
@@ -69,7 +75,7 @@ class ProjectSync:
         Raises:
             RuntimeError: If azcopy sync fails.
         """
-        source = f"{self._onelake_base}/dbt-test-artifacts"
+        source = f"{self._onelake_base}/dbt-remote-runs/{self._run_id}/artifacts"
         local_dir.mkdir(parents=True, exist_ok=True)
 
         cmd = [

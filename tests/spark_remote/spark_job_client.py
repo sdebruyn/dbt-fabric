@@ -141,6 +141,18 @@ class SparkJobClient:
         job_instance_id = parts[-1] if parts else ""
         return item_id, job_instance_id
 
+    def delete_spark_job_definition(self, item_id: str) -> None:
+        """Delete a Spark Job Definition by ID.
+
+        Args:
+            item_id: ID of the Spark Job Definition to delete.
+
+        Raises:
+            FabricApiError: If the API request fails.
+        """
+        url = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions/{item_id}"
+        self._api_client._api_delete(url)
+
     def get_job_instance(self, item_id: str, job_instance_id: str) -> dict:
         """Get the current state of a job instance.
 
