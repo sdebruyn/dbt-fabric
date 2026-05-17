@@ -37,7 +37,7 @@ null
 {%- if dbt_profiler.is_numeric_dtype(data_type) and not dbt_profiler.is_struct_dtype(data_type) -%}
 avg({{ adapter.quote(column_name) }})
 {%- elif dbt_profiler.is_logical_dtype(data_type) -%}
-avg(case when {{ adapter.quote(column_name) }} = 1 then 1 else 0 end)
+avg(case when {{ adapter.quote(column_name) }} = 1 then 1 when {{ adapter.quote(column_name) }} = 0 then 0 else null end)
 {%- else -%}
 cast(null as {{ dbt.type_numeric() }})
 {%- endif -%}

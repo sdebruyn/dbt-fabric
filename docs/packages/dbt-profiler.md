@@ -26,7 +26,7 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | `measure_median` | ✅ **(override)** | Uses `PERCENTILE_CONT` window function with `TOP 1` (T-SQL has no `MEDIAN()`) |
 | `measure_std_dev_population` | ✅ **(override)** | Uses T-SQL `STDEVP()` instead of `stddev_pop()` |
 | `measure_std_dev_sample` | ✅ **(override)** | Uses T-SQL `STDEV()` instead of `stddev_samp()` |
-| `measure_is_unique` | ✅ **(override)** | Returns `0`/`1` instead of `TRUE`/`FALSE` (T-SQL has no boolean type) |
+| `measure_is_unique` | ✅ **(override)** | Returns `'TRUE'`/`'FALSE'` strings (T-SQL has no boolean type) |
 | `measure_count` | ✅ | |
 | `measure_count_nulls` | ✅ | |
 | `measure_count_distinct` | ✅ | |

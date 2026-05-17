@@ -19,8 +19,7 @@
 {% endmacro %}
 
 {% macro fabric__is_date_or_time_dtype(dtype) %}
-  {% set is_date_or_time = dtype.startswith("timestamp")
-    or dtype.startswith("date")
+  {% set is_date_or_time = dtype.startswith("date")
     or dtype.startswith("time")
     or dtype == "smalldatetime" %}
   {% do return(is_date_or_time) %}
