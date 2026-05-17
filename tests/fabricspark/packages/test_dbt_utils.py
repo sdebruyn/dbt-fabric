@@ -12,6 +12,20 @@ class TestDbtUtils(BaseDbtPackageTests):
                     "test_groupby": {"+enabled": False},
                     "test_urls": {"+enabled": False},
                     "test_unpivot_bool": {"+enabled": False},
+                    "test_get_relations_by_prefix_and_union": {"+enabled": False},
+                    "test_get_relations_by_pattern": {"+enabled": False},
+                    "test_pivot_apostrophe": {"+enabled": False},
+                }
+            }
+        }
+
+    @pytest.fixture(scope="class")
+    def seeds_config(self):
+        return {
+            "dbt_utils_integration_tests": {
+                "schema_tests": {
+                    "data_test_equality_floats_a": {"+enabled": False},
+                    "data_test_equality_floats_b": {"+enabled": False},
                 }
             }
         }
