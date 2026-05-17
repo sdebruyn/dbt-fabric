@@ -1,4 +1,4 @@
-# CLUSTER BY
+# Data clustering
 
 Fabric Data Warehouse supports [automatic data clustering](https://learn.microsoft.com/fabric/data-warehouse/statistics#automatic-clustering?WT.mc_id=MVP_310840) via the `CLUSTER BY` clause on `CREATE TABLE` statements. Clustering organizes data physically on disk based on the specified columns, which can significantly improve query performance for filters and joins on those columns.
 
