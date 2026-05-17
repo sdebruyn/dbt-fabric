@@ -8,8 +8,8 @@ This document provides a detailed technical comparison between this adapter ([sd
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **Fabric Data Warehouse (T-SQL)** | ✅ (`fabric` adapter type) | ✅ (`fabric` adapter type) |
-| **Fabric Lakehouse / Spark SQL** | ✅ (`fabricspark` adapter type) | ❌ |
+| **Fabric Data Warehouse (T-SQL)** | :white_check_mark: (`fabric` adapter type) | :white_check_mark: (`fabric` adapter type) |
+| **Fabric Lakehouse / Spark SQL** | :white_check_mark: (`fabricspark` adapter type) | :x: |
 
 This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse via Spark SQL over Livy sessions. This includes a complete PEP 249 cursor/connection implementation, Livy session management, and 20 FabricSpark-specific macro files. The upstream supports only the Data Warehouse (T-SQL) adapter.
 
@@ -17,18 +17,18 @@ This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse
 
 | Materialization | dbt-fabric-samdebruyn (Fabric) | dbt-fabric-samdebruyn (FabricSpark) | microsoft/dbt-fabric |
 |---|---|---|---|
-| Table | ✅ | ✅ | ✅ |
-| View | ✅ | ✅ | ✅ |
-| Incremental (append) | ✅ | ✅ | ✅ |
-| Incremental (delete+insert) | ✅ | ❌ | ✅ |
-| Incremental (merge) | ✅ | ✅ | ✅ |
-| Incremental (insert_overwrite) | ❌ | ✅ | ❌ |
-| Incremental (microbatch) | ✅ | ✅ | ✅ |
-| Ephemeral | ✅ | ✅ | ✅ |
-| Snapshot | ✅ | ✅ | ✅ |
-| Clone | ✅ | ✅ | ✅ |
-| Materialized View | ❌ | ✅ (Fabric lake views) | ❌ |
-| Python models | ✅ (via Livy) | ✅ (via Livy) | ❌ |
+| Table | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| View | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Incremental (append) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Incremental (delete+insert) | :white_check_mark: | :x: | :white_check_mark: |
+| Incremental (merge) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Incremental (insert_overwrite) | :x: | :white_check_mark: | :x: |
+| Incremental (microbatch) | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Ephemeral | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Snapshot | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Clone | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Materialized View | :x: | :white_check_mark: (Fabric lake views) | :x: |
+| Python models | :white_check_mark: (via Livy) | :white_check_mark: (via Livy) | :x: |
 
 The `fabricspark` adapter supports `materialized_view` as a materialization (creating Fabric lake views with `CREATE OR REPLACE MATERIALIZED LAKE VIEW`). The default materialization is `view`, matching standard dbt behavior. The adapter also uniquely supports `insert_overwrite` for FabricSpark incremental models.
 
@@ -38,20 +38,20 @@ Both Python model support for Fabric DW (via Livy sessions writing through `syna
 
 | Authentication Method | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| ActiveDirectoryServicePrincipal | ✅ | ✅ |
-| ActiveDirectoryPassword | ✅ | ✅ |
-| ActiveDirectoryInteractive | ✅ | ✅ |
-| ActiveDirectoryDefault (auto) | ✅ (default) | ✅ |
-| Azure CLI | ✅ | ✅ |
-| Environment credentials | ✅ | ✅ |
-| Device Code Flow | ✅ | ❌ |
-| Managed Identity (MSI) | ✅ | ❌ |
-| Fabric Notebook (`notebookutils`) | ✅ (currently broken) | ✅ (`fabricnotebook`) |
-| Synapse Spark (mssparkutils) | ❌ (Synapse-specific, not applicable to Fabric) | ✅ (`synapsespark`) |
-| ActiveDirectoryAccessToken | ❌ (removed) | ✅ |
-| Windows Login | ✅ | ✅ |
-| `token_credential` (custom class) | ✅ | ❌ |
-| `workload_identity` (federated) | ✅ | ❌ |
+| ActiveDirectoryServicePrincipal | :white_check_mark: | :white_check_mark: |
+| ActiveDirectoryPassword | :white_check_mark: | :white_check_mark: |
+| ActiveDirectoryInteractive | :white_check_mark: | :white_check_mark: |
+| ActiveDirectoryDefault (auto) | :white_check_mark: (default) | :white_check_mark: |
+| Azure CLI | :white_check_mark: | :white_check_mark: |
+| Environment credentials | :white_check_mark: | :white_check_mark: |
+| Device Code Flow | :white_check_mark: | :x: |
+| Managed Identity (MSI) | :white_check_mark: | :x: |
+| Fabric Notebook (`notebookutils`) | :white_check_mark: (currently broken) | :white_check_mark: (`fabricnotebook`) |
+| Synapse Spark (mssparkutils) | :x: (Synapse-specific, not applicable to Fabric) | :white_check_mark: (`synapsespark`) |
+| ActiveDirectoryAccessToken | :x: (removed) | :white_check_mark: |
+| Windows Login | :white_check_mark: | :white_check_mark: |
+| `token_credential` (custom class) | :white_check_mark: | :x: |
+| `workload_identity` (federated) | :white_check_mark: | :x: |
 | SQL Authentication | Rejected | Rejected |
 
 This adapter supports 11 authentication methods via a unified `FabricTokenProvider` class. Notable additions over upstream:
@@ -81,8 +81,8 @@ The upstream has only a single `get_tables_by_pattern` utility macro and no pack
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **OPENROWSET source macro** | ❌ | ✅ (`openrowset_source()`) |
-| **dbt-external-tables override** | ✅ (creates views wrapping OPENROWSET) | ❌ |
+| **OPENROWSET source macro** | :x: | :white_check_mark: (`openrowset_source()`) |
+| **dbt-external-tables override** | :white_check_mark: (creates views wrapping OPENROWSET) | :x: |
 | **Supported formats** | Parquet, CSV, JSONL (via dbt-external-tables) | Parquet, CSV, JSONL (via `openrowset_source()`) |
 
 The upstream implements a standalone `openrowset_source()` macro for file-based ingestion. This adapter instead provides this functionality through a [dbt-external-tables](external-tables.md) package override, which creates views wrapping OPENROWSET queries. This integrates with dbt's standard source staging workflow (`dbt run-operation stage_external_sources`), providing lineage tracking and source freshness support out of the box.
@@ -117,46 +117,46 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 
 | Test Area | dbt-fabric-samdebruyn (Fabric) | dbt-fabric-samdebruyn (FabricSpark) | microsoft/dbt-fabric |
 |---|---|---|---|
-| Basic operations | ✅ | ✅ | ✅ |
-| Column types | ✅ | ✅ | ✅ |
-| Concurrency | ✅ | ✅ | ✅ |
-| Catalog | ✅ | ✅ | ✅ |
-| Incremental | ✅ | ✅ | ✅ |
-| Microbatch | ✅ | - | ✅ |
-| Ephemeral | ✅ | ✅ | ✅ |
-| Snapshots | ✅ | ✅ | ✅ |
-| Snapshot configs | ✅ | - | ✅ |
-| Constraints | ✅ | ✅ | ✅ |
-| dbt clone | ✅ | ✅ | ✅ |
-| dbt show | ✅ | ✅ | ✅ |
-| dbt debug | ✅ | ✅ | ✅ |
-| Store test failures | ✅ | ✅ | ✅ |
-| Unit testing | ✅ | ✅ | - |
-| Aliases | ✅ | ✅ | ✅ |
-| Caching | ✅ | ✅ | ✅ |
-| Persist docs | ✅ | ✅ | - |
-| Hooks | ✅ | ✅ | - |
-| Query comment | ✅ | ✅ | ✅ |
-| Quoting | ✅ | - | ✅ |
-| Schema | ✅ | - | ✅ |
-| Sources | ✅ | - | ✅ |
-| Seeds | ✅ | ✅ | ✅ |
-| Relations | ✅ | ✅ | ✅ |
-| Functions | ✅ | ✅ | - |
-| Sample mode | ✅ | ✅ | - |
-| Empty | ✅ | ✅ | ✅ |
-| Grants | ✅ | ✅ | - |
-| Python models | ✅ | ✅ | - |
-| Purview integration | ✅ | ✅ | - |
-| Warehouse snapshots | ✅ | - | - |
-| Data types | ✅ | ✅ | ✅ |
-| Null compare | ✅ | ✅ | ✅ |
-| Timestamps | ✅ | ✅ | ✅ |
-| Cluster by | ✅ | - | ✅ |
-| List relations | ✅ | ✅ | ✅ |
-| Utility functions | ✅ | ✅ | ✅ |
-| Package integration tests | [✅](packages/index.md) | [✅](packages/index.md) | - |
-| OPENROWSET | ✅ (via dbt-external-tables) | - | ✅ |
+| Basic operations | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Column types | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Concurrency | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Catalog | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Incremental | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Microbatch | :white_check_mark: | - | :white_check_mark: |
+| Ephemeral | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Snapshots | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Snapshot configs | :white_check_mark: | - | :white_check_mark: |
+| Constraints | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| dbt clone | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| dbt show | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| dbt debug | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Store test failures | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Unit testing | :white_check_mark: | :white_check_mark: | - |
+| Aliases | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Caching | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Persist docs | :white_check_mark: | :white_check_mark: | - |
+| Hooks | :white_check_mark: | :white_check_mark: | - |
+| Query comment | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Quoting | :white_check_mark: | - | :white_check_mark: |
+| Schema | :white_check_mark: | - | :white_check_mark: |
+| Sources | :white_check_mark: | - | :white_check_mark: |
+| Seeds | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Relations | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Functions | :white_check_mark: | :white_check_mark: | - |
+| Sample mode | :white_check_mark: | :white_check_mark: | - |
+| Empty | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Grants | :white_check_mark: | :white_check_mark: | - |
+| Python models | :white_check_mark: | :white_check_mark: | - |
+| Purview integration | :white_check_mark: | :white_check_mark: | - |
+| Warehouse snapshots | :white_check_mark: | - | - |
+| Data types | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Null compare | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Timestamps | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Cluster by | :white_check_mark: | - | :white_check_mark: |
+| List relations | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Utility functions | :white_check_mark: | :white_check_mark: | :white_check_mark: |
+| Package integration tests | [:white_check_mark:](packages/index.md) | [:white_check_mark:](packages/index.md) | - |
+| OPENROWSET | :white_check_mark: (via dbt-external-tables) | - | :white_check_mark: |
 
 ---
 
@@ -168,13 +168,13 @@ For supported dbt-core and Python versions, see the [compatibility page](compati
 
 | dbt Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **Microbatch incremental** | ✅ | ✅ |
-| **Cluster by** | ✅ | ✅ |
-| **dbt show** | ✅ | ✅ |
-| **dbt clone** | ✅ | ✅ |
-| **Unit testing** | ✅ | ✅ |
-| **Sample mode** | ✅ | Not tested |
-| **Functions** | ✅ | ❌ |
+| **Microbatch incremental** | :white_check_mark: | :white_check_mark: |
+| **Cluster by** | :white_check_mark: | :white_check_mark: |
+| **dbt show** | :white_check_mark: | :white_check_mark: |
+| **dbt clone** | :white_check_mark: | :white_check_mark: |
+| **Unit testing** | :white_check_mark: | :white_check_mark: |
+| **Sample mode** | :white_check_mark: | Not tested |
+| **Functions** | :white_check_mark: | :x: |
 
 ---
 
@@ -182,12 +182,12 @@ For supported dbt-core and Python versions, see the [compatibility page](compati
 
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **Integration tests on PR** | ✅ (runs on every push to main and on-demand per PR) | ❌ (no automated test runs on PRs) |
-| **Multi-version Python testing** | ✅ (3.11, 3.12, 3.13) | Only 3.11 |
-| **FabricSpark (Lakehouse) testing** | ✅ (weekly + on-demand) | N/A |
+| **Integration tests on PR** | :white_check_mark: (runs on every push to main and on-demand per PR) | :x: (no automated test runs on PRs) |
+| **Multi-version Python testing** | :white_check_mark: (3.11, 3.12, 3.13) | Only 3.11 |
+| **FabricSpark (Lakehouse) testing** | :white_check_mark: (weekly + on-demand) | N/A |
 | **Latest dbt Core support** | Up to 1.12 | Up to 1.10 |
 | **Commits since Jan 2024** | 550+ | ~100 |
-| **Active development** | ✅ | Sporadic |
+| **Active development** | :white_check_mark: | Sporadic |
 | **Build system** | Hatchling + uv | setuptools + pip |
 | **Documentation** | [Dedicated docs site](https://dbt-fabric.debruyn.dev) | 1 page (OPENROWSET) |
 | **Type annotations** | Modern (PEP 604) | Legacy (typing module) |

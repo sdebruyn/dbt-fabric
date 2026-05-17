@@ -42,14 +42,14 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 
 | Materialization | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Table** | ✅ | ✅ |
-| **View** | ✅ | ✅ |
+| **Table** | :white_check_mark: | :white_check_mark: |
+| **View** | :white_check_mark: | :white_check_mark: |
 | **Incremental** | append, merge, insert_overwrite, microbatch | append, merge, insert_overwrite, microbatch |
-| **Snapshot** | ✅ | ✅ |
-| **Ephemeral** | ✅ | ✅ |
-| **Materialized View / Lake View** | ✅ (standard dbt MV pattern) | ✅ (Fabric-specific MLV with REST API refresh) |
-| **Clone** | ✅ | ✅ |
-| **Seed** | ✅ | ✅ |
+| **Snapshot** | :white_check_mark: | :white_check_mark: |
+| **Ephemeral** | :white_check_mark: | :white_check_mark: |
+| **Materialized View / Lake View** | :white_check_mark: (standard dbt MV pattern) | :white_check_mark: (Fabric-specific MLV with REST API refresh) |
+| **Clone** | :white_check_mark: | :white_check_mark: |
+| **Seed** | :white_check_mark: | :white_check_mark: |
 
 Notable differences:
 
@@ -59,25 +59,25 @@ Notable differences:
 
 | Method | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Azure CLI** | ✅ | ✅ |
-| **Service Principal** | ✅ | ✅ |
-| **Token Credential** | ✅ | ✅ |
-| **Workload Identity** | ✅ (federated OIDC) | ❌ |
-| **Static Access Token** | ✅ | ✅ |
-| **Fabric Notebook** | ✅ | ✅ |
+| **Azure CLI** | :white_check_mark: | :white_check_mark: |
+| **Service Principal** | :white_check_mark: | :white_check_mark: |
+| **Token Credential** | :white_check_mark: | :white_check_mark: |
+| **Workload Identity** | :white_check_mark: (federated OIDC) | :x: |
+| **Static Access Token** | :white_check_mark: | :white_check_mark: |
+| **Fabric Notebook** | :white_check_mark: | :white_check_mark: |
 
 ### Livy session management
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | ✅ | ✅ |
+| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | :white_check_mark: | :white_check_mark: |
 | **Session reuse** | Deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
 | **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
 | **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
 | **Session idle timeout** | 15 min default | 30 min default, configurable |
-| **Local Livy mode** | ❌ | ✅ (`livy_mode: local`) |
+| **Local Livy mode** | :x: | :white_check_mark: (`livy_mode: local`) |
 | **Statement timeout** | 24 hours | 12 hours (configurable) |
-| **Thread-safe token refresh** | ❌ | ✅ (`_token_lock`) |
+| **Thread-safe token refresh** | :x: | :white_check_mark: (`_token_lock`) |
 
 ### Unique to this adapter
 
@@ -115,7 +115,7 @@ Notable differences:
 |---|---|---|
 | **Testing approach** | Integration tests against real Fabric | Unit tests (mock) + functional tests (real infra) |
 | **dbt-tests-adapter coverage** | Broad (standard adapter base classes) | Narrower (custom test suite) |
-| **Community package tests** | [✅](packages/index.md) | ❌ |
+| **Community package tests** | [:white_check_mark:](packages/index.md) | :x: |
 
 ---
 
@@ -129,9 +129,9 @@ For supported dbt-core and Python versions, see the [compatibility page](compati
 
 | Practice | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Inherits official base** | ✅ (SparkAdapter + BaseFabricAdapter) | Partially (SQLAdapter only) |
-| **Capability declarations** | ✅ | ❌ |
-| **`@available` methods** | ✅ (inherited) | ✅ (MLV, schema detection) |
+| **Inherits official base** | :white_check_mark: (SparkAdapter + BaseFabricAdapter) | Partially (SQLAdapter only) |
+| **Capability declarations** | :white_check_mark: | :x: |
+| **`@available` methods** | :white_check_mark: (inherited) | :white_check_mark: (MLV, schema detection) |
 | **Plugin dependencies** | `dependencies=["spark"]` | None |
 | **Dispatch fallback** | dbt-spark macros available | Must reimplement everything |
 
