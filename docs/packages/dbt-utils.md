@@ -96,9 +96,3 @@ These macros are used for schema management, not typically called directly in mo
 | `drop_schemas_by_prefixes` | ✅ **(override)** | Iterates schemas using T-SQL system catalog |
 | `get_tables_by_pattern_sql` | ✅ **(override)** | Queries `INFORMATION_SCHEMA` with T-SQL-compatible pattern matching |
 
-## Additional macros
-
-This adapter also provides two standalone T-SQL utility macros that complement dbt-utils:
-
-- `surrogate_key` -- Enhanced version with configurable `col_type` and `use_binary_hash` options for T-SQL-specific surrogate key generation
-- `cast_hash_to_str` -- Converts a `varbinary` hash to `varchar(32)` for use in tools that require string keys (e.g., Power BI relationships)
