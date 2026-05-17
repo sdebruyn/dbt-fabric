@@ -10,8 +10,6 @@ class TestDbtUtils(BaseDbtPackageTests):
             "dbt_utils_integration_tests": {
                 "sql": {
                     "test_groupby": {"+enabled": False},
-                    "test_get_relations_by_prefix_and_union": {"+enabled": False},
-                    "test_get_relations_by_pattern": {"+enabled": False},
                 }
             }
         }
