@@ -1,6 +1,6 @@
 import pytest
 
-from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+from tests.packages.base_package_test import BaseDbtPackageTests
 
 
 class TestDbtAuditHelper(BaseDbtPackageTests):

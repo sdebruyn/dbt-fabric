@@ -3,7 +3,7 @@ from pathlib import Path
 import pytest
 
 from dbt.tests.util import run_dbt
-from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+from tests.packages.base_package_test import BaseDbtPackageTests
 
 # T-SQL fix for dbt_expectations.expect_column_to_exist which renders Jinja True/False
 # directly in SQL (invalid in T-SQL). We patch the installed package file after dbt deps.

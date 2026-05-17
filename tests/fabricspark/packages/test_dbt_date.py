@@ -1,6 +1,7 @@
 import pytest
 
-from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+from dbt.tests.util import run_dbt
+from tests.packages.base_package_test import BaseDbtPackageTests
 
 
 class TestDbtDate(BaseDbtPackageTests):
@@ -32,3 +33,12 @@ class TestDbtDate(BaseDbtPackageTests):
                 ],
             }
         ]
+
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+        # Upstream test_dates.yml has an expression_is_true test that renders
+        # cast('to_date(...)' as date) — nested single quotes cause a Spark
+        # PARSE_SYNTAX_ERROR. This is an upstream fixture bug, not an adapter issue.
+        run_dbt(
+            ["build", "--exclude", "test_name:expression_is_true"],
+        )
