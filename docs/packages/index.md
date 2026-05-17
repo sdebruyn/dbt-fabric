@@ -26,6 +26,8 @@ dispatch:
     search_order: ['your_project_name', 'dbt', 'audit_helper']
   - macro_namespace: dbt_profiler
     search_order: ['your_project_name', 'dbt', 'dbt_profiler']
+  - macro_namespace: dbt_project_evaluator
+    search_order: ['your_project_name', 'dbt', 'dbt_project_evaluator']
 ```
 
 Replace `your_project_name` with the `name` field from your `dbt_project.yml`. Only include entries for the packages you actually use.
@@ -39,6 +41,7 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 | [dbt-utils](dbt-utils.md) | 1.3.3 | Yes |
 | [dbt-date](dbt-date.md) | 0.17.2 | Yes |
 | [dbt-codegen](dbt-codegen.md) | 0.14.1 | Yes |
+| [dbt-project-evaluator](dbt-project-evaluator.md) | 1.2.4 | Yes |
 | [dbt-expectations](dbt-expectations.md) | 0.10.10 | Yes |
 | [dbt-audit-helper](dbt-audit-helper.md) | 0.13.0 | Yes |
 | [dbt-external-tables](dbt-external-tables.md) | 0.11.0 | Yes |

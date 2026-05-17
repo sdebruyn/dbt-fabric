@@ -1,3 +1,4 @@
+{#- T-SQL forbids LIMIT; use WHERE 1=0 for the empty case. #}
 {% macro fabric__loop_vars(vars) %}
 {%- set sql_query = [] -%}
 {%- for var_name in vars -%}

@@ -1,3 +1,4 @@
+{#- T-SQL has no native boolean; cast to BIT instead of TRUE/FALSE literals. #}
 {%- macro fabric__get_relationship_values(node_type) -%}
 
     {%- if execute -%}

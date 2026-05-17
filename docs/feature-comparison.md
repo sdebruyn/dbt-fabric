@@ -159,7 +159,7 @@ This adapter supports 11 authentication methods via a unified token provider, in
 
 ### [Community package support](packages/index.md)
 
-This adapter includes **59 macro overrides** across 6 popular dbt packages (dbt-utils, dbt-date, dbt-expectations, insert_by_period, dbt-audit-helper, dbt-external-tables) to make them work with Fabric's T-SQL dialect. For details on each package, see the [Package support](packages/index.md) section.
+This adapter includes **64 macro overrides** across 7 popular dbt packages (dbt-utils, dbt-date, dbt-project-evaluator, dbt-expectations, insert_by_period, dbt-audit-helper, dbt-external-tables) to make them work with Fabric's T-SQL dialect. For details on each package, see the [Package support](packages/index.md) section.
 
 Microsoft's dbt-fabric has a single utility macro (`get_tables_by_pattern`). Microsoft's dbt-fabricspark has no community package support.
 

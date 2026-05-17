@@ -1,3 +1,5 @@
+{#- T-SQL recursive CTEs require explicit column typing; BIT booleans replace
+    TRUE/FALSE in the is_dependent_on_chain_of_views logic. #}
 {% macro fabric__recursive_dag() %}
 
 with direct_relationships as (

@@ -1,6 +1,5 @@
 import pytest
 
-from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 
@@ -18,11 +17,11 @@ class TestDbtProjectEvaluator(BaseDbtPackageTests):
         return "v1.2.4"
 
     @pytest.fixture(scope="class")
-    def packages(self, package_repo, package_revision):
+    def packages(self, package_repo, package_revision, dbt_utils_version):
         return {
             "packages": [
                 {"git": package_repo, "revision": package_revision},
-                {"package": "dbt-labs/dbt_utils", "version": "1.3.0"},
+                {"package": "dbt-labs/dbt_utils", "version": dbt_utils_version},
             ]
         }
 
@@ -31,8 +30,3 @@ class TestDbtProjectEvaluator(BaseDbtPackageTests):
         return {
             "max_depth_dag": 9,
         }
-
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["seed"])
-        run_dbt(["run"])

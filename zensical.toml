@@ -45,6 +45,7 @@ nav = [
     { "dbt-utils" = "packages/dbt-utils.md" },
     { "dbt-date" = "packages/dbt-date.md" },
     { "dbt-codegen" = "packages/dbt-codegen.md" },
+    { "dbt-project-evaluator" = "packages/dbt-project-evaluator.md" },
     { "dbt-expectations" = "packages/dbt-expectations.md" },
     { "dbt-audit-helper" = "packages/dbt-audit-helper.md" },
     { "dbt-external-tables" = "packages/dbt-external-tables.md" },
