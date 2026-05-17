@@ -10,11 +10,11 @@ class TestDbtProjectEvaluator(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
-        return "https://github.com/sdebruyn/dbt-project-evaluator"
+        return "https://github.com/dbt-labs/dbt-project-evaluator"
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return "feature/fabric-support"
+        return "v1.2.4"
 
     @pytest.fixture(scope="class")
     def packages(self, package_repo, package_revision, dbt_utils_version):
