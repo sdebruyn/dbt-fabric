@@ -34,7 +34,9 @@ class TestDbtProfiler(BaseDbtPackageTests):
     def models_config(self):
         return {
             "dbt_profiler_integration_tests": {
+                # STRUCT type does not exist in T-SQL (BigQuery-only)
                 "profile_struct": {"+enabled": False},
+                # Incremental model requires separate seed/run/run cycle, not needed for macro validation
                 "profile_over_time": {"+enabled": False},
             }
         }
