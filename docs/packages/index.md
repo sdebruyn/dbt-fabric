@@ -54,7 +54,7 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 
 | Package | Tested version | Data Warehouse | Lakehouse |
 |---|---|---|---|
-| [dbt-utils](dbt-utils.md) | 1.3.3 | :white_check_mark: Tested | :white_check_mark: Via dbt-spark |
+| [dbt-utils](dbt-utils.md) | 1.3.3 | :white_check_mark: Tested | :white_check_mark: Tested |
 | [dbt-date](dbt-date.md) | 0.17.2 | :white_check_mark: Tested | :white_check_mark: Tested |
 | [dbt-codegen](dbt-codegen.md) | 0.14.1 | :white_check_mark: Tested | :white_check_mark: Tested |
 | [dbt-expectations](dbt-expectations.md) | 0.10.10 | :white_check_mark: Tested | :white_check_mark: Tested |
