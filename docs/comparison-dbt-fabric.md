@@ -67,9 +67,7 @@ The upstream uses separate standalone functions per auth method, while this adap
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
 | **SQL driver** | `mssql-python` (bundles ODBC Driver 18) | `pyodbc` (requires separate ODBC install) |
-| **Separate ODBC driver install** | ❌ (bundled in Python package) | ✅ (ODBC Driver 18 for SQL Server) |
-| **System dependency** | None (all bundled) | ODBC driver manager + driver |
-| **Connection pooling** | Via mssql-python | `pyodbc.pooling = True` |
+| **System dependencies** | None — everything ships inside the Python package | ODBC driver manager + ODBC Driver 18 must be installed separately |
 
 This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), Microsoft's official Python driver for SQL Server, actively maintained by Microsoft. Under the hood it still uses ODBC, but it bundles the Microsoft ODBC Driver 18 for SQL Server and unixODBC directly in the Python package. This eliminates the need for separate system-level ODBC installation, simplifying setup across all platforms (especially macOS and containerized Linux environments). The upstream uses pyODBC, a community-maintained generic ODBC wrapper that requires a separately installed ODBC driver.
 
