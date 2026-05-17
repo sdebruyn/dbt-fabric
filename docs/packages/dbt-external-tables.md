@@ -20,21 +20,21 @@ dispatch:
 
 ## Macro compatibility
 
-Legend: ✅ = supported on Fabric, ❌ = not supported on Fabric
+Legend: :white_check_mark: = supported on Fabric, :x: = not supported on Fabric
 
 Macros marked with **(override)** have a Fabric-specific implementation in this adapter. All other supported macros work without any adapter-specific override.
 
 | Macro | Status | Notes |
 |---|---|---|
-| `stage_external_sources` | ✅ | Entry point run-operation |
-| `create_external_table` | ✅ **(override)** | Creates a view wrapping `OPENROWSET(BULK ...)` instead of `CREATE EXTERNAL TABLE` |
-| `refresh_external_table` | ✅ **(override)** | No-op (OPENROWSET reads live data on every query) |
-| `get_external_build_plan` | ✅ | |
-| `create_external_schema` | ✅ | |
-| `dropif` | ✅ **(override)** | Drops the OPENROWSET view with `DROP VIEW IF EXISTS` |
-| `exit_transaction` | ✅ | |
-| `update_external_table_columns` | ❌ | Not implemented for Fabric |
-| `recover_partitions` | ❌ | Hive-style partitions not supported |
+| `stage_external_sources` | :white_check_mark: | Entry point run-operation |
+| `create_external_table` | :white_check_mark: **(override)** | Creates a view wrapping `OPENROWSET(BULK ...)` instead of `CREATE EXTERNAL TABLE` |
+| `refresh_external_table` | :white_check_mark: **(override)** | No-op (OPENROWSET reads live data on every query) |
+| `get_external_build_plan` | :white_check_mark: | |
+| `create_external_schema` | :white_check_mark: | |
+| `dropif` | :white_check_mark: **(override)** | Drops the OPENROWSET view with `DROP VIEW IF EXISTS` |
+| `exit_transaction` | :white_check_mark: | |
+| `update_external_table_columns` | :x: | Not implemented for Fabric |
+| `recover_partitions` | :x: | Hive-style partitions not supported |
 
 ## How it works
 

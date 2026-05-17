@@ -18,11 +18,11 @@ All dbt-codegen macros work on Fabric without adapter-specific overrides. The pa
 
 | Macro | Status | Notes |
 |---|---|---|
-| `generate_source` | ✅ | |
-| `generate_model_yaml` | ✅ | |
-| `generate_base_model` | ✅ | |
-| `generate_model_import_ctes` | ✅ | |
-| `generate_unit_test_template` | ✅ | |
+| `generate_source` | :white_check_mark: | |
+| `generate_model_yaml` | :white_check_mark: | |
+| `generate_base_model` | :white_check_mark: | |
+| `generate_model_import_ctes` | :white_check_mark: | |
+| `generate_unit_test_template` | :white_check_mark: | |
 
 ## Notes
 
