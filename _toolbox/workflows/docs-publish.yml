@@ -1,0 +1,50 @@
+# Concept workflow for publishing dbt-fabric docs to GitHub Pages
+# under microsoft/fabric-toolbox.
+#
+# Place this at .github/workflows/dbt-fabric-docs.yml on the toolbox repo
+# AFTER activating GitHub Pages (Settings → Pages → Source: gh-pages branch).
+#
+# Pattern reusable by other toolbox tools that ship docs sites: copy this file,
+# change the working directory and deploy subdirectory.
+
+name: dbt-fabric docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/dbt-fabric/docs/**'
+      - 'tools/dbt-fabric/zensical.toml'
+      - 'tools/dbt-fabric/overrides/**'
+      - 'tools/dbt-fabric/README.md'
+      - 'tools/dbt-fabric/CONTRIBUTING.md'
+      - '.github/workflows/dbt-fabric-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Sync docs dependencies
+        working-directory: tools/dbt-fabric
+        run: uv sync --group docs
+
+      - name: Build site
+        working-directory: tools/dbt-fabric
+        run: uv run zensical build --strict
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: tools/dbt-fabric/docs_build/site
+          destination_dir: dbt-fabric
+          keep_files: true
