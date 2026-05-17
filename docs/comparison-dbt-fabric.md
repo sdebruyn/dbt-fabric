@@ -78,17 +78,9 @@ This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), M
 
 ## Community package compatibility
 
-| Package | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
-|---|---|---|
-| **dbt-utils** | 16 macro overrides, tested v1.3.0 | 1 (`get_tables_by_pattern`) |
-| **dbt-date** | 16 macro overrides, tested v0.17.2 | None |
-| **dbt-expectations** | 10 macro overrides | None |
-| **dbt-audit-helper** | 5 macro overrides | None |
-| **dbt-external-tables** | 5 macro overrides, tested v0.11.0 | None |
-| **insert_by_period** | 7 macro overrides | None |
-| **Integration tests** | Yes (dbt-utils, dbt-date, dbt-external-tables) | None |
+This adapter includes 59 macro overrides across 6 popular dbt packages to make them work with Fabric's T-SQL dialect, with integration tests for dbt-utils, dbt-date, and dbt-external-tables. For community package compatibility details, see [Package support](packages/index.md).
 
-This adapter includes [community package macro overrides](community-packages.md) organized by package name. These adapt T-SQL-incompatible SQL from popular dbt packages to work with Fabric's dialect. The upstream has only a single `get_tables_by_pattern` utility macro.
+The upstream has only a single `get_tables_by_pattern` utility macro and no package integration tests.
 
 ## OPENROWSET / external table support
 

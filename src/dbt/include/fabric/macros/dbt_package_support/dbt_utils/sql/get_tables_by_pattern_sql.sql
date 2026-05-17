@@ -1,3 +1,5 @@
+{#- Override: queries sys.tables joined with sys.schemas instead of information_schema.tables.
+    T-SQL sys views provide reliable pattern matching via LIKE on Fabric Data Warehouse. -#}
 {% macro fabric__get_tables_by_pattern_sql(schema_pattern, table_pattern, exclude='', database=target.database) %}
 
         select

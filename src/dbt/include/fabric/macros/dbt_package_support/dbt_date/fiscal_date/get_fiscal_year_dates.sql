@@ -14,6 +14,7 @@ year_month_end as (
         fsc_date_dimension d
     where
         d.month_of_year = {{ year_end_month }}
+    {#- Upstream uses GROUP BY 1,2. T-SQL doesn't support positional GROUP BY. #}
     group by
         d.year_number - {{ shift_year }},
         d.month_end_date
@@ -42,6 +43,7 @@ year_week_ends as (
         weeks d
     where
         d.month_of_year = {{ year_end_month }}
+    {#- Upstream uses GROUP BY 1,2. T-SQL doesn't support positional GROUP BY. #}
     group by
         d.year_number - {{ shift_year }},
         d.week_end_date
@@ -103,5 +105,6 @@ fiscal_year_dates as (
         weeks w on d.date_day between w.week_start_date and w.week_end_date
 
 )
+{#- Upstream has ORDER BY 1 here. Removed: Fabric doesn't support ORDER BY in views/subqueries. #}
 select * from fiscal_year_dates
 {% endmacro %}

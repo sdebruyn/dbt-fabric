@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pytest
 
-from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 _FISCAL_PERIODS_PATH = (
@@ -106,9 +105,3 @@ class TestDbtDate(BaseDbtPackageTests):
                 ],
             }
         ]
-
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["seed"])
-        run_dbt(["run"])
-        run_dbt(["test"])

@@ -1,3 +1,4 @@
+{#- Override: uses DATEADD from epoch '1970-01-01' instead of TO_TIMESTAMP()/FROM_UNIXTIME(). T-SQL requires DATEADD with explicit scale units (s/ms/mcs/ns) to convert Unix timestamps. -#}
 {%- macro fabric__from_unixtimestamp(epochs, format) -%}
     
     {%- if format == "seconds" -%}

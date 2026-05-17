@@ -1,12 +1,38 @@
-{% macro fabric__test_relationships_where(model, column_name, to, field, from_condition, to_condition) %}
+{#- Upstream defaults: from_condition="true", to_condition="true". T-SQL has no boolean type. -#}
+{% macro fabric__test_relationships_where(model, column_name, to, field, from_condition="1=1", to_condition="1=1") %}
 
-  {# override dbt-utils' integration tests args default see: #}
-  {# https://github.com/fishtown-analytics/dbt-utils/blob/bbba960726667abc66b42624f0d36bbb62c37593/integration_tests/models/schema_tests/schema.yml#L67-L75 #}
-  {# TSQL has non-ANSI not-equal sign #}
-  {% if from_condition == 'id <> 4' %}
-      {% set where = 'id != 4' %}
-  {% endif %}
+with left_table as (
 
-  {{ return(default__test_relationships_where(model, column_name, to, field, from_condition, to_condition)) }}
+    select
+        {{ column_name }} as id
+
+    from {{ model }}
+
+    where {{ column_name }} is not null
+        and {{ from_condition }}
+
+),
+
+right_table as (
+
+    select
+        {{ field }} as id
+
+    from {{ to }}
+
+    where {{ field }} is not null
+        and {{ to_condition }}
+
+)
+
+select
+    left_table.id
+
+from left_table
+
+left join right_table
+    on left_table.id = right_table.id
+
+where right_table.id is null
 
 {% endmacro %}

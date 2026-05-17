@@ -48,6 +48,7 @@
 #}
 
 
+{#- Override: upstream creates a CREATE EXTERNAL TABLE with external file format and data source objects. Fabric DW lacks Synapse-style external tables, so we create a view wrapping OPENROWSET(BULK ...) instead. -#}
 {% macro fabric__create_external_table(source_node) %}
 
     {%- set columns = source_node.columns.values() -%}
@@ -85,6 +86,7 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 {% endmacro %}
 
 
+{#- Override: upstream resolves file format to a named EXTERNAL FILE FORMAT object. Fabric DW has no such objects, so we resolve to a FORMAT string literal for OPENROWSET. -#}
 {% macro fabric__resolve_file_format(external) %}
     {%- set file_format = (external.get('file_format', '') or '') | lower -%}
 
@@ -112,6 +114,7 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 {% endmacro %}
 
 
+{#- New macro (no upstream equivalent): builds the OPENROWSET(BULK ...) expression with format, options, and WITH clause. Upstream has no counterpart because it uses CREATE EXTERNAL TABLE DDL instead. -#}
 {% macro fabric__build_openrowset(location, file_format, options, columns) %}
     {%- set parts = [] -%}
     {%- set escaped_location = location | replace("'", "''") -%}
@@ -166,6 +169,7 @@ FROM {{ openrowset_sql | replace("'", "''") }}
 {% endmacro %}
 
 
+{#- Override: upstream drops the external table with DROP EXTERNAL TABLE IF EXISTS. Fabric DW uses views instead of external tables, so we drop the view. -#}
 {% macro fabric__dropif(node) %}
 
     {%- set source_relation = source(node.source_name, node.name) -%}
@@ -181,6 +185,7 @@ EXEC('DROP VIEW IF EXISTS {{ view_relation | replace("'", "''") }};');
 {% endmacro %}
 
 
+{#- Override: upstream refreshes external table metadata (e.g., partition reloads). OPENROWSET reads live data on every query, so no refresh action is needed. -#}
 {% macro fabric__refresh_external_table(source_node) %}
     {# OPENROWSET reads live data, no refresh needed #}
     {% do return([]) %}

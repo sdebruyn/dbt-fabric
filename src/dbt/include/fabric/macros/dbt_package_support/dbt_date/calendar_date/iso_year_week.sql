@@ -1,3 +1,4 @@
+{#- New macro: dbt-date has no default__iso_year_week. T-SQL implementation using CONCAT + RIGHT for zero-padded ISO year-week. -#}
 {%- macro fabric__iso_year_week(date) -%}
     case
         when {{ dbt_date.iso_week_of_year(date) }} = 1

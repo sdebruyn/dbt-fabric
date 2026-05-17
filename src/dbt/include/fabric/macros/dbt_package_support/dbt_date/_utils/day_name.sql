@@ -1,3 +1,4 @@
+{#- Override: uses FORMAT(date, 'ddd'/'dddd') instead of TO_CHAR(date, 'Dy'/'Day'). T-SQL requires FORMAT() for locale-aware date name formatting. -#}
 {%- macro fabric__day_name(date, short, language="default") -%}
 {%- if language == "default" -%}
     {%- set f = 'ddd' if short else 'dddd' -%}

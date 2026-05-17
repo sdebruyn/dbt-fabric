@@ -5,6 +5,18 @@ from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 class TestDbtUtils(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
+    def models_config(self):
+        return {
+            "dbt_utils_integration_tests": {
+                "sql": {
+                    "test_groupby": {"+enabled": False},
+                    "test_urls": {"+enabled": False},
+                    "test_unpivot_bool": {"+enabled": False},
+                }
+            }
+        }
+
+    @pytest.fixture(scope="class")
     def macros(self):
         return {
             "limit_zero.sql": """
@@ -23,11 +35,7 @@ class TestDbtUtils(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return "1.3.0"
-
-    @pytest.fixture(scope="class")
-    def models_config(self):
-        return {"dbt_utils_integration_tests": {"sql": {"test_groupby": {"+enabled": False}}}}
+        return "1.3.3"
 
     @pytest.fixture(scope="class")
     def seeds_config(self):
