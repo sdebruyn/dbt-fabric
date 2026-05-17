@@ -97,7 +97,6 @@ The upstream's standalone macro additionally supports JSON path mapping and ordi
 | **[Warehouse snapshots](warehouse-snapshots.md) (macro-based)** | Create/update/delete warehouse snapshots via Fabric REST API, controllable from `on-run-start`/`on-run-end` hooks. |
 | **Fabric API client** | Full REST client for the Fabric API: workspace resolution, warehouse/lakehouse discovery, Livy session management, warehouse snapshot CRUD. |
 | **Automatic host resolution** | Auto-resolves the SQL endpoint hostname from workspace name via Fabric API, without needing the `host` config. |
-| **SQL injection protection** | `quote()` method escapes `]` as `]]` in identifiers; upstream does not. |
 | **[Catalog statistics](catalog-stats.md)** | `dbt docs generate` includes approximate row counts for every table. |
 | **[Functions](https://docs.getdbt.com/docs/build/functions?WT.mc_id=MVP_310840)** | Support for scalar functions as introduced in dbt Core 1.11. |
 
