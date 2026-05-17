@@ -26,6 +26,9 @@
     {% do exceptions.relation_wrong_type(target_relation, 'table') %}
   {%- endif -%}
 
+  {# dbt-spark: unconditional check_schema_exists -- cross-workspace skipped because
+     create_schema uses without_identifier() which strips workspace from render().
+     Cross-workspace users must ensure the target schema exists beforehand. #}
   {% if not workspace_name and not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(target_relation) %}
   {% endif %}

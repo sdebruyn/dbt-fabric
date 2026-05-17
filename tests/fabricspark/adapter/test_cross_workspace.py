@@ -72,6 +72,16 @@ _teardown_macro = """
         DROP TABLE IF EXISTS {{ source_fqn }}.cross_ws_snapshot
     {% endcall %}
 {% endmacro %}
+
+{% macro drop_snapshot_object() %}
+    {% set remote_ws = var('cross_workspace_name') %}
+    {% set remote_lh = var('cross_lakehouse_name') %}
+    {% set source_fqn = '`' ~ remote_ws ~ '`.`' ~ remote_lh ~ '`.`dbo`' %}
+
+    {% call statement('drop_snapshot', fetch_result=False) %}
+        DROP TABLE IF EXISTS {{ source_fqn }}.cross_ws_snapshot
+    {% endcall %}
+{% endmacro %}
 """
 
 _model_read_from_remote = """
@@ -361,7 +371,7 @@ class TestCrossWorkspaceSnapshot:
                 "cross_lakehouse_name": cross_workspace_config["lakehouse_name"],
             },
             "on-run-start": [
-                "{{ drop_cross_workspace_objects() }}",
+                "{{ drop_snapshot_object() }}",
                 "{{ create_cross_workspace_source() }}",
             ],
         }

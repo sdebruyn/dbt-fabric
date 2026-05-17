@@ -105,6 +105,8 @@ class FabricSparkRelation(BaseRelation):
 
     def render(self) -> str:
         base = super().render()
+        # Require identifier so that schema-level renders (without_identifier())
+        # stay workspace-free — needed for check_schema_exists and local DDL.
         if (
             self.workspace
             and self.identifier

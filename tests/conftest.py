@@ -174,9 +174,13 @@ def pytest_collection_modifyitems(config, items):
     skip_grants = pytest.mark.skip(reason="need --with-grants option to run")
     skip_python = pytest.mark.skip(reason="need --with-python option to run")
     skip_purview = pytest.mark.skip(reason="FABRIC_TEST_PURVIEW_ENDPOINT not set")
-    skip_cross_workspace = pytest.mark.skip(reason="FABRIC_TEST_CROSS_WORKSPACE_NAME not set")
+    skip_cross_workspace = pytest.mark.skip(
+        reason="FABRIC_TEST_CROSS_WORKSPACE_NAME and FABRIC_TEST_CROSS_LAKEHOUSE_NAME not set"
+    )
     has_purview = bool(os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT"))
-    has_cross_workspace = bool(os.getenv("FABRIC_TEST_CROSS_WORKSPACE_NAME"))
+    has_cross_workspace = bool(os.getenv("FABRIC_TEST_CROSS_WORKSPACE_NAME")) and bool(
+        os.getenv("FABRIC_TEST_CROSS_LAKEHOUSE_NAME")
+    )
     tests_root = Path(__file__).parent
 
     for item in items:
