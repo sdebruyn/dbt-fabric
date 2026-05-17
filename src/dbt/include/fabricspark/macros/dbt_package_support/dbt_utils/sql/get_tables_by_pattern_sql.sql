@@ -1,7 +1,12 @@
-{#- Override: Spark SQL has no information_schema.tables. Uses SHOW SCHEMAS
-    and SHOW TABLES to discover relations, then returns literal SQL rows.
-    Fabric Lakehouse does not support SHOW SCHEMAS LIKE, so schema filtering
-    is done in Jinja via regex. SHOW TABLES LIKE uses glob patterns (* not %). -#}
+{#- Override: dbt-utils default__get_tables_by_pattern_sql (get_tables_by_pattern_sql.sql)
+    queries information_schema.tables which doesn't exist in Spark SQL.
+    No spark__ or databricks__ version exists upstream.
+    This implementation uses SHOW SCHEMAS + SHOW TABLES to discover relations,
+    then returns literal SQL rows via UNION ALL.
+    Fabric Lakehouse-specific: SHOW SCHEMAS LIKE is not supported (returns 0 rows),
+    so schema filtering is done in Jinja via regex. SHOW SCHEMAS returns dotted
+    namespaces (e.g. adapter.lh.schema_name), so only the last segment is used.
+    SHOW TABLES LIKE uses glob patterns (* not SQL %). -#}
 {% macro fabricspark__get_tables_by_pattern_sql(schema_pattern, table_pattern, exclude='', database=target.database) %}
 
     {%- if not execute -%}
@@ -13,23 +18,25 @@
         {{ return('') }}
     {%- endif -%}
 
+    {#- SHOW TABLES LIKE uses glob (* not SQL %) -#}
     {%- set spark_table_pattern = table_pattern | replace('%', '*') -%}
 
-    {#- Convert SQL LIKE pattern to regex: escape regex chars, then replace
-        SQL wildcards (% → .*, _ → .) -#}
+    {#- Convert SQL LIKE pattern to regex for Jinja-side schema filtering
+        (replaces information_schema WHERE clause from upstream) -#}
     {%- set schema_regex = modules.re.escape(schema_pattern) | replace('%', '.*') | replace('_', '.') -%}
 
+    {#- SHOW SCHEMAS instead of information_schema.schemata -#}
     {%- set schema_results = run_query("show schemas") -%}
     {%- set matching_schemas = [] -%}
     {%- for row in schema_results -%}
-        {#- Fabric Lakehouse returns dotted namespaces (e.g. adapter.lh.schema);
-            extract just the last segment -#}
+        {#- Fabric Lakehouse returns dotted namespaces (e.g. adapter.lh.schema) -#}
         {%- set schema_name = row[0].split('.')[-1] -%}
         {%- if modules.re.match('^' ~ schema_regex ~ '$', schema_name, modules.re.IGNORECASE) -%}
             {%- do matching_schemas.append(schema_name) -%}
         {%- endif -%}
     {%- endfor -%}
 
+    {#- SHOW TABLES instead of information_schema.tables -#}
     {%- set all_tables = [] -%}
     {%- for schema_name in matching_schemas -%}
         {%- set table_results = run_query(
@@ -40,6 +47,7 @@
         {%- endfor -%}
     {%- endfor -%}
 
+    {#- Build result set as literal SQL rows instead of querying a catalog view -#}
     {%- if all_tables | length > 0 -%}
         select distinct table_schema, table_name, table_type from (
             {%- for tbl in all_tables %}
