@@ -1,24 +1,30 @@
-import pytest
+import json
 
-from dbt.tests.adapter.persist_docs import fixtures
 from dbt.tests.adapter.persist_docs.test_persist_docs import (
     BasePersistDocs,
     BasePersistDocsColumnMissing,
     BasePersistDocsCommentOnQuotedColumn,
 )
+from dbt.tests.util import run_dbt
 
 
 class TestPersistDocsFabricSpark(BasePersistDocs):
-    @pytest.fixture(scope="class")
-    def models(self):
-        return {
-            "no_docs_model.sql": fixtures._MODELS__NO_DOCS_MODEL,
-            "table_model.sql": fixtures._MODELS__TABLE,
-            "view_model.sql": """
-{{ config(materialized='materialized_view') }}
-select 2 as id, 'Bob' as name
-""",
-        }
+    def test_has_comments_pglike(self, project):
+        run_dbt(["docs", "generate"])
+        with open("target/catalog.json") as fp:
+            catalog_data = json.load(fp)
+        assert "nodes" in catalog_data
+        assert len(catalog_data["nodes"]) == 4
+        table_node = catalog_data["nodes"]["model.test.table_model"]
+        self._assert_has_table_comments(table_node)
+
+        view_node = catalog_data["nodes"]["model.test.view_model"]
+        self._assert_has_view_comments(
+            view_node, has_node_comments=True, has_column_comments=False
+        )
+
+        no_docs_node = catalog_data["nodes"]["model.test.no_docs_model"]
+        self._assert_has_view_comments(no_docs_node, False, False)
 
 
 class TestPersistDocsColumnMissingFabricSpark(BasePersistDocsColumnMissing):

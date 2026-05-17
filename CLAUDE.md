@@ -202,8 +202,6 @@ When a test fails, always investigate before skipping. The macro inheritance cha
 
 - **Base test fixtures assume PostgreSQL syntax** -- dbt-tests-adapter base classes are written for PostgreSQL. Their SQL fixtures commonly contain PG-specific syntax that fails on both Fabric and Spark: `::text` casts, `TEXT`/`INTEGER`/`TIMESTAMP WITHOUT TIME ZONE` types, double-quoted identifiers, multi-statement strings separated by `;`, and `VACUUM`/`BEGIN`/`COMMIT` transaction commands. Fix: override the relevant fixture (`models`, `seeds`, `macros`, or `seeds__expected_sql`) to replace PG syntax with the target dialect. For FabricSpark: use `STRING` not `TEXT`, `TIMESTAMP` not `TIMESTAMP WITHOUT TIME ZONE`, `INT`/`BIGINT` not `INTEGER`, backtick-quoted identifiers not double-quoted, and split multi-statement SQL into individual executions. For Fabric (T-SQL): use `varchar`/`datetime2(6)` and bracket-quoted identifiers. Note that test fixture macros dispatched with `macro_namespace='test'` do not search adapter macros -- per-test overrides via the `macros` fixture are required even when the adapter provides a production version.
 
-- **Base test classes hardcode `view` as materialization or relation type** -- Many base classes use `config(materialized="view")` in model SQL, `store_failures_as="view"` in test configs, or fall back to `view` in materialization logic (e.g., clone). Since FabricSpark has no `View` relation type, all of these fail. Fix: override fixtures and test methods to replace `view` with `materialized_view` (for read-only derived data) or `table` (for DML-heavy tests). This applies anywhere a base class references views -- models, schema.yml, project config, expected relation types, and materialization macros. Note: the `conftest.py` project-level default (`+materialized: materialized_view`) only applies when `config()` is not explicitly set in the model SQL, so fixture-level overrides are often still needed.
-
 - **Spark's `spark_catalog` rejects 3-part names in certain DML statements** -- `INSERT INTO TABLE` and some other DML trigger `REQUIRES_SINGLE_PART_NAMESPACE` with 3-part names (`database.schema.table`), even though `CREATE TABLE`, `MERGE INTO`, and `CREATE OR REPLACE MATERIALIZED LAKE VIEW` handle 3-part names fine. Additionally, if *any* temporary view exists in the Livy session, even normally-working 3-part DML breaks. Fix: strip the database component with `.include(database=false)` in affected macros, drop the `TABLE` keyword from `INSERT INTO`, avoid temporary views (use real staging tables instead), and override parent macros that call DML helpers without `adapter.dispatch()`. When `INSERT INTO` cannot be fixed, `MERGE INTO ... ON false WHEN NOT MATCHED THEN INSERT *` is a workaround.
 
 - **Delta Lake DDL has stricter limitations than T-SQL** -- Delta tables in Fabric Lakehouse do not support `DEFAULT` clauses in `ALTER TABLE ADD COLUMN`, and dropping a source table does not automatically drop dependent materialized views (no cascading drops). Fix: strip `DEFAULT ...` from column definitions in test helpers. For features that appear unsupported (e.g., `CREATE FUNCTION`), first verify by running test queries against Fabric and checking how dbt-spark/dbt-databricks handle it -- Fabric's Spark variant may support more than expected. Only skip after confirming the limitation with actual queries.
@@ -329,25 +327,13 @@ Fabric (T-SQL) and FabricSpark (Spark SQL) use fundamentally different SQL diale
 | String type | `varchar(MAX)` | `string` |
 | Timestamp | `datetime2(6)` | `timestamp` |
 | Identifier quoting | `[brackets]` | `` `backticks` `` |
-| Default materialization | `table` | `materialized_view` (lake view) |
+| Default materialization | `table` | `view` |
 | Connection | mssql-python (TDS) | Livy sessions (HTTP/REST) |
 | Catalog queries | `sys.tables`, `sys.views`, `sys.columns` | `SHOW TABLES`, `SHOW COLUMNS`, `DESCRIBE` |
 
-### No Spark SQL views in Fabric Lakehouse
-
-Microsoft Fabric Lakehouse with schemas enabled does not support Spark SQL views — only tables and materialized lake views. This means:
-- `FabricSparkRelationType` has no `View` variant — only `Table`, `MaterializedView`, `CTE`, `Ephemeral`, etc.
-- FabricSpark's default materialization is `materialized_view` (set in `dbt_project.yml` and `conftest.py`)
-- dbt's default materialization is `view`, which will fail on FabricSpark — every test that uses the default must be configured to use `materialized_view` or `table` instead
-- The `conftest.py` fixture `dbt_project_yml` sets `+materialized: materialized_view` for FabricSpark, but this can be lost if a test's `project_config_update` replaces the `models` key (shallow merge)
-
 ### Materialized lake views in FabricSpark
 
-FabricSpark's default materialization is `materialized_view`, which creates Fabric "lake views". These support:
-- `PARTITIONED BY` clauses
-- `TBLPROPERTIES` (Spark table properties)
-- `CHECK` constraints with `ON MISMATCH` behavior
-- `CREATE OR REPLACE` semantics
+FabricSpark supports `materialized_view` as a materialization, which creates Fabric "lake views". These support `PARTITIONED BY`, `TBLPROPERTIES`, `CHECK` constraints with `ON MISMATCH`, and `CREATE OR REPLACE` semantics.
 
 ### mssql-python driver
 

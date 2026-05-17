@@ -4,7 +4,7 @@ from dbt.tests.adapter.column_types.fixtures import schema_yml
 from dbt.tests.adapter.column_types.test_column_types import BasePostgresColumnTypes
 
 model_sql = """
-{{ config(materialized="materialized_view") }}
+{{ config(materialized="view") }}
 select
     CAST(1 AS smallint) as smallint_col,
     CAST(2 AS int) as int_col,

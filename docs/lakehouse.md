@@ -83,30 +83,9 @@ Key technical details:
 
 ## Materializations
 
-### Default materialization: `materialized_view`
+In addition to the standard dbt materializations, FabricSpark supports `materialized_view`, which creates Fabric [lake views](https://learn.microsoft.com/fabric/data-engineering/lakehouse-sql-analytics-endpoint?WT.mc_id=MVP_310840). Lake views support `PARTITIONED BY`, `TBLPROPERTIES`, and `CHECK` constraints with `ON MISMATCH` behavior.
 
-Unlike most dbt adapters where the default materialization is `view` or `table`, the FabricSpark adapter defaults to **`materialized_view`**. This creates Fabric [lake views](https://learn.microsoft.com/fabric/data-engineering/lakehouse-sql-analytics-endpoint?WT.mc_id=MVP_310840), a Fabric-specific concept.
-
-Lake views support:
-
-- `CREATE OR REPLACE` semantics
-- `PARTITIONED BY` clauses
-- `TBLPROPERTIES` (Spark table properties)
-- `CHECK` constraints with `ON MISMATCH` behavior
-
-### Supported materializations
-
-| Materialization | Supported | Notes |
-| --- | --- | --- |
-| `materialized_view` | Yes | Default. Creates a Fabric lake view. |
-| `table` | Yes | Creates a managed Delta table. |
-| `view` | No | Fabric Lakehouse with schemas does not support Spark SQL views. |
-| `incremental` | Yes | Supports `append` and `insert_overwrite` strategies. `merge` and `delete+insert` are not supported. |
-| `ephemeral` | Yes | Standard CTE-based ephemeral models. |
-
-!!! warning "No Spark SQL views"
-
-    Fabric Lakehouse with schemas enabled does not support Spark SQL views. If a model or package uses `materialized='view'`, you will see the error `'view' is not a valid FabricSparkRelationType`. Change the materialization to `materialized_view` or `table`.
+The incremental materialization supports `append` and `insert_overwrite` strategies.
 
 ---
 
@@ -191,8 +170,8 @@ A dbt run with many models will be significantly slower on FabricSpark than on F
 | SQL dialect | T-SQL | Spark SQL |
 | Connection | mssql-python (TDS protocol) | Livy sessions (HTTP REST) |
 | Identifier quoting | `[brackets]` | `` `backticks` `` |
-| Default materialization | `table` | `materialized_view` (lake view) |
-| Views | Supported | Not supported |
+| Default materialization | `table` | `view` |
+| Views | Supported | Supported |
 | String type | `varchar(MAX)` | `string` |
 | Timestamp type | `datetime2(6)` | `timestamp` |
 | Pagination | `SELECT TOP N` | `LIMIT N` |
@@ -218,7 +197,6 @@ See the [Python models guide](python-models.md) for writing and debugging Python
 
 ## Limitations
 
-- **No Spark SQL views** -- only tables and materialized lake views (Fabric lake views) are supported.
 - **No incremental merge strategy** -- the Spark SQL `MERGE` syntax in Fabric Lakehouse is not supported by the adapter. Use `append` or `insert_overwrite` instead.
 - **API rate limiting** -- can slow down large runs with many models.
 - **Session startup time** -- creating a new Spark session adds latency to the first statement in a run.
@@ -232,7 +210,6 @@ See the [Python models guide](python-models.md) for writing and debugging Python
 | --- | --- | --- |
 | `Livy session did not become idle in time` | Session startup took too long | Increase [`spark_session_timeout`](configuration.md#spark_session_timeout), retry, or check Fabric capacity |
 | `HTTP 429` in logs | API rate limiting | Automatic -- the adapter retries. Reduce `threads` if excessive. |
-| `'view' is not a valid FabricSparkRelationType` | Model uses `view` materialization | Change to `materialized_view` or `table` |
 | Slow execution | Livy polling overhead | Expected behavior. Use higher thread count. |
 | Statement timeout | Long-running Spark query | Increase [`query_timeout`](configuration.md#query_timeout) |
 | `Either workspace_id or workspace_name must be provided` | Missing workspace configuration | Add [`workspace`](configuration.md#workspace_name) or [`workspace_id`](configuration.md#workspace_id) to your profile |

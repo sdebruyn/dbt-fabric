@@ -5,16 +5,6 @@ from dbt.tests.adapter.simple_copy.test_copy_uppercase import BaseSimpleCopyUppe
 from dbt.tests.adapter.simple_copy.test_simple_copy import EmptyModelsArentRunBase, SimpleCopyBase
 from dbt.tests.util import check_relations_equal, rm_file, run_dbt, write_file
 
-_FABRICSPARK_VIEW_MODEL = """
-{{
-  config(
-    materialized = "materialized_view"
-  )
-}}
-
-select * from {{ ref('seed') }}
-"""
-
 _FABRICSPARK_DISABLED = """
 {{
   config(
@@ -76,7 +66,7 @@ class FabricSparkSimpleCopySetup:
             "incremental.sql": _FABRICSPARK_INCREMENTAL,
             "interleaved_sort.sql": fixtures._MODELS__INTERLEAVED_SORT,
             "materialized.sql": fixtures._MODELS__MATERIALIZED,
-            "view_model.sql": _FABRICSPARK_VIEW_MODEL,
+            "view_model.sql": fixtures._MODELS__VIEW_MODEL,
         }
 
     @pytest.fixture(scope="class")
@@ -131,9 +121,7 @@ class TestSimpleCopyBaseFabricSpark(FabricSparkSimpleCopySetup, SimpleCopyBase):
             project.adapter, ["seed", "view_model", "incremental", "materialized", "get_and_ref"]
         )
 
-    @pytest.mark.skip(
-        "FabricSpark does not support CREATE VIEW or CREATE MATERIALIZED VIEW via raw SQL"
-    )
+    @pytest.mark.skip("Raw SQL DDL syntax differs from Spark SQL (backtick quoting, MV syntax)")
     def test_simple_copy_with_materialized_views(self, project):
         pass
 
@@ -154,7 +142,7 @@ class TestSimpleCopyUppercaseFabricSpark(BaseSimpleCopyUppercase):
             "INCREMENTAL.sql": _FABRICSPARK_INCREMENTAL,
             "INTERLEAVED_SORT.sql": fixtures._MODELS__INTERLEAVED_SORT,
             "MATERIALIZED.sql": fixtures._MODELS__MATERIALIZED,
-            "VIEW_MODEL.sql": _FABRICSPARK_VIEW_MODEL,
+            "VIEW_MODEL.sql": fixtures._MODELS__VIEW_MODEL,
         }
 
     def test_simple_copy_uppercase(self, project):
