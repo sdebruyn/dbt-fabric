@@ -2,6 +2,7 @@ import datetime
 
 import pytest
 
+from dbt.artifacts.resources.v1.snapshot import SnapshotMetaColumnNames
 from dbt.tests.util import (
     check_relations_equal,
     get_manifest,
@@ -648,12 +649,12 @@ class BaseSnapshotInvalidColumnNames:
         assert len(results) == 1
         manifest = get_manifest(project.project_root)
         snapshot_node = manifest.nodes["snapshot.test.snapshot_actual"]
-        assert snapshot_node.config.snapshot_meta_column_names == {
-            "dbt_valid_to": "test_valid_to",
-            "dbt_valid_from": "test_valid_from",
-            "dbt_scd_id": "test_scd_id",
-            "dbt_updated_at": "test_updated_at",
-        }
+        assert snapshot_node.config.snapshot_meta_column_names == SnapshotMetaColumnNames(
+            dbt_valid_to="test_valid_to",
+            dbt_valid_from="test_valid_from",
+            dbt_scd_id="test_scd_id",
+            dbt_updated_at="test_updated_at",
+        )
 
         project.run_sql(invalidate_sql)
         project.run_sql(update_sql)
