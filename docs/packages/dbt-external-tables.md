@@ -20,7 +20,21 @@ dispatch:
 
 ## Macro compatibility
 
-<!-- TODO: fill in full macro table like dbt-utils -->
+Legend: ✅ = supported on Fabric, ❌ = not supported on Fabric
+
+Macros marked with **(override)** have a Fabric-specific implementation in this adapter. All other supported macros work without any adapter-specific override.
+
+| Macro | Status | Notes |
+|---|---|---|
+| `stage_external_sources` | ✅ | Entry point run-operation |
+| `create_external_table` | ✅ **(override)** | Creates a view wrapping `OPENROWSET(BULK ...)` instead of `CREATE EXTERNAL TABLE` |
+| `refresh_external_table` | ✅ **(override)** | No-op (OPENROWSET reads live data on every query) |
+| `get_external_build_plan` | ✅ | |
+| `create_external_schema` | ✅ | |
+| `dropif` | ✅ **(override)** | Drops the OPENROWSET view with `DROP VIEW IF EXISTS` |
+| `exit_transaction` | ✅ | |
+| `update_external_table_columns` | ❌ | Not implemented for Fabric |
+| `recover_partitions` | ❌ | Hive-style partitions not supported |
 
 ## How it works
 
