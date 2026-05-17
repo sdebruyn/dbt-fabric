@@ -25,7 +25,7 @@ cast(null as {{ dbt.type_numeric() }})
 {%- macro fabric__measure_is_unique(column_name, data_type) -%}
 {%- if not dbt_profiler.is_struct_dtype(data_type) -%}
 case when cast(count(*) as {{ dbt.type_bigint() }}) > 0 then
-        case when count(distinct {{ adapter.quote(column_name) }}) = count(*) then 1 else 0 end
+        case when count(distinct {{ adapter.quote(column_name) }}) = count(*) then 'TRUE' else 'FALSE' end
     else null
     end
 {%- else -%}
