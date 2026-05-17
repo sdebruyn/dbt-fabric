@@ -48,6 +48,7 @@ nav = [
     { "dbt-expectations" = "packages/dbt-expectations.md" },
     { "dbt-audit-helper" = "packages/dbt-audit-helper.md" },
     { "dbt-external-tables" = "packages/dbt-external-tables.md" },
+    { "dbt-profiler" = "packages/dbt-profiler.md" },
   ] },
 
 ]
