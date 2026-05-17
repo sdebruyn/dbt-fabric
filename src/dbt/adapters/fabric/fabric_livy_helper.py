@@ -27,6 +27,8 @@ class FabricLivyHelper(PythonJobHelper):
         if not self._sql_endpoint:
             self._sql_endpoint = fabric_api_client.get_warehouse_connection_string()
 
+    _GC_CODE = "spark._jvm.java.lang.System.gc()"
+
     def submit(self, compiled_code: str) -> Any:
         livy_session: HighConcurrencyLivySession = _thread_local.livy_session
         assert self._sql_endpoint is not None
@@ -39,4 +41,5 @@ class FabricLivyHelper(PythonJobHelper):
                 f"Logs URL: {livy_session.get_logs_url()}. "
                 f"Error: {result.error_message}"
             )
+        livy_session.run_statement(self._GC_CODE, "python", wait_for_result=False)
         return result.to_submission_result(compiled_code)
