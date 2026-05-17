@@ -1,4 +1,4 @@
-
+{#- Upstream uses STDDEV(). T-SQL spells it STDEV(). #}
 {% macro fabric__test_expect_column_values_to_be_within_n_stdevs(model,
                                   column_name,
                                   group_by,

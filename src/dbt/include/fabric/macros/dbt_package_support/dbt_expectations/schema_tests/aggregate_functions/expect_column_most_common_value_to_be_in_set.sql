@@ -68,13 +68,16 @@ unique_set_values as (
 
 ),
 validation_errors as (
-    -- values from the model that are not in the set
+    {#- Upstream uses NOT IN (SELECT ... FROM cte). T-SQL cannot reference a CTE
+        inside a subquery when the outer query is itself wrapped in a CTE by dbt's
+        test harness (nested CTE scoping limitation). Use LEFT JOIN anti-pattern. #}
     select
-        value_field
+        t.value_field
     from
-        value_count_top_n
+        value_count_top_n t
+        left join unique_set_values s on t.value_field = s.value_field
     where
-        value_field not in (select value_field from unique_set_values)
+        s.value_field is null
 
 )
 
