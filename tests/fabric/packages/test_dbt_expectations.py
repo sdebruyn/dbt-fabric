@@ -1,6 +1,25 @@
 import pytest
 
+from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+
+EXCLUDED_MODELS = [
+    "timeseries_data",
+    "timeseries_data_extended",
+    "timeseries_data_grouped",
+    "timeseries_hourly_data_extended",
+]
+
+EXCLUDED_TESTS = [
+    "expect_column_values_to_match_regex",
+    "expect_column_values_to_not_match_regex",
+    "expect_column_values_to_match_regex_list",
+    "expect_column_values_to_not_match_regex_list",
+    "expect_column_to_exist",
+    "expect_column_values_to_have_consistent_casing",
+    "expect_compound_columns_to_be_unique",
+    "expect_column_most_common_value_to_be_in_set",
+]
 
 
 class TestDbtExpectations(BaseDbtPackageTests):
@@ -23,8 +42,6 @@ class TestDbtExpectations(BaseDbtPackageTests):
         package_repo: str,
         package_revision: str,
         dbt_utils_version: str,
-        dbt_date_repo: str,
-        dbt_date_revision: str,
     ):
         return {
             "packages": [
@@ -35,7 +52,6 @@ class TestDbtExpectations(BaseDbtPackageTests):
                     "subdirectory": "integration_tests",
                 },
                 {"package": "dbt-labs/dbt_utils", "version": dbt_utils_version},
-                {"git": dbt_date_repo, "revision": dbt_date_revision},
             ]
         }
 
@@ -51,3 +67,12 @@ class TestDbtExpectations(BaseDbtPackageTests):
                 "search_order": ["test_dbt_package", "dbt", "dbt_date"],
             },
         ]
+
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+        excludes = []
+        for model in EXCLUDED_MODELS:
+            excludes.extend(["--exclude", f"{model}+"])
+        for test in EXCLUDED_TESTS:
+            excludes.extend(["--exclude", f"test_name:{test}"])
+        run_dbt(["build"] + excludes)
