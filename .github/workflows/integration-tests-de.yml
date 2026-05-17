@@ -33,7 +33,6 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     environment: azure
-    timeout-minutes: 60
     steps:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
@@ -55,7 +54,6 @@ jobs:
           FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
@@ -79,7 +77,6 @@ jobs:
        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     environment: azure
-    timeout-minutes: 60
 
     steps:
       - name: Resolve PR metadata
@@ -170,7 +167,6 @@ jobs:
           FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
           PYTEST_FILTER: ${{ steps.filter.outputs.expression }}
         run: |
@@ -224,7 +220,6 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number == ''
     runs-on: ubuntu-latest
     environment: azure
-    timeout-minutes: 60
     steps:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
@@ -246,7 +241,6 @@ jobs:
           FABRIC_TEST_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
-          FABRIC_TEST_THREADS: 2
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
           PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
         run: |
