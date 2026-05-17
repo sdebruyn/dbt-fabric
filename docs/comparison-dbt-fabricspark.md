@@ -75,9 +75,9 @@ Notable differences:
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | Yes (default on, instance-based lifecycle) | Yes (default on, `atexit` cleanup) |
+| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | Yes (HC-only, instance-based lifecycle) | Yes (default on, `atexit` cleanup) |
 | **Session creation** | `FabricApiClient` singleton | `LivySessionManager` with static globals |
-| **Session reuse** | By session name (singleton) / deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
+| **Session reuse** | Deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
 | **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
 | **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
 | **Session idle timeout** | 15 min default | 30 min default, configurable |

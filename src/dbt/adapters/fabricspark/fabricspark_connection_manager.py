@@ -5,9 +5,7 @@ from dbt.adapters.contracts.connection import AdapterResponse, Connection, Conne
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.base_connection_manager import BaseFabricConnectionManager
 from dbt.adapters.fabric.fabric_hc_livy_session import HighConcurrencyLivySession
-from dbt.adapters.fabric.fabric_livy_session import LivySession
 from dbt.adapters.fabricspark.fabricspark_connection import FabricSparkConnection
-from dbt.adapters.fabricspark.fabricspark_credentials import FabricSparkCredentials
 
 logger = AdapterLogger("fabricspark")
 
@@ -51,16 +49,10 @@ class FabricSparkConnectionManager(BaseFabricConnectionManager):
             return connection
 
         credentials = connection.credentials
-        use_hc = isinstance(credentials, FabricSparkCredentials) and credentials.high_concurrency
 
         def connect() -> FabricSparkConnection:
             api_client = cls.get_fabric_api_client(credentials)
-            if use_hc:
-                livy_session: LivySession | HighConcurrencyLivySession = (
-                    HighConcurrencyLivySession(api_client)
-                )
-            else:
-                livy_session = LivySession(api_client)
+            livy_session = HighConcurrencyLivySession(api_client)
             livy_session.wait_for_session_ready()
             return FabricSparkConnection(livy_session)
 

@@ -6,7 +6,8 @@ from typing import Any, Self
 
 from dbt_common.exceptions import DbtDatabaseError, DbtRuntimeError
 
-from dbt.adapters.fabric.fabric_livy_session import LivySession, LivySessionResult
+from dbt.adapters.fabric.fabric_hc_livy_session import HighConcurrencyLivySession
+from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
 
 
 class FabricSparkCursor:
@@ -36,7 +37,7 @@ class FabricSparkCursor:
         self._position = 0
         self._statement_id = None
 
-    def get_livy_session(self) -> LivySession:
+    def get_livy_session(self) -> HighConcurrencyLivySession:
         return self.connection.get_livy_session()
 
     def __enter__(self) -> Self:

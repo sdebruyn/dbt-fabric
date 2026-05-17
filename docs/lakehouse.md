@@ -45,37 +45,36 @@ The FabricSpark adapter does not use the [`host`](configuration.md#host) option 
 
 ## How it works
 
-The FabricSpark adapter executes all SQL through Fabric Livy sessions. Here is the execution flow:
+The FabricSpark adapter executes all SQL through Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840). Each dbt thread gets its own REPL inside a shared underlying Livy session. Here is the execution flow:
 
 ```mermaid
 sequenceDiagram
     participant dbt
     participant Adapter
-    participant Livy API
+    participant HC Livy API
     participant Spark Session
 
     dbt->>Adapter: Compiled Spark SQL
-    Adapter->>Livy API: GET /sessions (find existing session)
-    alt Session exists
-        Livy API-->>Adapter: Session ID
-    else No session
-        Adapter->>Livy API: POST /sessions (create new)
-        Livy API-->>Adapter: Session ID
-        Note over Adapter,Spark Session: Session startup: 1-5 minutes
+    Adapter->>HC Livy API: POST /highConcurrencySessions (acquire REPL)
+    alt Underlying session exists (warm)
+        HC Livy API-->>Adapter: HC session ID + REPL ID
+    else No underlying session
+        Note over HC Livy API,Spark Session: Spark startup: 1-5 minutes
+        HC Livy API-->>Adapter: HC session ID + REPL ID
     end
-    Adapter->>Livy API: POST /sessions/{id}/statements
-    Livy API->>Spark Session: Execute Spark SQL
+    Adapter->>HC Livy API: POST /sessions/{id}/repls/{replId}/statements
+    HC Livy API->>Spark Session: Execute Spark SQL (in REPL)
     loop Poll every 3 seconds
-        Adapter->>Livy API: GET /statements/{id}
-        Livy API-->>Adapter: Status + results (when done)
+        Adapter->>HC Livy API: GET /statements/{id}
+        HC Livy API-->>Adapter: Status + results (when done)
     end
     Adapter-->>dbt: Parsed results
 ```
 
 Key technical details:
 
-- **Session reuse** -- All statements in a dbt run share the same Livy session (named `dbt-fabric-samdebruyn` by default). This avoids the overhead of creating a new Spark session for each model.
-- **Session TTL** -- Sessions are created with a TTL of 30 seconds. If the session is idle for longer than that after the dbt run finishes, Fabric will automatically clean it up.
+- **One REPL per thread** -- Each dbt thread acquires its own REPL inside a shared underlying Livy session. Statements from different REPLs execute in parallel.
+- **Deterministic session tag** -- The adapter computes a session tag from `(workspace_id, lakehouse_id)`. Fabric packs all REPLs with the same tag onto one underlying Livy session, enabling warm session reuse across dbt invocations.
 - **Polling interval** -- The adapter polls for statement completion every 3 seconds.
 - **Rate limiting** -- The Fabric Livy API enforces rate limits. The adapter handles HTTP 429 responses automatically using the `Retry-After` header.
 - **DB-API 2.0 cursor** -- Results are returned as JSON and parsed into a [PEP 249](https://peps.python.org/pep-0249/) compatible cursor, so dbt interacts with the Lakehouse the same way it interacts with any other database.
@@ -127,26 +126,7 @@ SELECT [my column] FROM [my_schema].[my_table]
 
 ## High-concurrency Livy
 
-By default, the adapter uses Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840) (`high_concurrency: true`). Each dbt thread acquires its own HC session -- and therefore its own REPL -- inside a single underlying Livy session shared via a deterministic `sessionTag` derived from `(workspace_id, lakehouse_id)`. Statements from different REPLs execute in **parallel** inside the same Spark application, so increasing `threads` in your profile directly increases throughput.
-
-Without high-concurrency mode, all threads share a single Livy session where statements queue FIFO inside the default Spark scheduling pool -- effectively serial execution regardless of your thread count.
-
-### Configuration
-
-```yaml
-default:
-  target: dev
-  outputs:
-    dev:
-      type: fabricspark
-      workspace: your workspace name
-      database: your_lakehouse
-      schema: dbt
-      threads: 4
-      high_concurrency: true  # default; set to false to fall back to single-session mode
-```
-
-Set `high_concurrency: false` to fall back to the single-session-per-process mode. This is useful as an escape hatch when debugging any problems with the HC API.
+The adapter uses Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840). Each dbt thread acquires its own HC session -- and therefore its own REPL -- inside a single underlying Livy session shared via a deterministic `sessionTag` derived from `(workspace_id, lakehouse_id)`. Statements from different REPLs execute in **parallel** inside the same Spark application, so increasing `threads` in your profile directly increases throughput.
 
 ### Session reuse across runs
 
@@ -178,11 +158,11 @@ The Livy API architecture has inherent performance characteristics that are impo
 
 ### Session startup
 
-Creating a new Spark session can take **1-5 minutes**. The adapter reuses sessions within a run, so this overhead is paid once per `dbt run`. Subsequent runs may reuse an existing session if it is still alive. With [high-concurrency mode](#high-concurrency-livy) (default), subsequent runs can skip startup entirely by reattaching to a warm session.
+Creating a new Spark session can take **1-5 minutes**. The adapter reuses sessions within a run, so this overhead is paid once per `dbt run`. Subsequent runs may reuse an existing session if it is still alive. The [high-concurrency Livy](#high-concurrency-livy) session tag is deterministic, so subsequent runs can skip startup entirely by reattaching to a warm session.
 
 ### Statement execution
 
-Each SQL statement involves multiple HTTP API calls (submit + poll). This is inherently slower than a direct database connection like the TDS protocol used by the Data Warehouse adapter. With high-concurrency mode, statements from different threads execute in parallel, significantly improving wall-clock time for multi-model runs.
+Each SQL statement involves multiple HTTP API calls (submit + poll). This is inherently slower than a direct database connection like the TDS protocol used by the Data Warehouse adapter. Statements from different threads execute in parallel via [high-concurrency Livy](#high-concurrency-livy), significantly improving wall-clock time for multi-model runs.
 
 ### Polling overhead
 
@@ -194,11 +174,10 @@ Fabric applies rate limits to the Livy API. The adapter handles HTTP 429 respons
 
 ### Practical impact
 
-A dbt run with many models will be significantly slower on FabricSpark than on Fabric Data Warehouse. This is inherent to the Livy API architecture, not a limitation of the adapter. High-concurrency mode reduces this gap by running statements in parallel.
+A dbt run with many models will be significantly slower on FabricSpark than on Fabric Data Warehouse. This is inherent to the Livy API architecture, not a limitation of the adapter. [High-concurrency Livy](#high-concurrency-livy) reduces this gap by running statements in parallel.
 
 ### Recommendations
 
-- Use [high-concurrency mode](#high-concurrency-livy) (default) for parallel statement execution.
 - Use higher thread counts to parallelize model execution and amortize the per-statement overhead. However, higher parallelism also increases API call volume, which can trigger rate limiting sooner.
 - Keep models as consolidated as possible to reduce the total number of statements.
 - Monitor the Spark session in the [Fabric monitoring hub](https://learn.microsoft.com/fabric/data-engineering/spark-monitor-overview?WT.mc_id=MVP_310840) to understand execution patterns.
