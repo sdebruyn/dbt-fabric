@@ -1,7 +1,39 @@
+from pathlib import Path
+
 import pytest
 
 from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+
+# T-SQL fix for dbt_expectations.expect_column_to_exist which renders Jinja True/False
+# directly in SQL (invalid in T-SQL). We patch the installed package file after dbt deps.
+# Upstream: https://github.com/metaplane/dbt-expectations/issues/43
+_EXPECT_COLUMN_TO_EXIST_SQL = """\
+{%- test expect_column_to_exist(model, column_name, column_index=None, transform="upper") -%}
+{%- if execute -%}
+    {%- set column_name = column_name | map(transform) | join -%}
+    {%- set relation_column_names = dbt_expectations._get_column_list(model, transform) -%}
+    {%- set matching_column_index = relation_column_names.index(column_name)
+        if column_name in relation_column_names else -1 %}
+    {%- if column_index -%}
+        {%- set column_index_0 = column_index - 1 if column_index > 0 else 0 -%}
+        {%- set column_index_matches = 1 if matching_column_index == column_index_0 else 0 %}
+    {%- else -%}
+        {%- set column_index_matches = 1 -%}
+    {%- endif %}
+    with test_data as (
+        select
+            cast('{{ column_name }}' as {{ dbt.type_string() }}) as column_name,
+            {{ matching_column_index }} as matching_column_index,
+            {{ column_index_matches }} as column_index_matches
+    )
+    select *
+    from test_data
+    where
+        not(matching_column_index >= 0 and column_index_matches = 1)
+{%- endif -%}
+{%- endtest -%}
+"""
 
 
 class TestDbtProfiler(BaseDbtPackageTests):
@@ -47,14 +79,20 @@ class TestDbtProfiler(BaseDbtPackageTests):
 
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
-        results = run_dbt(["build"], expect_pass=False)
-        failures = [r for r in results.results if r.status in ("error", "fail")]
-        # dbt_expectations.expect_column_to_exist renders Jinja True/False directly in SQL
-        # (invalid T-SQL). The test is namespace-qualified in the package yml so a local
-        # override cannot take precedence. Upstream: metaplane/dbt-expectations#43
-        expected = "expect_column_to_exist"
-        unexpected = [f for f in failures if expected not in f.node.unique_id]
-        assert not unexpected, f"Unexpected failures: {[f.node.unique_id for f in unexpected]}"
+
+        # Patch expect_column_to_exist in the installed package (uses True/False literals)
+        expect_col_path = (
+            Path(project.project_root)
+            / "dbt_packages"
+            / "dbt_expectations"
+            / "macros"
+            / "schema_tests"
+            / "table_shape"
+            / "expect_column_to_exist.sql"
+        )
+        expect_col_path.write_text(_EXPECT_COLUMN_TO_EXIST_SQL)
+
+        run_dbt(["build"])
 
         # Run the incremental model a second time to test the merge/insert path
         run_dbt(["run", "--select", "profile_over_time"])
