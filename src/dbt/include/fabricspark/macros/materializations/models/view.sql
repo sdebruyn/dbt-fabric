@@ -32,7 +32,8 @@
     {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
 
     {# Neither dbt-spark's view materialization nor upstream create_or_replace_view() calls
-       persist_docs. We add it so relation/column comments are applied (like table/incremental). #}
+       persist_docs. We add it for relation-level comments (column comments are skipped for
+       views in fabricspark__persist_docs since Spark rejects ALTER TABLE CHANGE COLUMN on views). #}
     {% do persist_docs(target_relation, model) %}
 
     {{ run_hooks(post_hooks, inside_transaction=True) }}
