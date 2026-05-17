@@ -1,3 +1,5 @@
+{#- T-SQL forbids ORDER BY in views/subqueries unless TOP or OFFSET is specified.
+    The limit parameter uses OFFSET/FETCH instead of LIMIT. -#}
 {% macro fabric__compare_queries(a_query, b_query, primary_key=None, summarize=true, limit=None) %}
 
 with a as (

@@ -37,7 +37,7 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 | [dbt-utils](dbt-utils.md) | 1.3.3 | Yes |
 | [dbt-date](dbt-date.md) | 0.17.2 | Yes |
 | [dbt-expectations](dbt-expectations.md) | 0.10.10 | Yes |
-| [dbt-audit-helper](dbt-audit-helper.md) | -- | No |
+| [dbt-audit-helper](dbt-audit-helper.md) | 0.13.0 | Yes |
 | [dbt-external-tables](dbt-external-tables.md) | 0.11.0 | Yes |
 
 "Tested version" indicates the version against which the adapter runs automated integration tests in CI. Packages without a tested version have macro overrides that are expected to work but are not verified automatically.

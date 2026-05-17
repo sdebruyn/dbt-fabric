@@ -78,7 +78,7 @@ This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), M
 
 ## Community package compatibility
 
-This adapter includes 59 macro overrides across 6 popular dbt packages to make them work with Fabric's T-SQL dialect, with integration tests for dbt-utils, dbt-date, and dbt-external-tables. For community package compatibility details, see [Package support](packages/index.md).
+This adapter includes 59 macro overrides across 6 popular dbt packages to make them work with Fabric's T-SQL dialect, with integration tests for dbt-utils, dbt-date, dbt-audit-helper, and dbt-external-tables. For community package compatibility details, see [Package support](packages/index.md).
 
 The upstream has only a single `get_tables_by_pattern` utility macro and no package integration tests.
 

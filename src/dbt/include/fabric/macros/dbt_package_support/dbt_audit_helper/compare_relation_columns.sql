@@ -1,3 +1,5 @@
+{#- Uses sys.columns instead of INFORMATION_SCHEMA (not supported in Fabric distributed mode).
+    Replaces USING clause with explicit ON; uses CASE WHEN instead of boolean expressions. -#}
 {% macro fabric__compare_relation_columns(a_relation, b_relation) %}
 
 select

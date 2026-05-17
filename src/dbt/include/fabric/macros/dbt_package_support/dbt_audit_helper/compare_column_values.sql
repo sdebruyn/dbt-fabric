@@ -1,3 +1,5 @@
+{#- Adds column_name to output (v0.13.0), customizable relation names, and emoji toggle.
+    Uses CASE WHEN instead of bare boolean expressions (unsupported in T-SQL). -#}
 {% macro fabric__compare_column_values(a_query, b_query, primary_key, column_to_compare, emojis=True, a_relation_name='a', b_relation_name='b') -%}
 with a_query as (
     {{ a_query }}

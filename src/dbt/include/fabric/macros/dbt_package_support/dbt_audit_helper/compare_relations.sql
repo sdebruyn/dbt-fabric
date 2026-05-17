@@ -1,3 +1,4 @@
+{#- Passes limit through to fabric__compare_queries for T-SQL OFFSET/FETCH pagination. -#}
 {% macro fabric__compare_relations(a_relation, b_relation, exclude_columns=[], primary_key=None, summarize=true, limit=None) %}
 
 {%- set a_columns = adapter.get_columns_in_relation(a_relation) -%}

@@ -1,6 +1,5 @@
 import pytest
 
-from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 
@@ -50,9 +49,3 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
             "event_time_var": None,
             "quick_are_queries_identical_cols": ["col1"],
         }
-
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(["seed"])
-        run_dbt(["run"])
-        run_dbt(["test"])
