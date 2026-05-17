@@ -28,6 +28,11 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
                 "data_tests": {
                     "compare_and_classify_query_results": {"+enabled": False},
                     "compare_all_columns_where_clause": {"+enabled": False},
+                    # Macro works (run_query fetches metadata separately, view
+                    # builds with correct VALUES), but the equality test fails:
+                    # upstream seed CSV has UPPERCASE headers while the model
+                    # outputs lowercase, and Fabric's BIN2 collation is
+                    # case-sensitive for identifiers.
                     "compare_relation_columns": {"+enabled": False},
                 },
             }
