@@ -25,10 +25,10 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | `accepted_range` | ✅ | |
 | `at_least_one` | ✅ **(override)** | Subquery requires column alias; uses `TOP 1` instead of `LIMIT 1` |
 | `cardinality_equality` | ✅ | |
-| `equal_rowcount` | ✅ **(override)** | T-SQL subquery and comparison syntax |
+| `equal_rowcount` | ✅ **(override)** | Uses `FULL JOIN` with explicit `ON` clause; `COALESCE` for NULL-safe comparison |
 | `equality` | ✅ | |
 | `expression_is_true` | ✅ **(override)** | T-SQL boolean handling differences |
-| `fewer_rows_than` | ✅ **(override)** | T-SQL subquery and comparison syntax |
+| `fewer_rows_than` | ✅ **(override)** | Uses `FULL JOIN` with explicit `ON` clause; `CASE` instead of `GREATEST()` |
 | `mutually_exclusive_ranges` | ✅ **(override)** | T-SQL window function and boolean syntax |
 | `not_accepted_values` | ✅ | |
 | `not_constant` | ✅ | |

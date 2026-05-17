@@ -23,7 +23,7 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | Macro | Status | Notes |
 |---|---|---|
 | `get_base_dates` | ✅ | |
-| `get_date_dimension` | ✅ **(override)** | Inlined without nested CTEs (not supported in Fabric) |
+| `get_date_dimension` | ✅ **(override)** | Inlined without nested CTEs (Fabric disallows nested CTEs in `CREATE VIEW`) |
 
 ### Current date/time
 
@@ -95,7 +95,8 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 
 | Macro | Status | Notes |
 |---|---|---|
-| `get_fiscal_periods` | ✅ **(override)** | Rewritten for T-SQL CTE and date arithmetic syntax |
+| `get_fiscal_periods` | ✅ **(override)** | Inlined without nested CTEs; T-SQL date arithmetic and `%` operator |
+| `get_fiscal_year_dates` | ✅ **(override)** | T-SQL positional `GROUP BY` and `ORDER BY` replaced with explicit columns |
 
 ### Jinja utilities
 
