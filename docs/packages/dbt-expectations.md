@@ -2,7 +2,7 @@
 
 **Tested version:** 0.10.10 | **Integration tested:** Yes
 
-[dbt-expectations](https://github.com/calogica/dbt-expectations) provides data quality tests inspired by Great Expectations.
+[dbt-expectations](https://github.com/metaplane/dbt-expectations) provides data quality tests inspired by Great Expectations.
 
 ## Dispatch configuration
 
