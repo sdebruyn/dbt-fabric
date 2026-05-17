@@ -87,6 +87,33 @@ uv run pytest --with-grants          # Include GRANT/authorization tests
 uv run pytest -k "TestClassName"     # A specific test class
 ```
 
+### Remote Spark test execution
+
+FabricSpark tests normally run via a local Livy session. The `--remote` flag delegates test execution to a Spark Job Definition on Fabric infrastructure instead. Locally, pytest collects tests as usual, but instead of executing them it syncs the project to a lakehouse via azcopy and submits a Spark job that runs the tests remotely. Results are downloaded as junitxml and reported back in the local pytest session.
+
+```shell
+uv run pytest --de --remote -k "TestClassName"   # Run a specific test remotely
+uv run pytest --de --remote                      # Run all DE tests remotely
+```
+
+`--remote` requires `--de` — it only applies to FabricSpark tests.
+
+#### Prerequisites
+
+1. [azcopy](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azcopy-v10?WT.mc_id=MVP_310840) installed and on your `PATH`
+2. Azure credentials (`az login` or service principal configured in `test.env`)
+3. A Spark Job Definition in the Fabric workspace (the name is configurable via `FABRIC_TEST_SPARK_JOB_NAME`, default: `dbt-fabric-tests`)
+
+#### Optional environment variables
+
+| Variable | Description |
+|---|---|
+| `FABRIC_TEST_SPARK_EXEC_MODE` | `remote` or `mounted` (default: local execution when omitted) |
+| `FABRIC_TEST_ONELAKE_PATH` | Local mount path for OneLake (required for `mounted` mode) |
+| `FABRIC_TEST_SPARK_JOB_NAME` | Spark Job Definition display name (default: `dbt-fabric-tests`) |
+
+The remote orchestrator reuses `FABRIC_TEST_WORKSPACE_NAME` and `FABRIC_TEST_LAKEHOUSE_NAME` from `test.env` and resolves their IDs via the Fabric API — no separate ID variables are needed.
+
 ### Test architecture
 
 Tests use [dbt-tests-adapter](https://github.com/dbt-labs/dbt-adapters), dbt's official adapter test harness. It provides base test classes for standard adapter behavior. Our tests inherit from these and override fixtures where Fabric's SQL dialect differs:
