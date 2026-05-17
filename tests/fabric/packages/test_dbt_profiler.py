@@ -36,8 +36,6 @@ class TestDbtProfiler(BaseDbtPackageTests):
             "dbt_profiler_integration_tests": {
                 # STRUCT type does not exist in T-SQL (BigQuery-only)
                 "profile_struct": {"+enabled": False},
-                # Incremental model requires separate seed/run/run cycle, not needed for macro validation
-                "profile_over_time": {"+enabled": False},
             }
         }
 
@@ -57,3 +55,6 @@ class TestDbtProfiler(BaseDbtPackageTests):
         expected = "expect_column_to_exist"
         unexpected = [f for f in failures if expected not in f.node.unique_id]
         assert not unexpected, f"Unexpected failures: {[f.node.unique_id for f in unexpected]}"
+
+        # Run the incremental model a second time to test the merge/insert path
+        run_dbt(["run", "--select", "profile_over_time"])
