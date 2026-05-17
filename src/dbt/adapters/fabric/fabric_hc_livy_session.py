@@ -9,7 +9,7 @@ import requests
 
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient, FabricApiError
-from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
+from dbt.adapters.fabric.livy_result import LivySessionResult
 
 logger = AdapterLogger("fabricspark")
 

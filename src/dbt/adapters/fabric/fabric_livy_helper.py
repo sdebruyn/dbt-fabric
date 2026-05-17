@@ -7,8 +7,8 @@ from dbt.adapters.base.impl import PythonJobHelper
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_hc_livy_session import HighConcurrencyLivySession
-from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
+from dbt.adapters.fabric.livy_result import LivySessionResult
 
 _thread_local = threading.local()
 

@@ -6,7 +6,7 @@ from dbt.adapters.base.impl import PythonJobHelper
 from dbt.adapters.contracts.connection import AdapterResponse
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_livy_helper import FabricLivyHelper
-from dbt.adapters.fabric.fabric_livy_session import LivySubmissionResult
+from dbt.adapters.fabric.livy_result import LivySubmissionResult
 from dbt.adapters.fabric.purview_sync import PurviewSync, extract_syncable_models
 from dbt.adapters.sql.impl import SQLAdapter
 

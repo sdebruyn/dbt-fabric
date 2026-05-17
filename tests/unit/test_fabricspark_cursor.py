@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 import pytest
 from dbt_common.exceptions import DbtDatabaseError
 
-from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
+from dbt.adapters.fabric.livy_result import LivySessionResult
 from dbt.adapters.fabricspark.fabricspark_cursor import FabricSparkCursor
 
 SAMPLE_FIELDS = [

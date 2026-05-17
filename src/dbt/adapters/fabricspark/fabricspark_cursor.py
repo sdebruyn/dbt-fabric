@@ -7,7 +7,7 @@ from typing import Any, Self
 from dbt_common.exceptions import DbtDatabaseError, DbtRuntimeError
 
 from dbt.adapters.fabric.fabric_hc_livy_session import HighConcurrencyLivySession
-from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
+from dbt.adapters.fabric.livy_result import LivySessionResult
 
 
 class FabricSparkCursor:
