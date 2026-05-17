@@ -1,4 +1,4 @@
-# CLUSTER BY
+# Data clustering
 
 Fabric Data Warehouse supports [automatic data clustering](https://learn.microsoft.com/fabric/data-warehouse/statistics#automatic-clustering?WT.mc_id=MVP_310840) via the `CLUSTER BY` clause on `CREATE TABLE` statements. Clustering organizes data physically on disk based on the specified columns, which can significantly improve query performance for filters and joins on those columns.
 
@@ -57,43 +57,6 @@ The generated SQL will look like:
 CREATE TABLE [schema].[orders]
 WITH (CLUSTER BY ([customer_id], [order_date]))
 AS select ...
-```
-
----
-
-## Works with model contracts
-
-If your model has [contract enforcement](https://docs.getdbt.com/docs/collaborate/govern/model-contracts) enabled, the `CLUSTER BY` clause is added to the `CREATE TABLE` statement alongside the column constraints:
-
-```sql title="models/orders.sql"
-{{ config(
-    materialized='table',
-    cluster_by=['customer_id', 'order_date']
-) }}
-
-select
-    order_id,
-    order_date,
-    customer_id,
-    total_amount
-from {{ source('raw', 'orders') }}
-```
-
-```yaml title="models/schema.yml"
-models:
-  - name: orders
-    config:
-      contract:
-        enforced: true
-    columns:
-      - name: order_id
-        data_type: int
-      - name: order_date
-        data_type: date
-      - name: customer_id
-        data_type: int
-      - name: total_amount
-        data_type: decimal(18, 2)
 ```
 
 ---

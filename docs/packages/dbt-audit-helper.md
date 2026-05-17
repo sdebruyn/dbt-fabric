@@ -14,7 +14,7 @@ dispatch:
 
 ## Macro compatibility
 
-Legend: ✅ = supported on Fabric, ❌ = not supported on Fabric
+Legend: :white_check_mark: = supported on Fabric, :x: = not supported on Fabric
 
 Macros marked with **(override)** have a T-SQL-compatible override in this adapter. All other supported macros work without any adapter-specific override.
 
@@ -22,24 +22,24 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 
 | Macro | Status | Notes |
 |---|---|---|
-| `compare_queries` | ✅ **(override)** | `OFFSET/FETCH` instead of `LIMIT`; `ORDER BY` only when limit is used (T-SQL restriction) |
-| `compare_relations` | ✅ **(override)** | Passes `limit` through to `compare_queries` for T-SQL pagination |
-| `compare_column_values` | ✅ **(override)** | `CASE WHEN` instead of bare boolean expressions; adds `column_name` output, emoji toggle, custom relation names (v0.13.0) |
-| `compare_column_values_verbose` | ✅ **(override)** | `CASE WHEN` → 0/1 integers instead of bare boolean expressions and `coalesce(..., false)` |
-| `compare_all_columns` | ✅ **(override)** | Explicit `GROUP BY` instead of positional; `ORDER BY` moved out of CTE; `sum()` on 0/1 integer columns |
-| `compare_relation_columns` | ✅ **(override)** | Fetches metadata via `run_query()` (separate statement) to avoid distributed mode restrictions on `sys.columns`; builds comparison from `VALUES` literals |
-| `compare_row_counts` | ✅ | |
-| `compare_which_query_columns_differ` | ✅ | Works via the adapter's `bool_or` override (`MAX(CASE WHEN ... THEN 1 ELSE 0 END)`) |
-| `compare_which_relation_columns_differ` | ✅ | Delegates to `compare_which_query_columns_differ` |
-| `quick_are_queries_identical` | ✅ | |
-| `quick_are_relations_identical` | ✅ | |
+| `compare_queries` | :white_check_mark: **(override)** | `OFFSET/FETCH` instead of `LIMIT`; `ORDER BY` only when limit is used (T-SQL restriction) |
+| `compare_relations` | :white_check_mark: **(override)** | Passes `limit` through to `compare_queries` for T-SQL pagination |
+| `compare_column_values` | :white_check_mark: **(override)** | `CASE WHEN` instead of bare boolean expressions; adds `column_name` output, emoji toggle, custom relation names (v0.13.0) |
+| `compare_column_values_verbose` | :white_check_mark: **(override)** | `CASE WHEN` → 0/1 integers instead of bare boolean expressions and `coalesce(..., false)` |
+| `compare_all_columns` | :white_check_mark: **(override)** | Explicit `GROUP BY` instead of positional; `ORDER BY` moved out of CTE; `sum()` on 0/1 integer columns |
+| `compare_relation_columns` | :white_check_mark: **(override)** | Fetches metadata via `run_query()` (separate statement) to avoid distributed mode restrictions on `sys.columns`; builds comparison from `VALUES` literals |
+| `compare_row_counts` | :white_check_mark: | |
+| `compare_which_query_columns_differ` | :white_check_mark: | Works via the adapter's `bool_or` override (`MAX(CASE WHEN ... THEN 1 ELSE 0 END)`) |
+| `compare_which_relation_columns_differ` | :white_check_mark: | Delegates to `compare_which_query_columns_differ` |
+| `quick_are_queries_identical` | :white_check_mark: | |
+| `quick_are_relations_identical` | :white_check_mark: | |
 
 ### Not supported
 
 | Macro | Status | Notes |
 |---|---|---|
-| `compare_and_classify_query_results` | ❌ | Not dispatched; uses `true`/`false` literals (no boolean type in T-SQL) |
-| `compare_and_classify_relation_rows` | ❌ | Delegates to `compare_and_classify_query_results` |
+| `compare_and_classify_query_results` | :x: | Not dispatched; uses `true`/`false` literals (no boolean type in T-SQL) |
+| `compare_and_classify_relation_rows` | :x: | Delegates to `compare_and_classify_query_results` |
 
 ## Implementation notes
 

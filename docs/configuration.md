@@ -456,3 +456,116 @@ The endpoint URL of your Microsoft Purview account. This is required to use the 
 You can find this in the Azure portal under your Purview account's Properties page (labeled "Atlas endpoint") or in the Purview governance portal settings.
 
 Your authentication identity must have **Data Curator** and **Data Reader** roles in the Purview account's root collection.
+
+### `trace_flag`
+
+Possible values: `true`, `false`<br>
+Default: `false`
+
+!!! info "Data Warehouse only"
+
+    This option only applies to `type: fabric`.
+
+Enables SQL connection tracing for debugging purposes. When set to `true`, the underlying database driver logs detailed trace information. This is only useful for diagnosing low-level connection issues and should not be enabled in normal operation.
+
+### `fabric_base_api_uri`
+
+Default: `https://api.fabric.microsoft.com/v1`
+
+!!! warning "Advanced"
+
+    You should not need to change this unless you are connecting to a non-standard Fabric environment (e.g., a sovereign cloud or test endpoint).
+
+The base URL for the Fabric REST API. Used internally for workspace resolution, Livy session management, and Purview integration.
+
+### `powerbi_base_api_uri`
+
+Default: `https://api.powerbi.com/v1.0`
+
+!!! warning "Advanced"
+
+    You should not need to change this unless you are connecting to a non-standard Fabric environment (e.g., a sovereign cloud or test endpoint).
+
+The base URL for the Power BI REST API. Used internally for workspace and server resolution when [`workspace_name`](#workspace_name) or [`workspace_id`](#workspace_id) is provided.
+
+---
+
+## Model-level configuration
+
+These options are set in your `dbt_project.yml` or in individual model `{{ config(...) }}` blocks. They control how dbt materializes your models in Fabric.
+
+### Data Warehouse options
+
+#### `cluster_by`
+
+See the dedicated [CLUSTER BY](cluster-by.md) guide.
+
+#### `statistics`
+
+See the dedicated [Statistics](statistics.md) guide.
+
+#### `auto_provision_aad_principals`
+
+Possible values: `true`, `false`<br>
+Default: `false`
+
+When applying [grants](https://docs.getdbt.com/reference/resource-configs/grants), automatically provision Microsoft Entra ID principals (users or groups) if they do not already exist in the Data Warehouse. Without this, granting access to a principal that hasn't logged in yet would fail.
+
+```yaml
+models:
+  my_project:
+    +auto_provision_aad_principals: true
+    +grants:
+      select: ['data-readers@example.com']
+```
+
+### Lakehouse options
+
+#### `file_format`
+
+Default: `delta`
+
+The file format for tables. Only `delta` is supported in Fabric Lakehouse.
+
+#### `partition_by`
+
+Example value: `['year', 'month']`
+
+Columns to partition by. Required for the `insert_overwrite` and `microbatch` incremental strategies.
+
+```sql
+{{ config(
+    materialized='incremental',
+    incremental_strategy='insert_overwrite',
+    partition_by=['event_date']
+) }}
+```
+
+#### `tblproperties`
+
+A dictionary of Spark table properties to set on [materialized views](lakehouse.md) (lake views).
+
+```sql
+{{ config(
+    materialized='materialized_view',
+    tblproperties={'delta.deletedFileRetentionDuration': 'interval 30 days'}
+) }}
+```
+
+#### `workspace_name` (model config)
+
+Enables cross-workspace 4-part naming for snapshots. Set this to the target workspace name when your snapshot target is in a different workspace than your connection profile.
+
+```sql
+{% snapshot my_cross_workspace_snapshot %}
+{{ config(
+    target_database='other_lakehouse',
+    target_schema='dbo',
+    workspace_name='Other Workspace',
+    strategy='timestamp',
+    unique_key='id',
+    updated_at='updated_at'
+) }}
+select * from {{ source('external', 'my_table') }}
+{% endsnapshot %}
+```

@@ -5,9 +5,6 @@ This report provides a detailed technical comparison between the **FabricSpark a
 | | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
 | **PyPI package** | `dbt-fabric-samdebruyn[spark]` | `dbt-fabricspark` |
-| **Latest version** | v1.11.3b0 | v1.11.0 |
-
-**Last updated:** 2026-05-16
 
 ---
 
@@ -20,23 +17,22 @@ This is the most significant difference and influences nearly every other compar
 This adapter's FabricSpark adapter uses **multiple inheritance**: `FabricSparkAdapter(BaseFabricAdapter, SparkAdapter)`. It inherits from dbt-spark's `SparkAdapter` and a shared `BaseFabricAdapter` also used by the T-SQL adapter.
 
 - **Plugin registration** declares `dependencies=["spark"]`, so dbt-spark's macros are available at runtime.
-- **Adapter code** is thin (~749 LOC) because it delegates heavily to dbt-spark and the shared base.
-- **Macros** (24 files) are primarily overrides of dbt-spark macros for Fabric-specific behavior.
+- **Adapter code** is thin because it delegates heavily to dbt-spark and the shared base.
+- **Macros** are primarily overrides of dbt-spark macros for Fabric-specific behavior.
 
 ### Upstream: standalone SQLAdapter
 
 The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-spark dependency.
 
 - **Plugin registration** has no `dependencies` -- all Spark SQL behavior is self-contained.
-- **Adapter code** is significantly larger (~4,387 LOC) because it reimplements everything dbt-spark would provide.
-- **Macros** (34 files) include utility functions normally inherited from dbt-spark.
+- **Adapter code** is significantly larger because it reimplements everything dbt-spark would provide.
+- **Macros** include utility functions normally inherited from dbt-spark.
 
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
 | Code reuse | High (inherits dbt-spark + shared base) | None (self-contained) |
-| Maintenance burden | Lower per-adapter, coupled to dbt-spark | Higher total LOC, no external coupling |
+| Maintenance burden | Lower per-adapter, coupled to dbt-spark | Higher, no external coupling |
 | dbt-spark compatibility | Automatic (inherits macros/behaviors) | Manual (must reimplement) |
-| Customization surface | Limited by what dbt-spark exposes | Full control |
 
 ---
 
@@ -46,14 +42,14 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 
 | Materialization | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Table** | Yes (via dbt-spark) | Yes (custom implementation) |
-| **View** | Yes | Yes |
+| **Table** | :white_check_mark: | :white_check_mark: |
+| **View** | :white_check_mark: | :white_check_mark: |
 | **Incremental** | append, merge, insert_overwrite, microbatch | append, merge, insert_overwrite, microbatch |
-| **Snapshot** | Yes | Yes |
-| **Ephemeral** | Yes | Yes |
-| **Materialized View / Lake View** | Yes (standard dbt MV pattern) | Yes (Fabric-specific MLV with REST API refresh) |
-| **Clone** | Yes | Yes |
-| **Seed** | Yes (via dbt-spark) | Yes (custom implementation) |
+| **Snapshot** | :white_check_mark: | :white_check_mark: |
+| **Ephemeral** | :white_check_mark: | :white_check_mark: |
+| **Materialized View / Lake View** | :white_check_mark: (standard dbt MV pattern) | :white_check_mark: (Fabric-specific MLV with REST API refresh) |
+| **Clone** | :white_check_mark: | :white_check_mark: |
+| **Seed** | :white_check_mark: | :white_check_mark: |
 
 Notable differences:
 
@@ -63,26 +59,25 @@ Notable differences:
 
 | Method | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Azure CLI** | Yes | Yes |
-| **Service Principal** | Yes | Yes |
-| **Token Credential** | Yes | Yes |
-| **Workload Identity** | Yes (federated OIDC) | No |
-| **Static Access Token** | Yes | Yes |
-| **Fabric Notebook** | No | Yes |
+| **Azure CLI** | :white_check_mark: | :white_check_mark: |
+| **Service Principal** | :white_check_mark: | :white_check_mark: |
+| **Token Credential** | :white_check_mark: | :white_check_mark: |
+| **Workload Identity** | :white_check_mark: (federated OIDC) | :x: |
+| **Static Access Token** | :white_check_mark: | :white_check_mark: |
+| **Fabric Notebook** | :white_check_mark: | :white_check_mark: |
 
 ### Livy session management
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | Yes (HC-only, instance-based lifecycle) | Yes (default on, `atexit` cleanup) |
-| **Session creation** | `FabricApiClient` singleton | `LivySessionManager` with static globals |
+| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | :white_check_mark: | :white_check_mark: |
 | **Session reuse** | Deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
 | **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
 | **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
 | **Session idle timeout** | 15 min default | 30 min default, configurable |
-| **Local Livy mode** | No | Yes (`livy_mode: local`) |
+| **Local Livy mode** | :x: | :white_check_mark: (`livy_mode: local`) |
 | **Statement timeout** | 24 hours | 12 hours (configurable) |
-| **Thread-safe token refresh** | No | Yes (`_token_lock`) |
+| **Thread-safe token refresh** | :x: | :white_check_mark: (`_token_lock`) |
 
 ### Unique to this adapter
 
@@ -101,9 +96,7 @@ Notable differences:
 |---|---|
 | **MLV REST API** | On-demand refresh, scheduled refresh via Fabric API |
 | **OneLake shortcuts** | `ShortcutClient` for shortcut CRUD |
-| **Fabric Notebook auth** | Ambient auth inside notebooks |
 | **Local Livy mode** | Connect to local Livy for development |
-| **Cross-workspace 4-part naming** | Full read+write for `workspace.lakehouse.schema.table` |
 | **Credential validation** | UUID format, HTTPS domain whitelist |
 
 ### Lakehouse schema support
@@ -118,32 +111,17 @@ Notable differences:
 
 ## Test suite
 
-| Metric | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
+| Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Test files** | 60 | 50 |
-| **Test classes** | ~183 | ~141 |
-| **Unit/functional split** | All integration | Unit (mock) + functional (real infra) |
-| **Schema mode toggle** | No | Yes (`--schema-mode` CLI flag) |
-| **Session sharding** | No | Yes (`--session-id-files` for xdist workers) |
-| **Fail-fast sentinel** | No | Yes (cross-worker abort on first failure) |
-| **Session reuse assertion** | No | Yes (verifies no extra sessions created) |
-
-**This adapter covers that upstream does not:** Purview tests, broader dbt-tests-adapter base class coverage (183 vs 141 classes).
-
-**Upstream covers that this adapter does not:** Unit tests (mock-based), cross-workspace tests, MLV lifecycle tests, OneLake shortcut tests, dual schema-mode testing, fail-fast sentinel, session reuse verification.
+| **Testing approach** | Integration tests against real Fabric | Unit tests (mock) + functional tests (real infra) |
+| **dbt-tests-adapter coverage** | Broad (standard adapter base classes) | Narrower (custom test suite) |
+| **Community package tests** | [:white_check_mark:](packages/index.md) | :x: |
 
 ---
 
 ## dbt Core compatibility
 
-| Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
-|---|---|---|
-| **dbt-adapters** | >=1.22.6, <2.0 | >=1.7, <2.0 |
-| **dbt-common** | >=1.37.3, <2.0 | >=1.10, <2.0 |
-| **dbt-core** (dev) | >=1.9.6, <1.13.0 | >=1.8.0 |
-| **dbt-spark** | >=1.10.1 (optional) | Not used |
-| **Python** | >=3.11, <3.14 | >=3.10, <3.14 |
-| **azure-identity** | >=1.12.0 | >=1.21.0 |
+For supported dbt-core and Python versions, see the [compatibility page](compatibility.md).
 
 ---
 
@@ -151,9 +129,9 @@ Notable differences:
 
 | Practice | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Inherits official base** | Yes (SparkAdapter + BaseFabricAdapter) | Partially (SQLAdapter only) |
-| **Capability declarations** | Yes | No |
-| **`@available` methods** | Yes (inherited) | Yes (MLV, schema detection) |
+| **Inherits official base** | :white_check_mark: (SparkAdapter + BaseFabricAdapter) | Partially (SQLAdapter only) |
+| **Capability declarations** | :white_check_mark: | :x: |
+| **`@available` methods** | :white_check_mark: (inherited) | :white_check_mark: (MLV, schema detection) |
 | **Plugin dependencies** | `dependencies=["spark"]` | None |
 | **Dispatch fallback** | dbt-spark macros available | Must reimplement everything |
 
@@ -163,13 +141,10 @@ Notable differences:
 
 | | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Total commits** | 500+ since Jan 2025 | 329 total, ~278 since Jan 2025 |
-| **Release tags** | 67+ (v1.4.0rc1 to v1.11.3b0) | 8 (v1.7.0rc1 to v1.11.0) |
 | **Python** | 3.11-3.13 | 3.10-3.13 |
-| **Documentation** | [Docs website](https://dbt-fabric.debruyn.dev) + development guide | README + CONTRIBUTING.md |
-| **Code style** | ruff, PEP 604, line-length 99 | ruff, older typing style |
-
-Both repositories use the MIT License and the hatchling build system.
+| **Documentation** | [Dedicated docs site](https://dbt-fabric.debruyn.dev) | README + CONTRIBUTING.md |
+| **Code style** | ruff, PEP 604 | ruff, older typing style |
+| **License** | MIT | MIT |
 
 ---
 
@@ -179,14 +154,7 @@ A detailed review of the upstream's Python source code reveals several significa
 
 ### Global mutable state
 
-The upstream stores critical runtime state in module-level and class-level global variables:
-
-- **Authentication token** (`livysession.py` line 35): A single `accessToken: AccessToken = None` global shared by all threads. While a `_token_lock` protects the refresh path, other code reads `accessToken.token` after releasing the lock, creating a data race in multi-threaded dbt runs.
-- **Livy session** (`livysession.py` line 1327): `LivySessionManager.livy_global_session` is a class variable mutated from multiple threads. The lock only protects `connect()`/`disconnect()`, but `is_new_session_required` is set outside the lock at multiple call sites.
-- **Connection managers** (`connections.py` line 93): A class-level `connection_managers = {}` dict mutated at runtime, with no cleanup between test runs.
-- **Relation state** (`relation.py` lines 44-45): `_schemas_enabled` and `_identifier_prefix` are `ClassVar` attributes mutated at connection time, meaning all relation instances across all threads share the same value.
-
-This adapter uses proper instance-based encapsulation: `FabricTokenProvider` (per-scope token caching), `FabricApiClient` (singleton with thread-safe session lock), and no module-level mutable state.
+The upstream stores critical runtime state in module-level and class-level global variables — authentication tokens, Livy session handles, connection managers, and relation configuration are all shared across threads via globals or `ClassVar` attributes. This leads to data races in multi-threaded dbt runs (e.g., reading a token after releasing its lock, mutating session state outside locks). This adapter uses instance-based encapsulation with no module-level mutable state.
 
 ### atexit handler for session cleanup
 
@@ -198,9 +166,9 @@ This adapter manages session lifecycle through dbt's normal connection manager `
 
 Both `LivySession.__exit__` and `LivyCursor.__exit__` return `True` (`livysession.py` lines 489-495, 855-859), which suppresses all exceptions — including database errors, timeouts, and `KeyboardInterrupt` — inside any `with` block using these objects.
 
-### Misleading security comment with actual regex bug
+### Regex bug in SQL sanitization
 
-`_getLivySQL()` (`livysession.py` lines 980-988) contains alarming security comments ("repurcursions of code injection... arbritary Python code") about code that now just strips SQL block comments. The comment was left behind from a previous implementation. Additionally, `re.sub(r"\s*/\*(.|\n)*?\*/\s*", "\n", sql, re.DOTALL)` passes `re.DOTALL` (integer value 16) as the `count` parameter instead of as `flags=re.DOTALL`, meaning it limits replacements to 16 instead of enabling dotall mode.
+`_getLivySQL()` passes `re.DOTALL` as the `count` parameter instead of `flags=re.DOTALL`, silently limiting comment-stripping to 16 replacements instead of enabling multiline matching.
 
 ### Dead code and copy-paste artifacts
 
@@ -218,6 +186,6 @@ The upstream mixes camelCase (`tokenPrint`, `accessToken`, `_submitLivyCode`, `_
 
 ## Summary
 
-This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented). The fork's approach results in dramatically less code (749 LOC vs 4,387 LOC) with proper instance-based lifecycle management and no global mutable state.
+This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented). The fork's approach results in significantly less code with proper instance-based lifecycle management and no global mutable state.
 
-The upstream has more Fabric-specific features (MLV REST API refresh, OneLake shortcuts, cross-workspace 4-part naming, local Livy mode), while this adapter offers broader dbt ecosystem integration (dbt-spark inheritance, Purview, capability declarations, shared T-SQL + Spark in one package) and significantly higher code quality.
+The upstream has more Fabric-specific features (MLV REST API refresh, OneLake shortcuts, local Livy mode), while this adapter offers broader dbt ecosystem integration (dbt-spark inheritance, Purview, capability declarations, shared T-SQL + Spark in one package) and significantly higher code quality.
