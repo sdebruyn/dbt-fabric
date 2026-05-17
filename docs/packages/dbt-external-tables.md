@@ -22,16 +22,6 @@ dispatch:
 
 <!-- TODO: fill in full macro table like dbt-utils -->
 
-## Overridden macros
-
-| Macro | What it does |
-|---|---|
-| `create_external_table` | Creates a view wrapping an `OPENROWSET(BULK ...)` query instead of `CREATE EXTERNAL TABLE` |
-| `dropif` | Drops the OPENROWSET view with `DROP VIEW IF EXISTS` |
-| `refresh_external_table` | No-op (OPENROWSET reads live data on every query, no refresh needed) |
-| `resolve_file_format` | Detects file format from `file_format` config or file extension (Parquet, CSV, JSONL) |
-| `build_openrowset` | Generates the `OPENROWSET(BULK ...)` SQL with format options and optional `WITH` clause |
-
 ## How it works
 
 When you run `dbt run-operation stage_external_sources`, the overridden macros create **views** that wrap `OPENROWSET` queries. This means:
