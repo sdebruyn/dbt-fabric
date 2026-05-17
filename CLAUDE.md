@@ -291,7 +291,7 @@ GitHub Actions workflows in `.github/workflows/`:
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `lint-format.yml` | PR, push | `ruff format --check` + `ruff check` |
-| `integration-tests-dw.yml` | Push to main, PR comment (`/test-dw`), manual, weekly (Sun 02:00 UTC) | DW tests: Python 3.13 on push/on-demand/manual, full matrix (3.11/3.12/3.13) on weekly schedule |
+| `integration-tests-dw.yml` | PR, push, manual, weekly (Sun 02:00 UTC) | DW tests: Python 3.14 only on PR/push/manual, full matrix (3.11/3.12/3.13/3.14) on weekly schedule |
 | `integration-tests-de.yml` | Weekly (Sun 01:00 UTC), PR comment (`/test-de`), manual | DE tests: weekly full run on main + on-demand per PR via `/test-de <filter>` or `gh workflow run` |
 | `release-version.yml` | Tag `v*` | Update version, build, publish to PyPI |
 
@@ -309,12 +309,12 @@ CI authenticates to Azure via OIDC (federated credentials, no secrets stored). T
 
 - **Formatter/linter**: ruff (config in `pyproject.toml`)
 - **Line length**: 99
-- **Python target**: 3.13
+- **Python target**: 3.11 (ruff target-version, must match minimum supported Python)
 - **Quote style**: double quotes
 - **Lint rules**: isort (`I`) + no commented-out code (`ERA`)
 - **No comments in code** unless the _why_ is non-obvious
 - **Always run ruff before committing**: `uv run ruff format .` and `uv run ruff check --fix .` must pass before every commit
-- **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the project targets Python 3.13 and has no `from typing import Union` imports
+- **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the minimum supported Python is 3.11 (PEP 604 requires 3.10+) and there are no `from typing import Union` imports
 - **Class constants at the top**: group all class-level constants together at the top of the class body, before any methods
 
 ## Key concepts for working on this adapter

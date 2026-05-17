@@ -207,7 +207,8 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 | 3.8-3.10 | No | Listed in classifiers |
 | 3.11 | Yes (tested in CI) | Yes |
 | 3.12 | Yes (tested in CI) | Not listed |
-| 3.13 | Yes (tested in CI, primary) | Not listed |
+| 3.13 | Yes (tested in CI) | Not listed |
+| 3.14 | Yes (tested in CI, primary) | Not listed |
 
 ### dbt feature compatibility
 
@@ -227,7 +228,7 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **DW test matrix** | Python 3.11/3.12/3.13 on weekly; 3.13 on PR/push | Python 3.11 only |
+| **DW test matrix** | Python 3.11/3.12/3.13/3.14 on weekly; 3.14 on PR/push | Python 3.11 only |
 | **DE (Spark) test matrix** | Weekly + on-demand via `/test-de` PR comment | N/A |
 | **Auth in CI** | OIDC federated credentials (`workload_identity`) | OIDC via Azure login action |
 | **Runner** | `ubuntu-latest` | Custom Docker container |

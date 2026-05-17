@@ -167,7 +167,7 @@ Notable differences:
 |---|---|---|
 | **Total commits** | 500+ since Jan 2025 | 329 total, ~278 since Jan 2025 |
 | **Release tags** | 67+ (v1.4.0rc1 to v1.11.3b0) | 8 (v1.7.0rc1 to v1.11.0) |
-| **Python** | 3.11-3.13 | 3.10-3.13 |
+| **Python** | 3.11-3.14 | 3.10-3.13 |
 | **Documentation** | [Docs website](https://dbt-fabric.debruyn.dev) + development guide | README + CONTRIBUTING.md |
 | **Code style** | ruff, PEP 604, line-length 99 | ruff, older typing style |
 
@@ -214,7 +214,7 @@ Both `LivySession.__exit__` and `LivyCursor.__exit__` return `True` (`livysessio
 
 ### Inconsistent style
 
-The upstream mixes camelCase (`tokenPrint`, `accessToken`, `_submitLivyCode`, `_getLivySQL`) with snake_case throughout. Pre-3.9 typing aliases (`Dict`, `List`, `Optional`, `Union`) are used despite targeting Python 3.13.
+The upstream mixes camelCase (`tokenPrint`, `accessToken`, `_submitLivyCode`, `_getLivySQL`) with snake_case throughout. Pre-3.9 typing aliases (`Dict`, `List`, `Optional`, `Union`) are used despite targeting Python 3.10+.
 
 ---
 
