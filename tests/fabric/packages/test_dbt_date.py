@@ -33,12 +33,12 @@ class TestDbtDate(BaseDbtPackageTests):
         return "dbt_date"
 
     @pytest.fixture(scope="class")
-    def package_repo(self) -> str:
-        return "https://github.com/godatadriven/dbt-date"
+    def package_repo(self, dbt_date_repo) -> str:
+        return dbt_date_repo
 
     @pytest.fixture(scope="class")
-    def package_revision(self) -> str:
-        return "0.17.2"
+    def package_revision(self, dbt_date_revision) -> str:
+        return dbt_date_revision
 
     @pytest.fixture(scope="class")
     def models(self):

@@ -1,3 +1,5 @@
+{#- T-SQL STRING_SPLIT only accepts single-char separators. We REPLACE the actual
+    delimiter with char(1) (SOH) first, then split on that. #}
 {% macro fabric__split_part(string_text, delimiter_text, part_number) %}
     (
         select value
