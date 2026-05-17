@@ -1,4 +1,6 @@
-{% macro fabric__compare_queries(a_query, b_query, primary_key=None, summarize=true) %}
+{#- T-SQL forbids ORDER BY in views/subqueries unless TOP or OFFSET is specified.
+    The limit parameter uses OFFSET/FETCH instead of LIMIT. -#}
+{% macro fabric__compare_queries(a_query, b_query, primary_key=None, summarize=true, limit=None) %}
 
 with a as (
 
@@ -76,10 +78,10 @@ summary_stats as (
 final as (
 
     select
-    *,
-    round(100.0 * count / sum(count) over (), 2) as percent_of_total
-
+        *,
+        round(100.0 * count / sum(count) over (), 2) as percent_of_total
     from summary_stats
+
 )
 
 {%- else %}
@@ -94,7 +96,10 @@ final as (
 
 {%- endif %}
 
-select *
-from final
+select * from final
+{%- if limit and not summarize %}
+order by {{ primary_key ~ ", " if primary_key is not none }} in_a desc, in_b desc
+offset 0 rows fetch next {{ limit }} rows only
+{%- endif %}
 
 {% endmacro %}
