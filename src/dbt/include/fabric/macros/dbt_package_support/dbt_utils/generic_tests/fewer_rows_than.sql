@@ -55,8 +55,8 @@ final as (
     select *,
         {#- Upstream uses GREATEST(). T-SQL has no GREATEST; emulated with CASE. -#}
         case
-            when count_our_model > count_comparison_model then (count_our_model - count_comparison_model)
-            when count_our_model = count_comparison_model then 1
+            when coalesce(count_our_model, 0) > coalesce(count_comparison_model, 0) then (coalesce(count_our_model, 0) - coalesce(count_comparison_model, 0))
+            when coalesce(count_our_model, 0) = coalesce(count_comparison_model, 0) then 1
             else 0
         end as row_count_delta
     from counts
