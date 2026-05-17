@@ -69,7 +69,10 @@ class TestDbtCodegen(BaseDbtPackageTests):
         run_dbt(["seed"])
         run_dbt(["run-operation", "create_source_table"])
         run_dbt(["run"])
-        run_dbt(["test"])
+        # test_generate_source: codegen.generate_source() calls
+        # dbt_utils.get_relations_by_pattern which queries information_schema.tables,
+        # not available in Spark SQL (same limitation as dbt-utils on FabricSpark)
+        run_dbt(["test", "--exclude", "test_generate_source"])
 
 
 _SCHEMA_YML = """
