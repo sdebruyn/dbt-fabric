@@ -1,5 +1,6 @@
 import pytest
 
+from dbt.tests.util import run_dbt
 from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 
 
@@ -41,27 +42,12 @@ class TestDbtExpectations(BaseDbtPackageTests):
         return {
             "dbt_expectations_integration_tests": {
                 "schema_tests": {
-                    # dbt_date.now() generates T-SQL incompatible date arithmetic in these models
+                    # dbt_date.now() generates T-SQL incompatible date arithmetic
                     "timeseries_data": {"+enabled": False},
                     "timeseries_data_extended": {"+enabled": False},
                     "timeseries_data_grouped": {"+enabled": False},
                     "timeseries_hourly_data_extended": {"+enabled": False},
                 }
-            }
-        }
-
-    @pytest.fixture(scope="class")
-    def tests_config(self):
-        return {
-            "dbt_expectations_integration_tests": {
-                "expect_column_values_to_match_regex": {"+enabled": False},
-                "expect_column_values_to_not_match_regex": {"+enabled": False},
-                "expect_column_values_to_match_regex_list": {"+enabled": False},
-                "expect_column_values_to_not_match_regex_list": {"+enabled": False},
-                "expect_column_to_exist": {"+enabled": False},
-                "expect_column_values_to_have_consistent_casing": {"+enabled": False},
-                "expect_compound_columns_to_be_unique": {"+enabled": False},
-                "expect_column_most_common_value_to_be_in_set": {"+enabled": False},
             }
         }
 
@@ -77,3 +63,45 @@ class TestDbtExpectations(BaseDbtPackageTests):
                 "search_order": ["test_dbt_package", "dbt", "dbt_date"],
             },
         ]
+
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+
+        excludes = []
+
+        # T-SQL has no native regex support (no REGEXP, REGEXP_LIKE, or similar).
+        # These tests cannot be fixed with macro overrides or adapter dispatch.
+        for test in (
+            "expect_column_values_to_match_regex",
+            "expect_column_values_to_not_match_regex",
+            "expect_column_values_to_match_regex_list",
+            "expect_column_values_to_not_match_regex_list",
+        ):
+            excludes.extend(["--exclude", f"test_name:{test}"])
+
+        # These tests have T-SQL incompatible SQL but do NOT use adapter.dispatch(),
+        # so they cannot be overridden by adapter macros. Project-level macros also
+        # cannot shadow them because dbt resolves generic tests defined in a package's
+        # schema.yml from the package's own macro namespace, not the root project.
+        for test in (
+            # Upstream renders Python True/False as SQL literals and uses bare boolean
+            # in WHERE. T-SQL has no boolean type.
+            "expect_column_to_exist",
+            # Upstream uses positional GROUP BY 1. T-SQL does not support positional
+            # GROUP BY.
+            "expect_column_values_to_have_consistent_casing",
+        ):
+            excludes.extend(["--exclude", f"test_name:{test}"])
+
+        # This specific test instance sets fail_calc='cast((count(*)=0) as int)' in its
+        # schema.yml. T-SQL cannot cast a boolean expression to int. This is a test
+        # harness config issue in the upstream integration_tests, not an adapter
+        # limitation — the expect_compound_columns_to_be_unique test itself works fine.
+        excludes.extend(
+            [
+                "--exclude",
+                "dbt_expectations_expect_compound_columns_to_be_unique_data_test_date_col__col_null__all_values_are_missing",
+            ]
+        )
+
+        run_dbt(["build"] + excludes)
