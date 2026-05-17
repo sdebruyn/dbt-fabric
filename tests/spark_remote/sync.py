@@ -13,6 +13,14 @@ EXCLUDE_PATTERNS = "*.pyc;*.pyo;*.egg-info"
 
 
 class ProjectSync:
+    """Syncs the local project to/from a lakehouse on OneLake via azcopy.
+
+    Args:
+        workspace_id: Fabric workspace GUID.
+        lakehouse_id: Lakehouse item GUID.
+        project_root: Local path to the dbt-fabric project root.
+    """
+
     def __init__(self, workspace_id: str, lakehouse_id: str, project_root: Path):
         self._project_root = project_root
         self._onelake_base = (
@@ -20,6 +28,13 @@ class ProjectSync:
         )
 
     def upload(self) -> None:
+        """Upload the project directory to the lakehouse, excluding build artifacts.
+
+        Generates a requirements file and sanitized test.env before syncing.
+
+        Raises:
+            RuntimeError: If azcopy sync or uv export fails.
+        """
         self._generate_requirements()
         self._generate_test_env_remote()
 
@@ -43,6 +58,17 @@ class ProjectSync:
         print("  Sync complete.")
 
     def download_artifacts(self, local_dir: Path) -> Path | None:
+        """Download test artifacts (junitxml) from the lakehouse.
+
+        Args:
+            local_dir: Local directory to sync artifacts into.
+
+        Returns:
+            Path to results.xml if it exists after download, otherwise None.
+
+        Raises:
+            RuntimeError: If azcopy sync fails.
+        """
         source = f"{self._onelake_base}/dbt-test-artifacts"
         local_dir.mkdir(parents=True, exist_ok=True)
 
@@ -62,6 +88,11 @@ class ProjectSync:
         return results_xml if results_xml.exists() else None
 
     def _generate_requirements(self) -> None:
+        """Export pinned requirements via uv for remote pip install.
+
+        Raises:
+            RuntimeError: If uv export fails.
+        """
         result = subprocess.run(
             ["uv", "export", "--format", "requirements.txt", "--all-extras", "--group", "dev"],
             capture_output=True,
@@ -75,6 +106,11 @@ class ProjectSync:
         reqs_path.write_text(result.stdout)
 
     def _generate_test_env_remote(self) -> None:
+        """Create a sanitized test.env.remote with secrets stripped and auth overridden.
+
+        Reads the local test.env, removes sensitive variables (client secrets,
+        federated tokens), and overrides authentication to use notebookutils.
+        """
         test_env_path = self._project_root / "test.env"
         remote_env_path = self._project_root / "test.env.remote"
 
@@ -111,6 +147,11 @@ class ProjectSync:
 
 
 def check_prerequisites() -> list[str]:
+    """Verify that required CLI tools (azcopy, az) are available and authenticated.
+
+    Returns:
+        List of human-readable error messages. Empty if all prerequisites are met.
+    """
     errors = []
 
     if not shutil.which("azcopy"):

@@ -7,6 +7,18 @@ from tests.spark_remote.result_reporter import report_remote_results
 
 
 def remote_runtestloop(session: pytest.Session) -> bool:
+    """Replace pytest's default test loop with remote Spark execution.
+
+    Syncs the project to a lakehouse, submits a Spark job that runs pytest
+    remotely, downloads junitxml results, and reports them back into the
+    local session.
+
+    Args:
+        session: The pytest Session (already collected).
+
+    Returns:
+        True to signal that the test loop has been handled.
+    """
     if session.config.option.collectonly:
         return True
 
@@ -30,6 +42,17 @@ def remote_runtestloop(session: pytest.Session) -> bool:
 
 
 def _build_remote_args(session: pytest.Session) -> list[str]:
+    """Extract relevant pytest options from the local session for remote forwarding.
+
+    Forwards -k, -v, --de, -x, positional paths, and appends --junitxml for
+    result collection.
+
+    Args:
+        session: The local pytest Session to extract options from.
+
+    Returns:
+        List of CLI arguments to pass to the remote pytest invocation.
+    """
     args: list[str] = []
     config = session.config
 

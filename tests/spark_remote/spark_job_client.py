@@ -11,6 +11,8 @@ from dbt.adapters.fabric.fabric_api_client import FabricApiClient, FabricApiErro
 
 @dataclass
 class SparkJobResult:
+    """Result of a Spark Job Definition execution."""
+
     status: str
     start_time: str | None
     end_time: str | None
@@ -19,6 +21,12 @@ class SparkJobResult:
 
 
 class SparkJobClient:
+    """Client for managing and running Spark Job Definitions via the Fabric REST API.
+
+    Args:
+        api_client: Authenticated FabricApiClient for HTTP communication.
+    """
+
     def __init__(self, api_client: FabricApiClient):
         self._api_client = api_client
 
@@ -31,6 +39,14 @@ class SparkJobClient:
         return self._api_client.get_workspace_id()
 
     def list_spark_job_definitions(self) -> list[dict]:
+        """List all Spark Job Definitions in the workspace, following pagination.
+
+        Returns:
+            List of Spark Job Definition metadata dicts.
+
+        Raises:
+            FabricApiError: If the API request fails.
+        """
         items = []
         url: str | None = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions"
         while url:
@@ -41,6 +57,17 @@ class SparkJobClient:
         return items
 
     def find_by_name(self, name: str) -> dict | None:
+        """Find a Spark Job Definition by its display name.
+
+        Args:
+            name: The display name to search for.
+
+        Returns:
+            The matching item dict, or None if not found.
+
+        Raises:
+            FabricApiError: If the API request fails.
+        """
         for item in self.list_spark_job_definitions():
             if item.get("displayName") == name:
                 return item
@@ -49,6 +76,19 @@ class SparkJobClient:
     def create_spark_job_definition(
         self, name: str, lakehouse_id: str, executable_path: str
     ) -> str:
+        """Create a new Spark Job Definition in the workspace.
+
+        Args:
+            name: Display name for the new job definition.
+            lakehouse_id: ID of the default lakehouse to attach.
+            executable_path: abfss:// path to the Python entry point script.
+
+        Returns:
+            The ID of the newly created Spark Job Definition.
+
+        Raises:
+            FabricApiError: If the API request fails.
+        """
         payload_json = json.dumps(
             {
                 "executableFile": executable_path,
@@ -77,6 +117,18 @@ class SparkJobClient:
         return resp.json()["id"]
 
     def run_on_demand(self, item_id: str, command_line_args: list[str]) -> tuple[str, str]:
+        """Submit an on-demand run of a Spark Job Definition.
+
+        Args:
+            item_id: ID of the Spark Job Definition to run.
+            command_line_args: Command-line arguments to pass to the job.
+
+        Returns:
+            Tuple of (item_id, job_instance_id) for tracking the run.
+
+        Raises:
+            FabricApiError: If the API request fails.
+        """
         url = (
             f"{self._base_url}/workspaces/{self._workspace_id}"
             f"/items/{item_id}/jobs/instances?jobType=sparkjob"
@@ -90,6 +142,18 @@ class SparkJobClient:
         return item_id, job_instance_id
 
     def get_job_instance(self, item_id: str, job_instance_id: str) -> dict:
+        """Get the current state of a job instance.
+
+        Args:
+            item_id: ID of the Spark Job Definition.
+            job_instance_id: ID of the specific job run instance.
+
+        Returns:
+            Job instance metadata dict including status, timestamps, and failure info.
+
+        Raises:
+            FabricApiError: If the API request fails.
+        """
         url = (
             f"{self._base_url}/workspaces/{self._workspace_id}"
             f"/items/{item_id}/jobs/instances/{job_instance_id}"
@@ -99,6 +163,19 @@ class SparkJobClient:
     def poll_until_done(
         self, item_id: str, job_instance_id: str, interval: int = 10, timeout: int = 1800
     ) -> SparkJobResult:
+        """Poll a job instance until it reaches a terminal state.
+
+        Prints status updates to stdout when the status changes.
+
+        Args:
+            item_id: ID of the Spark Job Definition.
+            job_instance_id: ID of the specific job run instance.
+            interval: Seconds between polling attempts.
+            timeout: Maximum seconds to wait before returning a Timeout result.
+
+        Returns:
+            SparkJobResult with final status, timestamps, and any error message.
+        """
         workspace_id = self._workspace_id
         job_url = (
             f"https://app.fabric.microsoft.com/groups/{workspace_id}"
@@ -139,6 +216,19 @@ class SparkJobClient:
             time.sleep(interval)
 
     def _get_with_retry(self, item_id: str, job_instance_id: str, max_retries: int = 3) -> dict:
+        """Fetch job instance state with retry on transient API errors.
+
+        Args:
+            item_id: ID of the Spark Job Definition.
+            job_instance_id: ID of the specific job run instance.
+            max_retries: Maximum number of attempts before raising.
+
+        Returns:
+            Job instance metadata dict.
+
+        Raises:
+            FabricApiError: If all retry attempts fail.
+        """
         url = (
             f"{self._base_url}/workspaces/{self._workspace_id}"
             f"/items/{item_id}/jobs/instances/{job_instance_id}"

@@ -13,6 +13,14 @@ from tests.spark_remote.sync import ProjectSync, check_prerequisites
 
 
 class RemoteTestOrchestrator:
+    """Coordinates remote test execution: sync, job submission, and result retrieval.
+
+    Args:
+        api_client: Authenticated FabricApiClient for API communication.
+        project_root: Local path to the dbt-fabric project root.
+        job_name: Display name of the Spark Job Definition to use or create.
+    """
+
     def __init__(
         self,
         api_client: FabricApiClient,
@@ -26,6 +34,13 @@ class RemoteTestOrchestrator:
 
     @classmethod
     def from_env(cls) -> RemoteTestOrchestrator:
+        """Create an orchestrator from environment variables.
+
+        Uses FABRIC_TEST_* env vars to build credentials and resolve workspace/lakehouse.
+
+        Raises:
+            SystemExit: If prerequisites (azcopy, Azure CLI) are not met.
+        """
         errors = check_prerequisites()
         if errors:
             for error in errors:
@@ -52,12 +67,30 @@ class RemoteTestOrchestrator:
         )
 
     def sync_project(self) -> None:
+        """Upload the project to the lakehouse via azcopy.
+
+        Raises:
+            RuntimeError: If azcopy sync fails.
+        """
         workspace_id = self._api_client.get_workspace_id()
         lakehouse_id = self._api_client.get_lakehouse_id()
         sync = ProjectSync(workspace_id, lakehouse_id, self._project_root)
         sync.upload()
 
     def run_spark_job(self, pytest_args: list[str]) -> SparkJobResult:
+        """Submit a Spark job to run pytest remotely and wait for completion.
+
+        Creates a Spark Job Definition if one doesn't exist with the configured name.
+
+        Args:
+            pytest_args: Command-line arguments to forward to the remote pytest invocation.
+
+        Returns:
+            SparkJobResult with final job status and metadata.
+
+        Raises:
+            FabricApiError: If any Fabric API call fails.
+        """
         workspace_id = self._api_client.get_workspace_id()
         lakehouse_id = self._api_client.get_lakehouse_id()
 
@@ -93,6 +126,14 @@ class RemoteTestOrchestrator:
         return job_client.poll_until_done(item_id, job_instance_id)
 
     def download_results(self) -> Path | None:
+        """Download test result artifacts from the lakehouse.
+
+        Returns:
+            Path to the results.xml file, or None if it was not produced.
+
+        Raises:
+            RuntimeError: If azcopy download fails.
+        """
         workspace_id = self._api_client.get_workspace_id()
         lakehouse_id = self._api_client.get_lakehouse_id()
         sync = ProjectSync(workspace_id, lakehouse_id, self._project_root)

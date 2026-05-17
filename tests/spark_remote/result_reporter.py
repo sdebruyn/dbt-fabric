@@ -12,6 +12,8 @@ from tests.spark_remote.spark_job_client import SparkJobResult
 
 @dataclass
 class JunitTestResult:
+    """Parsed result of a single test case from junitxml."""
+
     nodeid: str
     outcome: str
     duration: float
@@ -23,6 +25,16 @@ class JunitTestResult:
 def report_remote_results(
     session: pytest.Session, results_path: Path | None, job_result: SparkJobResult
 ) -> None:
+    """Report remote test results back into the local pytest session.
+
+    Parses the junitxml from the remote run and replays each result as a
+    pytest TestReport so the local session shows correct pass/fail/skip counts.
+
+    Args:
+        session: The local pytest Session with collected items.
+        results_path: Path to the downloaded results.xml, or None if unavailable.
+        job_result: The SparkJobResult with job status and error info.
+    """
     if results_path is None:
         msg = f"Remote job {job_result.status}"
         if job_result.error_message:
@@ -48,6 +60,12 @@ def report_remote_results(
 
 
 def _report_all_as_error(session: pytest.Session, message: str) -> None:
+    """Report all collected items as failed with the given error message.
+
+    Args:
+        session: The pytest Session with collected items.
+        message: Error message to attach to each test report.
+    """
     for item in session.items:
         ihook = item.ihook
         ihook.pytest_runtest_logstart(nodeid=item.nodeid, location=item.location)
@@ -56,12 +74,18 @@ def _report_all_as_error(session: pytest.Session, message: str) -> None:
 
 
 def _report_item_as_error(item: pytest.Item, message: str) -> None:
+    """Emit setup/call/teardown reports for a single item, marking call as failed.
+
+    Args:
+        item: The pytest Item to report on.
+        message: Error message for the call phase.
+    """
     ihook = item.ihook
     for when in ("setup", "call", "teardown"):
         report = TestReport(
             nodeid=item.nodeid,
             location=item.location,
-            keywords={x: 1 for x in item.keywords},
+            keywords=dict.fromkeys(item.keywords, 1),
             outcome="failed" if when == "call" else "passed",
             longrepr=message if when == "call" else None,
             when=when,
@@ -71,12 +95,18 @@ def _report_item_as_error(item: pytest.Item, message: str) -> None:
 
 
 def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
+    """Emit setup/call/teardown reports for a single item based on remote results.
+
+    Args:
+        item: The pytest Item to report on.
+        result: Parsed JunitTestResult from the remote junitxml.
+    """
     ihook = item.ihook
 
     setup_report = TestReport(
         nodeid=item.nodeid,
         location=item.location,
-        keywords={x: 1 for x in item.keywords},
+        keywords=dict.fromkeys(item.keywords, 1),
         outcome="passed",
         longrepr=None,
         when="setup",
@@ -88,7 +118,7 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
         call_report = TestReport(
             nodeid=item.nodeid,
             location=item.location,
-            keywords={x: 1 for x in item.keywords},
+            keywords=dict.fromkeys(item.keywords, 1),
             outcome="passed",
             longrepr=None,
             when="call",
@@ -99,7 +129,7 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
         call_report = TestReport(
             nodeid=item.nodeid,
             location=item.location,
-            keywords={x: 1 for x in item.keywords},
+            keywords=dict.fromkeys(item.keywords, 1),
             outcome="failed",
             longrepr=result.failure_message,
             when="call",
@@ -110,7 +140,7 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
         call_report = TestReport(
             nodeid=item.nodeid,
             location=item.location,
-            keywords={x: 1 for x in item.keywords},
+            keywords=dict.fromkeys(item.keywords, 1),
             outcome="skipped",
             longrepr=("", 0, result.skip_reason or "Skipped"),
             when="call",
@@ -121,7 +151,7 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
         call_report = TestReport(
             nodeid=item.nodeid,
             location=item.location,
-            keywords={x: 1 for x in item.keywords},
+            keywords=dict.fromkeys(item.keywords, 1),
             outcome="failed",
             longrepr=f"Unknown outcome: {result.outcome}",
             when="call",
@@ -133,7 +163,7 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
     teardown_report = TestReport(
         nodeid=item.nodeid,
         location=item.location,
-        keywords={x: 1 for x in item.keywords},
+        keywords=dict.fromkeys(item.keywords, 1),
         outcome="passed",
         longrepr=None,
         when="teardown",
@@ -143,6 +173,17 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
 
 
 def _parse_junitxml(path: Path) -> list[JunitTestResult]:
+    """Parse a junitxml file into a list of test results.
+
+    Args:
+        path: Path to the junitxml file.
+
+    Returns:
+        List of JunitTestResult, one per <testcase> element.
+
+    Raises:
+        ET.ParseError: If the XML is malformed.
+    """
     tree = ET.parse(path)
     root = tree.getroot()
 
@@ -207,6 +248,17 @@ def _parse_junitxml(path: Path) -> list[JunitTestResult]:
 
 
 def _reconstruct_nodeid(testcase: ET.Element) -> str:
+    """Reconstruct a pytest node ID from junitxml testcase attributes.
+
+    Handles the mapping from junitxml's (file, classname, name) triple back to
+    pytest's ``file::Class::method`` format.
+
+    Args:
+        testcase: An XML <testcase> element with file, classname, and name attributes.
+
+    Returns:
+        A pytest-compatible node ID string (e.g. "tests/test_foo.py::TestBar::test_baz").
+    """
     file_attr = testcase.get("file")
     classname = testcase.get("classname", "")
     name = testcase.get("name", "")
@@ -218,7 +270,6 @@ def _reconstruct_nodeid(testcase: ET.Element) -> str:
             return f"{file_attr}::{remaining.replace('.', '::')}::{name}"
         return f"{file_attr}::{name}"
 
-    # Fallback: split classname on first uppercase component (class name boundary)
     parts = classname.split(".")
     file_parts = []
     class_parts = []

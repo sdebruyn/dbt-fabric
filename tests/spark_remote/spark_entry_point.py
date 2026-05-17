@@ -18,6 +18,15 @@ ARTIFACTS_DIR = f"{LAKEHOUSE_ROOT}/Files/dbt-test-artifacts"
 
 
 def main() -> None:
+    """Install dependencies, configure env, run pytest, and write exit code.
+
+    Reads command-line arguments from sys.argv (forwarded by the Spark Job Definition)
+    and passes them to pytest. Ensures --junitxml is set so results can be collected.
+
+    Raises:
+        subprocess.CalledProcessError: If pip install fails.
+        SystemExit: Always exits with the pytest exit code.
+    """
     if os.path.isdir(ARTIFACTS_DIR):
         for f in os.listdir(ARTIFACTS_DIR):
             os.remove(os.path.join(ARTIFACTS_DIR, f))
