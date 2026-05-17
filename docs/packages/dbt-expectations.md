@@ -37,7 +37,7 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 
 | Macro | Status | Notes |
 |---|---|---|
-| `expect_column_most_common_value_to_be_in_set` | ✅ **(override)** | Uses `ROW_NUMBER()` instead of `LIMIT` for top-N selection |
+| `expect_column_most_common_value_to_be_in_set` | ✅ **(override)** | `ROW_NUMBER()` for top-N; `LEFT JOIN` anti-pattern instead of `NOT IN (SELECT FROM cte)` |
 | `expect_column_stdev_to_be_between` | ✅ **(override)** | T-SQL uses `STDEV()` instead of `STDDEV()` |
 
 ### Distributional tests
@@ -58,3 +58,16 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | Macro | Status | Notes |
 |---|---|---|
 | `expect_grouped_row_values_to_have_recent_data` | ✅ **(override)** | Uses explicit join key for T-SQL `LEFT JOIN` pattern |
+
+## Unsupported tests
+
+These tests cannot run on Fabric and cannot be fixed with adapter macro overrides:
+
+| Test | Reason |
+|---|---|
+| `expect_column_values_to_match_regex` | T-SQL has no native regex support |
+| `expect_column_values_to_not_match_regex` | T-SQL has no native regex support |
+| `expect_column_values_to_match_regex_list` | T-SQL has no native regex support |
+| `expect_column_values_to_not_match_regex_list` | T-SQL has no native regex support |
+| `expect_column_to_exist` | Renders Python `True`/`False` as SQL literals (no boolean type in T-SQL); does not use `adapter.dispatch()` so no override possible |
+| `expect_column_values_to_have_consistent_casing` | Uses positional `GROUP BY 1` (T-SQL requires explicit expressions); does not use `adapter.dispatch()` so no override possible |
