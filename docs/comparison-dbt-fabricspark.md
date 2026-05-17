@@ -42,14 +42,14 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 
 | Materialization | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Table** | ✅ (via dbt-spark) | ✅ (custom implementation) |
+| **Table** | ✅ | ✅ |
 | **View** | ✅ | ✅ |
 | **Incremental** | append, merge, insert_overwrite, microbatch | append, merge, insert_overwrite, microbatch |
 | **Snapshot** | ✅ | ✅ |
 | **Ephemeral** | ✅ | ✅ |
 | **Materialized View / Lake View** | ✅ (standard dbt MV pattern) | ✅ (Fabric-specific MLV with REST API refresh) |
 | **Clone** | ✅ | ✅ |
-| **Seed** | ✅ (via dbt-spark) | ✅ (custom implementation) |
+| **Seed** | ✅ | ✅ |
 
 Notable differences:
 
@@ -64,14 +64,13 @@ Notable differences:
 | **Token Credential** | ✅ | ✅ |
 | **Workload Identity** | ✅ (federated OIDC) | ❌ |
 | **Static Access Token** | ✅ | ✅ |
-| **Fabric Notebook** | ✅ (currently broken due to Microsoft scope issue) | ✅ |
+| **Fabric Notebook** | ✅ | ✅ |
 
 ### Livy session management
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | ✅ (HC-only, instance-based lifecycle) | ✅ (default on, `atexit` cleanup) |
-| **Session creation** | `FabricApiClient` singleton | `LivySessionManager` with static globals |
+| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | ✅ | ✅ |
 | **Session reuse** | Deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
 | **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
 | **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
