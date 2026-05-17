@@ -107,8 +107,10 @@ class FabricSparkRelation(BaseRelation):
         base = super().render()
         if (
             self.workspace
+            and self.identifier
             and self.database
             and self.include_policy.get_part(ComponentName.Database)
+            and self.include_policy.get_part(ComponentName.Identifier)
         ):
             quoted_ws = self.quoted(self.workspace)
             return f"{quoted_ws}.{base}" if base else quoted_ws

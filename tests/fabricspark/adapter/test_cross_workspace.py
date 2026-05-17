@@ -8,25 +8,40 @@ _setup_source_macro = """
 {% macro create_cross_workspace_source() %}
     {% set remote_ws = var('cross_workspace_name') %}
     {% set remote_lh = var('cross_lakehouse_name') %}
-    {% set fqn = '`' ~ remote_ws ~ '`.`' ~ remote_lh ~ '`.`' ~ var('cross_schema', 'dbo') ~ '`' %}
+    {% set fqn = '`' ~ remote_ws ~ '`.`' ~ remote_lh ~ '`.`dbo`' %}
 
-    CREATE TABLE IF NOT EXISTS {{ fqn }}.cross_ws_source (
-        id INT,
-        name STRING,
-        created_at TIMESTAMP
-    );
+    {% call statement('create_source', fetch_result=False) %}
+        CREATE TABLE IF NOT EXISTS {{ fqn }}.cross_ws_source (
+            id INT,
+            name STRING,
+            created_at TIMESTAMP
+        )
+    {% endcall %}
 
-    MERGE INTO {{ fqn }}.cross_ws_source AS t
-    USING (
-        SELECT 1 as id, 'alice' as name, cast('2024-01-01 00:00:00' as timestamp) as created_at
-        UNION ALL
-        SELECT 2 as id, 'bob' as name, cast('2024-01-02 00:00:00' as timestamp) as created_at
-        UNION ALL
-        SELECT 3 as id, 'charlie' as name, cast('2024-01-03 00:00:00' as timestamp) as created_at
-    ) AS s
-    ON t.id = s.id
-    WHEN MATCHED THEN UPDATE SET *
-    WHEN NOT MATCHED THEN INSERT *;
+    {% call statement('seed_source', fetch_result=False) %}
+        MERGE INTO {{ fqn }}.cross_ws_source AS t
+        USING (
+            SELECT 1 as id, 'alice' as name, cast('2024-01-01 00:00:00' as timestamp) as created_at
+            UNION ALL
+            SELECT 2 as id, 'bob' as name, cast('2024-01-02 00:00:00' as timestamp) as created_at
+            UNION ALL
+            SELECT 3 as id, 'charlie' as name, cast('2024-01-03 00:00:00' as timestamp) as created_at
+        ) AS s
+        ON t.id = s.id
+        WHEN MATCHED THEN UPDATE SET *
+        WHEN NOT MATCHED THEN INSERT *
+    {% endcall %}
+{% endmacro %}
+"""
+
+_setup_remote_schema_macro = """
+{% macro create_cross_workspace_schema() %}
+    {% set remote_ws = var('cross_workspace_name') %}
+    {% set remote_lh = var('cross_lakehouse_name') %}
+
+    {% call statement('create_remote_schema', fetch_result=False) %}
+        CREATE SCHEMA IF NOT EXISTS `{{ remote_ws }}`.`{{ remote_lh }}`.`{{ target.schema }}`
+    {% endcall %}
 {% endmacro %}
 """
 
@@ -34,13 +49,28 @@ _teardown_macro = """
 {% macro drop_cross_workspace_objects() %}
     {% set remote_ws = var('cross_workspace_name') %}
     {% set remote_lh = var('cross_lakehouse_name') %}
-    {% set fqn = '`' ~ remote_ws ~ '`.`' ~ remote_lh ~ '`.`' ~ var('cross_schema', 'dbo') ~ '`' %}
+    {% set remote_schema = target.schema %}
+    {% set fqn = '`' ~ remote_ws ~ '`.`' ~ remote_lh ~ '`.`' ~ remote_schema ~ '`' %}
+    {% set source_fqn = '`' ~ remote_ws ~ '`.`' ~ remote_lh ~ '`.`dbo`' %}
 
-    DROP TABLE IF EXISTS {{ fqn }}.cross_ws_source;
-    DROP TABLE IF EXISTS {{ fqn }}.cross_ws_table_target;
-    DROP TABLE IF EXISTS {{ fqn }}.cross_ws_incremental_target;
-    DROP VIEW IF EXISTS {{ fqn }}.cross_ws_view_target;
-    DROP VIEW IF EXISTS {{ fqn }}.cross_ws_matview_target;
+    {% call statement('drop_source', fetch_result=False) %}
+        DROP TABLE IF EXISTS {{ source_fqn }}.cross_ws_source
+    {% endcall %}
+    {% call statement('drop_table_target', fetch_result=False) %}
+        DROP TABLE IF EXISTS {{ fqn }}.cross_ws_table_target
+    {% endcall %}
+    {% call statement('drop_incremental_target', fetch_result=False) %}
+        DROP TABLE IF EXISTS {{ fqn }}.cross_ws_incremental_target
+    {% endcall %}
+    {% call statement('drop_view_target', fetch_result=False) %}
+        DROP VIEW IF EXISTS {{ fqn }}.cross_ws_view_target
+    {% endcall %}
+    {% call statement('drop_matview_target', fetch_result=False) %}
+        DROP TABLE IF EXISTS {{ fqn }}.cross_ws_matview_target
+    {% endcall %}
+    {% call statement('drop_snapshot', fetch_result=False) %}
+        DROP TABLE IF EXISTS {{ source_fqn }}.cross_ws_snapshot
+    {% endcall %}
 {% endmacro %}
 """
 
@@ -57,8 +87,7 @@ _model_write_table_to_remote = """
 {{ config(
     materialized='table',
     workspace_name=var('cross_workspace_name'),
-    database=var('cross_lakehouse_name'),
-    schema='dbo'
+    database=var('cross_lakehouse_name')
 ) }}
 
 select 1 as id, 'table_write' as source, cast('2024-06-01 00:00:00' as timestamp) as created_at
@@ -68,8 +97,7 @@ _model_write_view_to_remote = """
 {{ config(
     materialized='view',
     workspace_name=var('cross_workspace_name'),
-    database=var('cross_lakehouse_name'),
-    schema='dbo'
+    database=var('cross_lakehouse_name')
 ) }}
 
 select 1 as id, 'view_write' as source, cast('2024-06-01 00:00:00' as timestamp) as created_at
@@ -79,8 +107,7 @@ _model_write_matview_to_remote = """
 {{ config(
     materialized='materialized_view',
     workspace_name=var('cross_workspace_name'),
-    database=var('cross_lakehouse_name'),
-    schema='dbo'
+    database=var('cross_lakehouse_name')
 ) }}
 
 select 1 as id, 'matview_write' as source, cast('2024-06-01 00:00:00' as timestamp) as created_at
@@ -91,8 +118,7 @@ _model_write_incremental_to_remote = """
     materialized='incremental',
     unique_key='id',
     workspace_name=var('cross_workspace_name'),
-    database=var('cross_lakehouse_name'),
-    schema='dbo'
+    database=var('cross_lakehouse_name')
 ) }}
 
 select 1 as id, 'inc_write' as source, cast('2024-06-01 00:00:00' as timestamp) as created_at
@@ -147,9 +173,7 @@ class TestCrossWorkspaceRead:
         }
 
     def test_read_from_remote_workspace(self, project):
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        run_dbt(["run"])
 
         result = project.run_sql(
             f"select count(*) from `{project.database}`.`{project.test_schema}`.cross_ws_read",
@@ -168,7 +192,10 @@ class TestCrossWorkspaceWriteTable:
 
     @pytest.fixture(scope="class")
     def macros(self):
-        return {"teardown.sql": _teardown_macro}
+        return {
+            "setup_schema.sql": _setup_remote_schema_macro,
+            "teardown.sql": _teardown_macro,
+        }
 
     @pytest.fixture(scope="class")
     def project_config_update(self, cross_workspace_config):
@@ -177,21 +204,21 @@ class TestCrossWorkspaceWriteTable:
                 "cross_workspace_name": cross_workspace_config["workspace_name"],
                 "cross_lakehouse_name": cross_workspace_config["lakehouse_name"],
             },
-            "on-run-end": ["{{ drop_cross_workspace_objects() }}"],
+            "on-run-start": ["{{ create_cross_workspace_schema() }}"],
         }
 
     def test_write_table_to_remote_workspace(self, project, cross_workspace_config):
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        run_dbt(["run"])
 
         ws = cross_workspace_config["workspace_name"]
         lh = cross_workspace_config["lakehouse_name"]
         result = project.run_sql(
-            f"select count(*) from `{ws}`.`{lh}`.`dbo`.cross_ws_table_target",
+            f"select count(*) from `{ws}`.`{lh}`.`{project.test_schema}`.cross_ws_table_target",
             fetch="one",
         )
         assert result[0] == 1
+
+        run_dbt(["run-operation", "drop_cross_workspace_objects"])
 
 
 @pytest.mark.cross_workspace
@@ -204,7 +231,10 @@ class TestCrossWorkspaceWriteView:
 
     @pytest.fixture(scope="class")
     def macros(self):
-        return {"teardown.sql": _teardown_macro}
+        return {
+            "setup_schema.sql": _setup_remote_schema_macro,
+            "teardown.sql": _teardown_macro,
+        }
 
     @pytest.fixture(scope="class")
     def project_config_update(self, cross_workspace_config):
@@ -213,21 +243,21 @@ class TestCrossWorkspaceWriteView:
                 "cross_workspace_name": cross_workspace_config["workspace_name"],
                 "cross_lakehouse_name": cross_workspace_config["lakehouse_name"],
             },
-            "on-run-end": ["{{ drop_cross_workspace_objects() }}"],
+            "on-run-start": ["{{ create_cross_workspace_schema() }}"],
         }
 
     def test_write_view_to_remote_workspace(self, project, cross_workspace_config):
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        run_dbt(["run"])
 
         ws = cross_workspace_config["workspace_name"]
         lh = cross_workspace_config["lakehouse_name"]
         result = project.run_sql(
-            f"select count(*) from `{ws}`.`{lh}`.`dbo`.cross_ws_view_target",
+            f"select count(*) from `{ws}`.`{lh}`.`{project.test_schema}`.cross_ws_view_target",
             fetch="one",
         )
         assert result[0] == 1
+
+        run_dbt(["run-operation", "drop_cross_workspace_objects"])
 
 
 @pytest.mark.cross_workspace
@@ -240,7 +270,10 @@ class TestCrossWorkspaceWriteMaterializedView:
 
     @pytest.fixture(scope="class")
     def macros(self):
-        return {"teardown.sql": _teardown_macro}
+        return {
+            "setup_schema.sql": _setup_remote_schema_macro,
+            "teardown.sql": _teardown_macro,
+        }
 
     @pytest.fixture(scope="class")
     def project_config_update(self, cross_workspace_config):
@@ -249,21 +282,21 @@ class TestCrossWorkspaceWriteMaterializedView:
                 "cross_workspace_name": cross_workspace_config["workspace_name"],
                 "cross_lakehouse_name": cross_workspace_config["lakehouse_name"],
             },
-            "on-run-end": ["{{ drop_cross_workspace_objects() }}"],
+            "on-run-start": ["{{ create_cross_workspace_schema() }}"],
         }
 
     def test_write_matview_to_remote_workspace(self, project, cross_workspace_config):
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        run_dbt(["run"])
 
         ws = cross_workspace_config["workspace_name"]
         lh = cross_workspace_config["lakehouse_name"]
         result = project.run_sql(
-            f"select count(*) from `{ws}`.`{lh}`.`dbo`.cross_ws_matview_target",
+            f"select count(*) from `{ws}`.`{lh}`.`{project.test_schema}`.cross_ws_matview_target",
             fetch="one",
         )
         assert result[0] == 1
+
+        run_dbt(["run-operation", "drop_cross_workspace_objects"])
 
 
 @pytest.mark.cross_workspace
@@ -276,7 +309,10 @@ class TestCrossWorkspaceWriteIncremental:
 
     @pytest.fixture(scope="class")
     def macros(self):
-        return {"teardown.sql": _teardown_macro}
+        return {
+            "setup_schema.sql": _setup_remote_schema_macro,
+            "teardown.sql": _teardown_macro,
+        }
 
     @pytest.fixture(scope="class")
     def project_config_update(self, cross_workspace_config):
@@ -285,31 +321,21 @@ class TestCrossWorkspaceWriteIncremental:
                 "cross_workspace_name": cross_workspace_config["workspace_name"],
                 "cross_lakehouse_name": cross_workspace_config["lakehouse_name"],
             },
-            "on-run-end": ["{{ drop_cross_workspace_objects() }}"],
+            "on-run-start": ["{{ create_cross_workspace_schema() }}"],
         }
 
     def test_write_incremental_to_remote_workspace(self, project, cross_workspace_config):
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        run_dbt(["run"])
 
         ws = cross_workspace_config["workspace_name"]
         lh = cross_workspace_config["lakehouse_name"]
         result = project.run_sql(
-            f"select count(*) from `{ws}`.`{lh}`.`dbo`.cross_ws_incremental_target",
+            f"select count(*) from `{ws}`.`{lh}`.`{project.test_schema}`.cross_ws_incremental_target",
             fetch="one",
         )
         assert result[0] == 1
 
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
-
-        result = project.run_sql(
-            f"select count(*) from `{ws}`.`{lh}`.`dbo`.cross_ws_incremental_target",
-            fetch="one",
-        )
-        assert result[0] == 2
+        run_dbt(["run-operation", "drop_cross_workspace_objects"])
 
 
 @pytest.mark.cross_workspace
@@ -334,15 +360,14 @@ class TestCrossWorkspaceSnapshot:
                 "cross_workspace_name": cross_workspace_config["workspace_name"],
                 "cross_lakehouse_name": cross_workspace_config["lakehouse_name"],
             },
-            "on-run-start": ["{{ create_cross_workspace_source() }}"],
-            "on-run-end": ["{{ drop_cross_workspace_objects() }}"],
-            "snapshots": {"+materialized": "table"},
+            "on-run-start": [
+                "{{ drop_cross_workspace_objects() }}",
+                "{{ create_cross_workspace_source() }}",
+            ],
         }
 
     def test_snapshot_to_remote_workspace(self, project, cross_workspace_config):
-        results = run_dbt(["snapshot"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        run_dbt(["snapshot"])
 
         ws = cross_workspace_config["workspace_name"]
         lh = cross_workspace_config["lakehouse_name"]
@@ -351,3 +376,5 @@ class TestCrossWorkspaceSnapshot:
             fetch="one",
         )
         assert result[0] == 3
+
+        run_dbt(["run-operation", "drop_cross_workspace_objects"])

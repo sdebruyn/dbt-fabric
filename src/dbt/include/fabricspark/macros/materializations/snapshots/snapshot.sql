@@ -26,7 +26,7 @@
     {% do exceptions.relation_wrong_type(target_relation, 'table') %}
   {%- endif -%}
 
-  {% if not adapter.check_schema_exists(model.database, model.schema) %}
+  {% if not workspace_name and not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(target_relation) %}
   {% endif %}
 
