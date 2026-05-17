@@ -66,6 +66,14 @@ class TestTryTranslateType:
         result = FabricSparkRelation.try_translate_type("external")
         assert result is None
 
+    def test_view_uppercase(self):
+        result = FabricSparkRelation.try_translate_type("VIEW")
+        assert result == FabricSparkRelationType.View
+
+    def test_view_lowercase(self):
+        result = FabricSparkRelation.try_translate_type("view")
+        assert result == FabricSparkRelationType.View
+
 
 class TestBuildSparkRelationList:
     @pytest.fixture
@@ -159,6 +167,20 @@ class TestBuildSparkRelationList:
         )
         result = adapter._build_spark_relation_list(rows, self._info_func)
         assert result[0].type == FabricSparkRelationType.Table
+
+    def test_detects_view_type(self, adapter):
+        rows = self._make_rows(
+            [
+                {
+                    "namespace": "`ws`.`db`.`schema1`",
+                    "name": "my_spark_view",
+                    "information": "Type: VIEW\nProvider: delta",
+                },
+            ]
+        )
+        result = adapter._build_spark_relation_list(rows, self._info_func)
+        assert len(result) == 1
+        assert result[0].type == FabricSparkRelationType.View
 
     def test_extracts_workspace_database_schema(self, adapter):
         rows = self._make_rows(

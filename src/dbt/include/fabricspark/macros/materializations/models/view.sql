@@ -7,15 +7,21 @@
 
     {%- set target_relation = this.incorporate(type='view') -%}
 
-    {{ run_hooks(pre_hooks) }}
+    {{ run_hooks(pre_hooks, inside_transaction=False) }}
 
-    {%- if old_relation is not none and old_relation.is_table -%}
+    {%- if old_relation is not none and not old_relation.is_view -%}
         {%- if should_full_refresh() -%}
             {% do adapter.drop_relation(old_relation) %}
         {%- else -%}
-            {{ exceptions.raise_compiler_error("Cannot create view " ~ target_relation ~ " because a table with that name already exists. Use --full-refresh to drop the table first.") }}
+            {{ exceptions.raise_compiler_error(
+                "Cannot create view " ~ target_relation
+                ~ " because a relation of type '" ~ old_relation.type
+                ~ "' already exists. Use --full-refresh to drop it first."
+            ) }}
         {%- endif -%}
     {%- endif -%}
+
+    {{ run_hooks(pre_hooks, inside_transaction=True) }}
 
     {% call statement('main') -%}
         create or replace view {{ target_relation }} as (
@@ -26,7 +32,8 @@
     {% set should_revoke = should_revoke(exists_as_view, full_refresh_mode=True) %}
     {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
 
-    {{ run_hooks(post_hooks) }}
+    {{ run_hooks(post_hooks, inside_transaction=True) }}
+    {{ run_hooks(post_hooks, inside_transaction=False) }}
 
     {{ return({'relations': [target_relation]}) }}
 {%- endmaterialization %}
