@@ -8,12 +8,19 @@
   {# dbt-spark: file_format config + validation removed -- Fabric Lakehouse only supports Delta #}
   {%- set grant_config = config.get('grants') -%}
 
+  {%- set workspace_name = config.get('workspace_name') -%}
+
   {# dbt-spark: database=none -- FabricSpark supports 3-part names #}
   {% set target_relation_exists, target_relation = get_or_create_relation(
           database=model.database,
           schema=model.schema,
           identifier=target_table,
           type='table') -%}
+
+  {# Propagate workspace for cross-workspace 4-part naming #}
+  {%- if workspace_name -%}
+    {% set target_relation = target_relation.incorporate(workspace=workspace_name) %}
+  {%- endif -%}
 
   {%- if not target_relation.is_table -%}
     {% do exceptions.relation_wrong_type(target_relation, 'table') %}
