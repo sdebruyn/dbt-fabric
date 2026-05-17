@@ -1,8 +1,12 @@
+{# dbt-spark returns True (Delta supports SHALLOW CLONE); Fabric Lakehouse does not. #}
 {% macro fabricspark__can_clone_table() %}
     {{ return(False) }}
 {% endmacro %}
 
 
+{# dbt-spark's clone requires file_format='delta' and delegates to SHALLOW CLONE or the
+   view materialization. We skip the file_format check (no Delta clone in Fabric) and
+   always create a view via inline SQL instead of delegating to the view materialization. #}
 {% materialization clone, adapter='fabricspark' %}
 
   {%- set relations = {'relations': []} -%}
@@ -21,6 +25,8 @@
 
   {%- set target_relation = this.incorporate(type='view') -%}
 
+  {# dbt-spark only drops non-table relations; we drop any existing relation since
+     Fabric has more types (table, materialized_view) that block CREATE OR REPLACE VIEW. #}
   {% if existing_relation is not none %}
       {{ drop_relation_if_exists(existing_relation) }}
   {% endif %}

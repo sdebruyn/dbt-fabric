@@ -31,6 +31,8 @@
     {% set should_revoke = should_revoke(exists_as_view, full_refresh_mode=True) %}
     {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
 
+    {# Neither dbt-spark's view materialization nor upstream create_or_replace_view() calls
+       persist_docs. We add it so relation/column comments are applied (like table/incremental). #}
     {% do persist_docs(target_relation, model) %}
 
     {{ run_hooks(post_hooks, inside_transaction=True) }}
