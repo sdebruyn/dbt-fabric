@@ -7,7 +7,7 @@ from tests.fabric.packages.base_package_test import BaseDbtPackageTests
 class TestDbtCodegen(BaseDbtPackageTests):
     @pytest.fixture(scope="class")
     def package_name(self) -> str:
-        return "dbt_codegen"
+        return "codegen"
 
     @pytest.fixture(scope="class")
     def package_repo(self) -> str:
@@ -63,15 +63,6 @@ class TestDbtCodegen(BaseDbtPackageTests):
             "create_source_table.sql": _CREATE_SOURCE_TABLE_SQL,
             "assert_equal.sql": _ASSERT_EQUAL_SQL,
         }
-
-    @pytest.fixture(scope="class")
-    def extra_dispatches(self):
-        return [
-            {
-                "macro_namespace": "codegen",
-                "search_order": ["test_dbt_package", "dbt", "codegen"],
-            }
-        ]
 
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
@@ -174,7 +165,7 @@ models:
         description: ""
 
       - name: col_b
-        data_type: varchar(16)
+        data_type: varchar
         description: ""
 
 {% endset %}
