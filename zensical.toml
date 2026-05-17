@@ -43,13 +43,13 @@ nav = [
   ] },
   { "Package support" = [
     { "Overview" = "packages/index.md" },
-    { "dbt-utils" = "packages/dbt-utils.md" },
-    { "dbt-date" = "packages/dbt-date.md" },
-    { "dbt-codegen" = "packages/dbt-codegen.md" },
-    { "dbt-expectations" = "packages/dbt-expectations.md" },
     { "dbt-audit-helper" = "packages/dbt-audit-helper.md" },
+    { "dbt-codegen" = "packages/dbt-codegen.md" },
+    { "dbt-date" = "packages/dbt-date.md" },
+    { "dbt-expectations" = "packages/dbt-expectations.md" },
     { "dbt-external-tables" = "packages/dbt-external-tables.md" },
     { "dbt-profiler" = "packages/dbt-profiler.md" },
+    { "dbt-utils" = "packages/dbt-utils.md" },
   ] },
 
 ]
