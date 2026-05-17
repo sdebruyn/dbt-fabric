@@ -1,6 +1,6 @@
 # Lakehouse (Spark SQL)
 
-The dbt-fabric-samdebruyn adapter supports Fabric Lakehouse via the `fabricspark` adapter type. This uses **Spark SQL** as the query language and connects to Fabric through the [Livy API](https://learn.microsoft.com/fabric/data-engineering/lakehouse-api?WT.mc_id=MVP_310840) -- an HTTP REST interface for submitting Spark statements.
+The dbt-fabric adapter supports Fabric Lakehouse via the `fabricspark` adapter type. This uses **Spark SQL** as the query language and connects to Fabric through the [Livy API](https://learn.microsoft.com/fabric/data-engineering/lakehouse-api) -- an HTTP REST interface for submitting Spark statements.
 
 ---
 
@@ -11,7 +11,7 @@ The dbt-fabric-samdebruyn adapter supports Fabric Lakehouse via the `fabricspark
 Install the adapter with the `[spark]` extra:
 
 ```bash
-pip install dbt-fabric-samdebruyn[spark] dbt-core
+pip install dbt-fabric[spark] dbt-core
 ```
 
 This installs [dbt-spark](https://github.com/dbt-labs/dbt-spark) as a dependency.
@@ -45,7 +45,7 @@ The FabricSpark adapter does not use the [`host`](configuration.md#host) option 
 
 ## How it works
 
-The FabricSpark adapter executes all SQL through Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840). Each dbt thread gets its own REPL inside a shared underlying Livy session. Here is the execution flow:
+The FabricSpark adapter executes all SQL through Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy). Each dbt thread gets its own REPL inside a shared underlying Livy session. Here is the execution flow:
 
 ```mermaid
 sequenceDiagram
@@ -83,7 +83,7 @@ Key technical details:
 
 ## Materializations
 
-In addition to the standard dbt materializations, FabricSpark supports `materialized_view`, which creates Fabric [lake views](https://learn.microsoft.com/fabric/data-engineering/lakehouse-sql-analytics-endpoint?WT.mc_id=MVP_310840). Lake views support `PARTITIONED BY`, `TBLPROPERTIES`, and `CHECK` constraints with `ON MISMATCH` behavior.
+In addition to the standard dbt materializations, FabricSpark supports `materialized_view`, which creates Fabric [lake views](https://learn.microsoft.com/fabric/data-engineering/lakehouse-sql-analytics-endpoint). Lake views support `PARTITIONED BY`, `TBLPROPERTIES`, and `CHECK` constraints with `ON MISMATCH` behavior.
 
 The incremental materialization supports `append` and `insert_overwrite` strategies.
 
@@ -105,7 +105,7 @@ SELECT [my column] FROM [my_schema].[my_table]
 
 ## High-concurrency Livy
 
-The adapter uses Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840). Each dbt thread acquires its own HC session -- and therefore its own REPL -- inside a single underlying Livy session shared via a deterministic `sessionTag` derived from `(workspace_id, lakehouse_id)`. Statements from different REPLs execute in **parallel** inside the same Spark application, so increasing `threads` in your profile directly increases throughput.
+The adapter uses Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy). Each dbt thread acquires its own HC session -- and therefore its own REPL -- inside a single underlying Livy session shared via a deterministic `sessionTag` derived from `(workspace_id, lakehouse_id)`. Statements from different REPLs execute in **parallel** inside the same Spark application, so increasing `threads` in your profile directly increases throughput.
 
 ### Session reuse across runs
 
@@ -113,7 +113,7 @@ The session tag is deterministic: every dbt invocation targeting the same worksp
 
 ### `threads > 5`
 
-Fabric packs up to **5 REPLs onto one underlying Livy session** (see the [HC Livy key concepts](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840#key-concepts)). With `threads > 5`, dbt still works correctly -- Fabric spins up a second underlying Livy session to host the 6th REPL onwards.
+Fabric packs up to **5 REPLs onto one underlying Livy session** (see the [HC Livy key concepts](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy#key-concepts)). With `threads > 5`, dbt still works correctly -- Fabric spins up a second underlying Livy session to host the 6th REPL onwards.
 
 | Property | Shared across underlying sessions? |
 | --- | --- |
@@ -159,7 +159,7 @@ A dbt run with many models will be significantly slower on FabricSpark than on F
 
 - Use higher thread counts to parallelize model execution and amortize the per-statement overhead. However, higher parallelism also increases API call volume, which can trigger rate limiting sooner.
 - Keep models as consolidated as possible to reduce the total number of statements.
-- Monitor the Spark session in the [Fabric monitoring hub](https://learn.microsoft.com/fabric/data-engineering/spark-monitor-overview?WT.mc_id=MVP_310840) to understand execution patterns.
+- Monitor the Spark session in the [Fabric monitoring hub](https://learn.microsoft.com/fabric/data-engineering/spark-monitor-overview) to understand execution patterns.
 
 ---
 
@@ -188,7 +188,7 @@ A dbt run with many models will be significantly slower on FabricSpark than on F
 
 Python models work differently depending on the adapter type:
 
-- **`type: fabric` (Data Warehouse):** Python models use Livy to execute PySpark code that reads from and writes to the Data Warehouse via the [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector?WT.mc_id=MVP_310840). You need both a [`lakehouse`](configuration.md#lakehouse) (for the Livy session) and a [`database`](configuration.md#database) (the DW target).
+- **`type: fabric` (Data Warehouse):** Python models use Livy to execute PySpark code that reads from and writes to the Data Warehouse via the [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector). You need both a [`lakehouse`](configuration.md#lakehouse) (for the Livy session) and a [`database`](configuration.md#database) (the DW target).
 - **`type: fabricspark` (Lakehouse):** Python models run on the same Livy session that handles all SQL models. The [`database`](configuration.md#database) field IS the lakehouse. No separate `lakehouse` config is needed.
 
 See the [Python models guide](python-models.md) for writing and debugging Python models.

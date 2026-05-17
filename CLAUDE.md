@@ -1,6 +1,6 @@
 # dbt-fabric
 
-A dbt adapter for Microsoft Fabric, maintained as a fork of [microsoft/dbt-fabric](https://github.com/microsoft/dbt-fabric). Published to PyPI as `dbt-fabric-samdebruyn`.
+The dbt adapter for Microsoft Fabric. Published to PyPI as `dbt-fabric`.
 
 This adapter supports two Microsoft Fabric compute engines:
 
@@ -26,17 +26,16 @@ uv run zensical build --strict       # Build docs and fail on warnings
 
 ## Documentation website
 
-The project has a documentation website at https://dbt-fabric.debruyn.dev, built with Zensical. Source files live in `docs/`, configuration in `zensical.toml`, and theme overrides in `overrides/`.
+The project has a documentation website built with Zensical. Source files live in `docs/`, configuration in `zensical.toml`, and theme overrides in `overrides/`.
 
-The docs cover everything that is specific to this dbt adapter compared to other dbt adapters: installation, configuration, authentication, feature guides (Python models, warehouse snapshots), and a comparison with Microsoft's upstream `dbt-fabric`. When adding or changing adapter-specific behavior, update the relevant docs page. If a new feature has no existing page, add one under the appropriate nav section in `zensical.toml`.
-
-When linking to Microsoft Learn pages (anywhere in docs, code comments, or markdown), always append the MVP tracking parameter: `?WT.mc_id=MVP_310840` (or `&WT.mc_id=MVP_310840` if the URL already has query parameters).
+The docs cover everything that is specific to this dbt adapter: installation, configuration, authentication, and feature guides (Python models, warehouse snapshots, cluster by, statistics, external tables, Purview integration). When adding or changing adapter-specific behavior, update the relevant docs page. If a new feature has no existing page, add one under the appropriate nav section in `zensical.toml`.
 
 Current nav structure:
 
-- **Home** — Overview, comparison with upstream dbt-fabric, contributing, license
+- **Home** — Overview, Features, Contributing, License
 - **Installation & configuration** — Installing the adapter, compatibility matrix, configuration options
-- **Feature guides** — Authentication, Python models, warehouse snapshots
+- **Feature guides** — Authentication, Python models, warehouse snapshots, external tables, data clustering, statistics, catalog statistics, Microsoft Purview integration, Lakehouse, known limitations
+- **Package support** — Overview and per-package compatibility
 
 ## Architecture
 
@@ -101,7 +100,7 @@ Each adapter has an `__init__.py` that registers the plugin:
 - `src/dbt/adapters/fabric/__init__.py` — Registers `FabricAdapter` with `FabricCredentials`
 - `src/dbt/adapters/fabricspark/__init__.py` — Registers `FabricSparkAdapter` with `FabricSparkCredentials`, declares `dependencies=["spark"]`
 
-The FabricSpark adapter requires the optional `spark` dependency group: `pip install dbt-fabric-samdebruyn[spark]`.
+The FabricSpark adapter requires the optional `spark` dependency group: `pip install dbt-fabric[spark]`.
 
 ## Branching and worktrees
 
@@ -348,10 +347,6 @@ Both adapters use Fabric Livy sessions for Python model execution. The `BaseFabr
 
 The `dbt_package_support/` directory contains macro overrides that make popular dbt community packages (dbt-utils, dbt-date, dbt-expectations, dbt-audit-helper) work with Fabric's T-SQL dialect. These override specific macros from those packages with Fabric-compatible implementations.
 
-## Upstream relationship
+## Repository
 
-This is a maintained fork of `microsoft/dbt-fabric`. The upstream remote is configured:
-- `origin` → `sdebruyn/dbt-fabric` (this fork)
-- `upstream` → `microsoft/dbt-fabric` (original)
-
-The fork adds features and fixes not (yet) present in Microsoft's version, including FabricSpark support.
+This adapter lives under `tools/dbt-fabric/` in the [microsoft/fabric-toolbox](https://github.com/microsoft/fabric-toolbox) monorepo.

@@ -1,6 +1,6 @@
 # Authentication
 
-The dbt-fabric-samdebruyn adapter supports a variety of authentication methods so you can connect to Microsoft Fabric from any environment. This guide walks through each method, explains when to use it, and provides ready-to-use `profiles.yml` examples.
+The dbt-fabric adapter supports a variety of authentication methods so you can connect to Microsoft Fabric from any environment. This guide walks through each method, explains when to use it, and provides ready-to-use `profiles.yml` examples.
 
 !!! info "Works with both adapter types"
 
@@ -74,11 +74,11 @@ default:
 
     There have been reports of issues when using an outdated version of the Azure CLI. Run `az upgrade` to make sure you are on the latest version.
 
-The Azure CLI itself supports [multiple login methods](https://learn.microsoft.com/cli/azure/authenticate-azure-cli?view=azure-cli-latest&WT.mc_id=MVP_310840) (browser, device code, service principal, managed identity, …), making this a flexible option that adapts to many scenarios.
+The Azure CLI itself supports [multiple login methods](https://learn.microsoft.com/cli/azure/authenticate-azure-cli?view=azure-cli-latest) (browser, device code, service principal, managed identity, …), making this a flexible option that adapts to many scenarios.
 
 ### Automatic (`DefaultAzureCredential`)
 
-Set `authentication` to `auto` (or omit it entirely — it's the default). The adapter uses the Azure Identity SDK's [`DefaultAzureCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python&WT.mc_id=MVP_310840) which tries several credential sources in order:
+Set `authentication` to `auto` (or omit it entirely — it's the default). The adapter uses the Azure Identity SDK's [`DefaultAzureCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python) which tries several credential sources in order:
 
 1. Environment variables
 2. Workload identity
@@ -141,7 +141,7 @@ default:
 
 ### Environment variables
 
-Set `authentication` to `environment` and configure credentials through environment variables. The adapter uses Azure Identity's [`EnvironmentCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.environmentcredential?view=azure-python&WT.mc_id=MVP_310840), which supports the following variables:
+Set `authentication` to `environment` and configure credentials through environment variables. The adapter uses Azure Identity's [`EnvironmentCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.environmentcredential?view=azure-python), which supports the following variables:
 
 === "Service principal with secret"
 
@@ -185,13 +185,13 @@ This method keeps your `profiles.yml` completely free of secrets, which is an ad
 
 ### Workload Identity (federated credentials)
 
-Use `workload_identity` to authenticate with [Workload Identity Federation](https://learn.microsoft.com/entra/workload-id/workload-identity-federation?WT.mc_id=MVP_310840) — no client secret needed. The adapter uses [`ClientAssertionCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.clientassertioncredential?view=azure-python&WT.mc_id=MVP_310840) under the hood, fetching a fresh federated token on each Azure token refresh.
+Use `workload_identity` to authenticate with [Workload Identity Federation](https://learn.microsoft.com/entra/workload-id/workload-identity-federation) — no client secret needed. The adapter uses [`ClientAssertionCredential`](https://learn.microsoft.com/python/api/azure-identity/azure.identity.clientassertioncredential?view=azure-python) under the hood, fetching a fresh federated token on each Azure token refresh.
 
 This works with any identity provider that issues OIDC tokens: GitHub Actions, Kubernetes, or any custom OIDC endpoint.
 
 **Prerequisites:**
 
-- A registered application in Microsoft Entra ID with a [federated credential](https://learn.microsoft.com/entra/workload-id/workload-identity-federation-create-trust?pivots=identity-wif-apps-methods-azp&WT.mc_id=MVP_310840) configured for your identity provider
+- A registered application in Microsoft Entra ID with a [federated credential](https://learn.microsoft.com/entra/workload-id/workload-identity-federation-create-trust?pivots=identity-wif-apps-methods-azp) configured for your identity provider
 - The application must have access to your Fabric workspace
 - You need the **client ID** and **tenant ID** (no client secret)
 
@@ -281,7 +281,7 @@ default:
 
 !!! warning "`notebookutils` is currently broken"
 
-    The adapter also has a `notebookutils` authentication method that uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to obtain an access token from the notebook session. However, this method is **not working** at the moment because Microsoft's Runtime in the Notebooks returns a credential with a scope that is not allowed to access Data Warehouses and SQL Endpoints. Use one of the alternatives above instead.
+    The adapter also has a `notebookutils` authentication method that uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities) to obtain an access token from the notebook session. However, this method is **not working** at the moment because Microsoft's Runtime in the Notebooks returns a credential with a scope that is not allowed to access Data Warehouses and SQL Endpoints. Use one of the alternatives above instead.
 
 ---
 
@@ -289,7 +289,7 @@ default:
 
 ### Bring your own `TokenCredential`
 
-If the built-in authentication methods don't cover your scenario, you can supply any class that implements the [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840) protocol. The adapter loads the class by its dotted import path at runtime and calls `get_token()` whenever it needs an access token.
+If the built-in authentication methods don't cover your scenario, you can supply any class that implements the [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python) protocol. The adapter loads the class by its dotted import path at runtime and calls `get_token()` whenever it needs an access token.
 
 This is useful when:
 

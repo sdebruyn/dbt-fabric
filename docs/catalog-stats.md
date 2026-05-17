@@ -6,7 +6,7 @@ When you run `dbt docs generate`, this adapter enriches the [catalog](https://do
 
 ## How it works
 
-The catalog query uses the T-SQL function [`OBJECTPROPERTYEX`](https://learn.microsoft.com/sql/t-sql/functions/objectpropertyex-transact-sql?view=fabric&WT.mc_id=MVP_310840) with the `'Cardinality'` property to retrieve the optimizer's row count estimate for each table:
+The catalog query uses the T-SQL function [`OBJECTPROPERTYEX`](https://learn.microsoft.com/sql/t-sql/functions/objectpropertyex-transact-sql?view=fabric) with the `'Cardinality'` property to retrieve the optimizer's row count estimate for each table:
 
 ```sql
 cast(objectpropertyex(object_id, 'Cardinality') as int)
@@ -26,11 +26,9 @@ No configuration is needed — the statistics are included automatically wheneve
 
 ---
 
-## Why this adapter?
+## Why row counts in the catalog?
 
-Microsoft's upstream dbt-fabric adapter does not include any statistics in the catalog output. The base catalog query returns `null` for all stat columns, so the dbt docs site shows no table size information.
-
-This adapter adds row count statistics out of the box, which is especially useful for:
+Having row counts visible directly in the dbt docs site is especially useful for:
 
 - **Quickly assessing table sizes** during development and code review
 - **Spotting unexpected growth or emptiness** in tables after a dbt run

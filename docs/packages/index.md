@@ -66,7 +66,7 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 
 !!! info "dbt-external-tables on Lakehouse"
 
-    The dbt-external-tables package is not applicable to the Lakehouse adapter. Fabric Lakehouse uses [OneLake shortcuts](https://learn.microsoft.com/fabric/onelake/onelake-shortcuts-overview?WT.mc_id=MVP_310840) for external data access, not SQL-level external tables.
+    The dbt-external-tables package is not applicable to the Lakehouse adapter. Fabric Lakehouse uses [OneLake shortcuts](https://learn.microsoft.com/fabric/onelake/onelake-shortcuts-overview) for external data access, not SQL-level external tables.
 
 ### Package-specific limitations
 

@@ -1,6 +1,6 @@
 # Compatibility
 
-The first release of this fork was version 1.10.0. The adapter follows [dbt-adapters](https://github.com/dbt-labs/dbt-adapters) versioning rather than dbt-core versioning, so the adapter version number does not correspond to the dbt-core version.
+The adapter version (`1.X.Y`) is tested and guaranteed against the matching dbt-core minor version (`1.X.*`). This follows the dbt ecosystem convention where the adapter major and minor versions track the dbt-core release that they target.
 
 ## dbt-core
 
@@ -21,13 +21,7 @@ The first release of this fork was version 1.10.0. The adapter follows [dbt-adap
 
 ## SQL Server driver
 
-This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), Microsoft's official pure Python driver for SQL Server and Fabric. No ODBC drivers or system-level dependencies are required.
-
-| | dbt-fabric-samdebruyn | Microsoft's dbt-fabric |
-|---|---|---|
-| Driver | `mssql-python` | pyODBC + `msodbcsql18` |
-| System dependencies | None | ODBC driver manager + ODBC driver |
-| Installation | `pip install` only | `pip install` + platform-specific ODBC setup |
+This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), Microsoft's official Python driver for SQL Server and Fabric. It bundles the Microsoft ODBC Driver 18 for SQL Server and unixODBC directly in the Python package, so no ODBC drivers or system-level dependencies need to be installed separately. Installation is a single `pip install` command on Linux, macOS, and Windows.
 
 ## Fabric compute types
 
@@ -36,4 +30,4 @@ This adapter uses [`mssql-python`](https://github.com/microsoft/mssql-python), M
 | Fabric Data Warehouse | `fabric` | T-SQL |
 | Fabric Lakehouse | `fabricspark` | Spark SQL |
 
-The `fabricspark` adapter type requires the optional `spark` dependency: `pip install dbt-fabric-samdebruyn[spark]`.
+The `fabricspark` adapter type requires the optional `spark` dependency: `pip install dbt-fabric[spark]`.

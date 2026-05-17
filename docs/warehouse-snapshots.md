@@ -1,24 +1,14 @@
 # Warehouse snapshots
 
-A [warehouse snapshot](https://learn.microsoft.com/fabric/data-warehouse/warehouse-snapshot?WT.mc_id=MVP_310840) is a read-only, point-in-time view of a Fabric Data Warehouse. Snapshots let downstream consumers (reports, analysts, other pipelines) query a stable version of the data while your dbt run is modifying the warehouse. They can be "rolled forward" on demand and are retained for up to 30 days.
+A [warehouse snapshot](https://learn.microsoft.com/fabric/data-warehouse/warehouse-snapshot) is a read-only, point-in-time view of a Fabric Data Warehouse. Snapshots let downstream consumers (reports, analysts, other pipelines) query a stable version of the data while your dbt run is modifying the warehouse. They can be "rolled forward" on demand and are retained for up to 30 days.
 
-The dbt-fabric-samdebruyn adapter ships a macro that lets you create or update a warehouse snapshot from anywhere in your dbt project — giving you full control over **when** and **how often** snapshots are taken.
+The dbt-fabric adapter ships a macro that lets you create or update a warehouse snapshot from anywhere in your dbt project — giving you full control over **when** and **how often** snapshots are taken.
 
 ---
 
-## Why this adapter?
+## How it's exposed
 
-Microsoft's upstream dbt-fabric adapter also supports warehouse snapshots, but it bakes the feature into the adapter internals by hijacking Python runtime components. Their implementation does not respect the proper dbt lifecycle — it bypasses dbt's hook system entirely and instead injects snapshot logic into the running Python code. You get a single snapshot per run, triggered automatically at either the start or end, with no further control.
-
-This adapter takes a different approach: it exposes a **macro** that you call explicitly, putting you in charge.
-
-| | dbt-fabric (Microsoft) | dbt-fabric-samdebruyn |
-| --- | --- | --- |
-| **How** | Built into the adapter internals | A macro you call explicitly |
-| **When** | Automatically at the start or end of a run (configured via a profile setting) | Wherever you decide: `on-run-start`, `on-run-end`, `post-hook`, or any other Jinja context |
-| **Flexibility** | Single snapshot per run, limited control | Multiple snapshots, dynamic names, custom timing |
-
-This means you can take snapshots at multiple points during a run, use dynamic names (e.g. including the date), scope them to specific models, or skip them entirely on certain invocations — all by writing standard dbt configuration.
+This adapter exposes warehouse-snapshot creation as a Jinja macro you call explicitly. You decide when to take a snapshot, what to name it, and how often to refresh it — using dbt's standard side-effect orchestration mechanisms (`on-run-start`, `on-run-end`, `post-hook`, or any other Jinja context). This means you can take snapshots at multiple points during a run, use dynamic names (e.g. including the date), scope them to specific models, or skip them entirely on certain invocations — all by writing standard dbt configuration.
 
 ---
 

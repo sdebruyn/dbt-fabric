@@ -244,11 +244,11 @@ The `release-version.yml` workflow automatically updates `__version__.py` in bot
 
 ## Documentation
 
-The documentation website at [dbt-fabric.debruyn.dev](https://dbt-fabric.debruyn.dev) is built with [Zensical](https://zensical.org). Source files live in `docs/`, configuration in `zensical.toml`.
+The documentation website is built with [Zensical](https://zensical.org). Source files live in `docs/`, configuration in `zensical.toml`.
 
 ```shell
 uv run zensical serve                 # Local preview at http://127.0.0.1:8000
 uv run zensical build --strict        # Build and fail on warnings
 ```
 
-When adding or changing adapter-specific behavior, update the relevant docs page. When linking to Microsoft Learn pages, always append `?WT.mc_id=MVP_310840` (or `&WT.mc_id=MVP_310840` if the URL already has query parameters).
+When adding or changing adapter-specific behavior, update the relevant docs page.

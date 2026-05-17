@@ -4,7 +4,7 @@ This adapter provides compatibility macros for the [dbt-external-tables](https:/
 
 ## How it works
 
-The dbt-external-tables package includes a Fabric plugin, but it uses `CREATE EXTERNAL TABLE` syntax designed for Azure Synapse, which Fabric Data Warehouse does not support. Instead, Fabric Data Warehouse uses the T-SQL [`OPENROWSET(BULK ...)`](https://learn.microsoft.com/sql/t-sql/functions/openrowset-bulk-transact-sql?view=fabric&WT.mc_id=MVP_310840) function for external data access.
+The dbt-external-tables package includes a Fabric plugin, but it uses `CREATE EXTERNAL TABLE` syntax designed for Azure Synapse, which Fabric Data Warehouse does not support. Instead, Fabric Data Warehouse uses the T-SQL [`OPENROWSET(BULK ...)`](https://learn.microsoft.com/sql/t-sql/functions/openrowset-bulk-transact-sql?view=fabric) function for external data access.
 
 This adapter provides override macros that replace the package's Fabric plugin. When you run `dbt run-operation stage_external_sources`, the overridden macros create **views** that wrap `OPENROWSET` queries. This means:
 

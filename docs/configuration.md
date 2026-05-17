@@ -175,7 +175,7 @@ Possible values (case insensitive):
 
 The adapter supports an authentication method for every use case. The default is `auto`, which will try to use the best available method depending on your environment.
 
-If you can't find a suitable method for your use case, please [open an issue](https://github.com/sdebruyn/dbt-fabric/issues).
+If you can't find a suitable method for your use case, please [open an issue](https://github.com/microsoft/fabric-toolbox/issues).
 
 #### `ActiveDirectoryIntegrated`
 
@@ -221,21 +221,21 @@ Authenticate with a managed identity configured in your environment. This is typ
 
 **Default authentication method.**
 
-This will try to authenticate using the best available method depending on your environment. It can automatically pick up configurations for managed identities, service principals, Azure CLI/PowerShell users, and more. The full list and order of methods is described on [Microsoft Learn](https://learn.microsoft.com/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python&WT.mc_id=MVP_310840).
+This will try to authenticate using the best available method depending on your environment. It can automatically pick up configurations for managed identities, service principals, Azure CLI/PowerShell users, and more. The full list and order of methods is described on [Microsoft Learn](https://learn.microsoft.com/python/api/azure-identity/azure.identity.defaultazurecredential?view=azure-python).
 
 #### `CLI`
 
 Authenticate using the credentials from the Azure CLI. You must be logged in using `az login`. There have been reports of issues when using an outdated version of the Azure CLI, so make sure to use the latest version. Your account does not need to have access to any Azure subscriptions or resources and the selected Azure subscription does not matter.
 
-Since the Azure CLI supports [a variety of authentication methods](https://learn.microsoft.com/cli/azure/authenticate-azure-cli?view=azure-cli-latest&WT.mc_id=MVP_310840), this is a flexible option that works in many scenarios.
+Since the Azure CLI supports [a variety of authentication methods](https://learn.microsoft.com/cli/azure/authenticate-azure-cli?view=azure-cli-latest), this is a flexible option that works in many scenarios.
 
 #### `environment`
 
-Authenticate using environment variables. This works similarly to the `auto` method, but only uses environment variables. See [Microsoft Learn](https://learn.microsoft.com/python/api/azure-identity/azure.identity.environmentcredential?view=azure-python&WT.mc_id=MVP_310840) for the list of supported environment variables.
+Authenticate using environment variables. This works similarly to the `auto` method, but only uses environment variables. See [Microsoft Learn](https://learn.microsoft.com/python/api/azure-identity/azure.identity.environmentcredential?view=azure-python) for the list of supported environment variables.
 
 #### `notebookutils`
 
-This authentication method works inside a Fabric notebook. It uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities?WT.mc_id=MVP_310840) to get an access token for the current user.
+This authentication method works inside a Fabric notebook. It uses [NotebookUtils](https://learn.microsoft.com/fabric/data-engineering/notebook-utilities) to get an access token for the current user.
 
 !!! warning "Currently broken"
 
@@ -243,13 +243,13 @@ This authentication method works inside a Fabric notebook. It uses [NotebookUtil
 
 #### `workload_identity`
 
-Authenticate with [Workload Identity Federation](https://learn.microsoft.com/entra/workload-id/workload-identity-federation?WT.mc_id=MVP_310840) using a federated OIDC token. No client secret needed. Works with GitHub Actions, Kubernetes, and any OIDC provider. See the [authentication guide](authentication.md#workload-identity-federated-credentials) for examples.
+Authenticate with [Workload Identity Federation](https://learn.microsoft.com/entra/workload-id/workload-identity-federation) using a federated OIDC token. No client secret needed. Works with GitHub Actions, Kubernetes, and any OIDC provider. See the [authentication guide](authentication.md#workload-identity-federated-credentials) for examples.
 
 Requires [`tenant_id`](#tenant_id), [`client_id`](#client_id), and exactly one of [`federated_token_url`](#federated_token_url) or [`federated_token_file`](#federated_token_file).
 
 #### `token_credential`
 
-Load any [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840) implementation by its dotted import path. This is useful when the built-in methods don't cover your scenario -- for example, when using a custom OAuth flow, a token broker, or Workload Identity Federation with a non-standard setup. See the [authentication guide](authentication.md#custom-token-credential) for a full walkthrough.
+Load any [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python) implementation by its dotted import path. This is useful when the built-in methods don't cover your scenario -- for example, when using a custom OAuth flow, a token broker, or Workload Identity Federation with a non-standard setup. See the [authentication guide](authentication.md#custom-token-credential) for a full walkthrough.
 
 Requires [`credential_class`](#credential_class). Optionally accepts [`credential_kwargs`](#credential_kwargs).
 
@@ -318,7 +318,7 @@ Depending on the [`authentication`](#authentication) method you are using, the a
 
 Example value: `my_pkg.auth.MyCredential`
 
-The fully qualified dotted import path to a Python class that implements [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840). This is required when [`authentication`](#authentication) is set to `token_credential`, and must not be set for any other authentication method.
+The fully qualified dotted import path to a Python class that implements [`azure.core.credentials.TokenCredential`](https://learn.microsoft.com/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python). This is required when [`authentication`](#authentication) is set to `token_credential`, and must not be set for any other authentication method.
 
 The path must be a valid dotted Python identifier (e.g. `my_pkg.sub.MyCredential`). The class must be importable from the Python environment where dbt runs.
 
@@ -438,7 +438,7 @@ The maximum time to wait for the Livy Spark session to become idle (ready to acc
 
 ### `livy_session_name`
 
-Default: `dbt-fabric-samdebruyn`
+Default: `dbt-fabric`
 
 The name of the Livy session. Sessions are reused across statements within a dbt run. If an existing session with this name is found in an `idle`, `starting`, `running`, or `busy` state, it will be reused instead of creating a new one.
 

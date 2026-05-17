@@ -2,7 +2,7 @@
 
 **Tested version:** 0.11.0 | **Integration tested:** Yes
 
-[dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) enables defining external data sources that dbt can reference via `{{ source() }}`. This adapter overrides the package's Fabric plugin to use [`OPENROWSET(BULK ...)`](https://learn.microsoft.com/sql/t-sql/functions/openrowset-bulk-transact-sql?view=fabric&WT.mc_id=MVP_310840) instead of the Synapse-style `CREATE EXTERNAL TABLE` syntax that Fabric Data Warehouse does not support.
+[dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables) enables defining external data sources that dbt can reference via `{{ source() }}`. This adapter overrides the package's Fabric plugin to use [`OPENROWSET(BULK ...)`](https://learn.microsoft.com/sql/t-sql/functions/openrowset-bulk-transact-sql?view=fabric) instead of the Synapse-style `CREATE EXTERNAL TABLE` syntax that Fabric Data Warehouse does not support.
 
 For full setup instructions, source configuration examples, and format-specific options, see the [external tables guide](../external-tables.md).
 

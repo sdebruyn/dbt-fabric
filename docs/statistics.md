@@ -1,6 +1,6 @@
 # Statistics
 
-Fabric Data Warehouse supports [manual statistics](https://learn.microsoft.com/fabric/data-warehouse/statistics?WT.mc_id=MVP_310840) that give the query optimizer accurate cardinality estimates. While Fabric creates automatic statistics at query time (using sampling), manual statistics use `FULLSCAN` by default — reading all rows for exact histograms — and persist across sessions without needing a query to trigger creation.
+Fabric Data Warehouse supports [manual statistics](https://learn.microsoft.com/fabric/data-warehouse/statistics) that give the query optimizer accurate cardinality estimates. While Fabric creates automatic statistics at query time (using sampling), manual statistics use `FULLSCAN` by default — reading all rows for exact histograms — and persist across sessions without needing a query to trigger creation.
 
 This adapter lets you manage manual statistics declaratively using the `statistics` config option.
 
@@ -176,5 +176,5 @@ Statistics are named `dbt_stats__<md5_hash>` where the hash is computed from `<t
 ## Limitations
 
 - **Fabric Data Warehouse only** — FabricSpark (Lakehouse) uses a different statistics mechanism (`ANALYZE TABLE`) and is not supported by this config option
-- **Single-column statistics only** — Fabric Data Warehouse [does not support multi-column statistics](https://learn.microsoft.com/fabric/data-warehouse/statistics?WT.mc_id=MVP_310840#limitations)
+- **Single-column statistics only** — Fabric Data Warehouse [does not support multi-column statistics](https://learn.microsoft.com/fabric/data-warehouse/statistics#limitations)
 - **One scan method per model** — all columns in a model use the same `FULLSCAN` or `SAMPLE` setting; for per-column control, use post-hooks

@@ -1,30 +1,30 @@
 # Microsoft Purview integration
 
-This adapter can sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/?WT.mc_id=MVP_310840), enriching your Fabric tables with descriptions, business metadata, and lineage from your dbt project.
+This adapter can sync dbt metadata to [Microsoft Purview Data Catalog](https://learn.microsoft.com/en-us/purview/), enriching your Fabric tables with descriptions, business metadata, and lineage from your dbt project.
 
 ## Why this integration
 
-Microsoft Purview has a [built-in integration with Microsoft Fabric](https://learn.microsoft.com/en-us/fabric/governance/microsoft-purview-fabric?WT.mc_id=MVP_310840) that scans your Fabric workspace and discovers items like Warehouses, Lakehouses, Notebooks, and Pipelines. However, this built-in scanner has significant limitations when it comes to the metadata that dbt users care about:
+Microsoft Purview has a [built-in integration with Microsoft Fabric](https://learn.microsoft.com/en-us/fabric/governance/microsoft-purview-fabric) that scans your Fabric workspace and discovers items like Warehouses, Lakehouses, Notebooks, and Pipelines. However, this built-in scanner has significant limitations when it comes to the metadata that dbt users care about:
 
 | Capability | Built-in Purview scanner | dbt Purview sync |
 |---|---|---|
-| **Table discovery** | Lakehouse tables only (preview). Data Warehouse tables are [not scanned as sub-items](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric?WT.mc_id=MVP_310840). | Searches for existing entities first, creates them if missing. Works without live view or scanning. |
+| **Table discovery** | Lakehouse tables only (preview). Data Warehouse tables are [not scanned as sub-items](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric). | Searches for existing entities first, creates them if missing. Works without live view or scanning. |
 | **Column discovery** | Not populated for either Lakehouse or Data Warehouse tables. | Creates column entities for all physical columns (discovered from the database catalog), with data types and descriptions from dbt YAML where available. |
-| **Table descriptions** | Not populated. Must be [manually entered](https://learn.microsoft.com/en-us/purview/data-gov-classic-metadata-curation?WT.mc_id=MVP_310840) in the Purview portal per table. | Automatically pushed from dbt model YAML files after every run. |
+| **Table descriptions** | Not populated. Must be [manually entered](https://learn.microsoft.com/en-us/purview/data-gov-classic-metadata-curation) in the Purview portal per table. | Automatically pushed from dbt model YAML files after every run. |
 | **Column descriptions** | Not populated. Must be manually entered per column. | Automatically pushed from dbt column YAML files after every run. |
-| **Table-level lineage** | Not supported. The scanner only captures [item-level lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric?WT.mc_id=MVP_310840) (e.g., Lakehouse → Notebook → Lakehouse), not which specific table was derived from which other tables. | Full table-level lineage graph based on dbt's `ref()` and `source()` dependencies. |
+| **Table-level lineage** | Not supported. The scanner only captures [item-level lineage](https://learn.microsoft.com/en-us/purview/data-map-lineage-fabric) (e.g., Lakehouse → Notebook → Lakehouse), not which specific table was derived from which other tables. | Full table-level lineage graph based on dbt's `ref()` and `source()` dependencies. |
 | **Business metadata** | Not populated. No built-in mechanism to attach tags, test results, or custom metadata to table entities. | Automatically creates a `dbt_metadata` business metadata type with model ID, tags, materialization, test names, test results, custom meta, and sync timestamp. |
 | **Automation** | Runs on a scan schedule configured in Purview. | Runs automatically after every `dbt run` via `on-run-end` hook, or on-demand via `dbt run-operation`. |
 
 In short: the built-in Purview integration discovers _what exists_ in Fabric at the item level (Warehouses, Lakehouses). This dbt integration goes deeper: it registers individual tables and columns, adds _what each table means_ (descriptions), shows _how tables relate to each other_ (lineage), and documents _what guarantees are in place_ (tests, tags, metadata).
 
-**No Purview scanning or live view configuration is required** — the adapter creates all necessary entities directly via the Purview Data Map API. This means you can skip configuring Fabric scans in Purview entirely, which saves [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map?WT.mc_id=MVP_310840) and removes the delay between table changes and catalog updates. If you do already have scans configured, the sync works alongside them — existing entities are enriched, not duplicated.
+**No Purview scanning or live view configuration is required** — the adapter creates all necessary entities directly via the Purview Data Map API. This means you can skip configuring Fabric scans in Purview entirely, which saves [scan capacity costs](https://learn.microsoft.com/en-us/purview/concept-elastic-data-map) and removes the delay between table changes and catalog updates. If you do already have scans configured, the sync works alongside them — existing entities are enriched, not duplicated.
 
 ![Description and business metadata synced from dbt to a Lakehouse table in Purview](assets/purview/purview-description-metadata.png)
 
 ## How it works
 
-The sync uses a "search first, create if missing" approach for all entity types. If a Purview entity already exists (from [live view](https://learn.microsoft.com/en-us/purview/data-gov-live-view?WT.mc_id=MVP_310840) or a [scan](https://learn.microsoft.com/en-us/purview/register-scan-fabric-tenant?WT.mc_id=MVP_310840)), the sync enriches it. If no entity exists, the sync creates it via the Purview Data Map API. This means users don't need to configure live view or run scans for the sync to work.
+The sync uses a "search first, create if missing" approach for all entity types. If a Purview entity already exists (from [live view](https://learn.microsoft.com/en-us/purview/data-gov-live-view) or a [scan](https://learn.microsoft.com/en-us/purview/register-scan-fabric-tenant)), the sync enriches it. If no entity exists, the sync creates it via the Purview Data Map API. This means users don't need to configure live view or run scans for the sync to work.
 
 **Lakehouse tables** — the sync searches for existing `fabric_lakehouse_table` entities and creates them if missing. Column entities (`fabric_lakehouse_table_column`) are created for all physical columns discovered from the database catalog.
 
@@ -112,7 +112,7 @@ dbt run-operation purview_sync --args '{sync_lineage: false}'
 
 ## Controlling which models are synced
 
-The sync respects dbt's [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs?WT.mc_id=MVP_310840) configuration. Models where `persist_docs` is explicitly disabled are skipped entirely — no descriptions, no business metadata, and no lineage are pushed to Purview for those models.
+The sync respects dbt's [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs) configuration. Models where `persist_docs` is explicitly disabled are skipped entirely — no descriptions, no business metadata, and no lineage are pushed to Purview for those models.
 
 | `persist_docs` setting | Purview behavior |
 |---|---|
@@ -177,13 +177,13 @@ This shows up in Purview's lineage view as a graph of how data flows through you
 
 How dbt models are matched to Purview entities depends on the adapter type:
 
-- **FabricSpark** (Lakehouse) — the sync searches for existing `fabric_lakehouse_table` entities by name and filters by the Fabric item GUID. If an existing entity is found (from a [scan](https://learn.microsoft.com/en-us/purview/register-scan-fabric-tenant?WT.mc_id=MVP_310840) or live view), the sync enriches it. If no entity is found, the sync creates one via the Purview API.
-- **Fabric** (Data Warehouse) — the sync creates `fabric_warehouse_table` entities via the Purview API, along with parent `fabric_warehouse` and `fabric_warehouse_schema` entities. If a `fabric_warehouse` entity already exists from [live view](https://learn.microsoft.com/en-us/purview/data-gov-live-view?WT.mc_id=MVP_310840), the sync reuses it rather than creating a duplicate.
+- **FabricSpark** (Lakehouse) — the sync searches for existing `fabric_lakehouse_table` entities by name and filters by the Fabric item GUID. If an existing entity is found (from a [scan](https://learn.microsoft.com/en-us/purview/register-scan-fabric-tenant) or live view), the sync enriches it. If no entity is found, the sync creates one via the Purview API.
+- **Fabric** (Data Warehouse) — the sync creates `fabric_warehouse_table` entities via the Purview API, along with parent `fabric_warehouse` and `fabric_warehouse_schema` entities. If a `fabric_warehouse` entity already exists from [live view](https://learn.microsoft.com/en-us/purview/data-gov-live-view), the sync reuses it rather than creating a duplicate.
 
 Ephemeral models are skipped in both cases since they don't produce physical tables.
 
 !!! warning "Unique item names within a workspace"
-    Lakehouses and Warehouses in the same workspace must have distinct display names. The sync resolves database names to Fabric items via the [Fabric REST API](https://learn.microsoft.com/en-us/rest/api/fabric/core/items/list-items?WT.mc_id=MVP_310840) and checks Lakehouses first. If a Lakehouse and a Warehouse share the same name, the sync always matches the Lakehouse, which causes wrong entity types in Purview.
+    Lakehouses and Warehouses in the same workspace must have distinct display names. The sync resolves database names to Fabric items via the [Fabric REST API](https://learn.microsoft.com/en-us/rest/api/fabric/core/items/list-items) and checks Lakehouses first. If a Lakehouse and a Warehouse share the same name, the sync always matches the Lakehouse, which causes wrong entity types in Purview.
 
 ## Column entities
 

@@ -1,6 +1,6 @@
 # Python models
 
-The dbt-fabric-samdebruyn adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models), allowing you to use PySpark DataFrames to transform data in Microsoft Fabric. This is a feature exclusive to this adapter -- Microsoft's upstream dbt-fabric does not support it.
+The dbt-fabric adapter supports [Python models](https://docs.getdbt.com/docs/build/python-models), allowing you to use PySpark DataFrames to transform data in Microsoft Fabric.
 
 Python models are useful when you need transformations that are difficult or impossible to express in SQL, such as machine learning inference, complex string parsing, or calling external APIs.
 
@@ -8,7 +8,7 @@ Python models are useful when you need transformations that are difficult or imp
 
     Python models work on both adapter types, but the execution model differs:
 
-    - **`type: fabric` (Data Warehouse):** Python models use Livy to execute PySpark code that reads from and writes to the Data Warehouse via the [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector?WT.mc_id=MVP_310840). You need both a [`lakehouse`](configuration.md#lakehouse) (for the Livy session) and a [`database`](configuration.md#database) (the DW target).
+    - **`type: fabric` (Data Warehouse):** Python models use Livy to execute PySpark code that reads from and writes to the Data Warehouse via the [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector). You need both a [`lakehouse`](configuration.md#lakehouse) (for the Livy session) and a [`database`](configuration.md#database) (the DW target).
     - **`type: fabricspark` (Lakehouse):** Python models run on the same Livy session that handles all SQL models. The [`database`](configuration.md#database) field IS the lakehouse. No separate `lakehouse` config is needed.
 
     The rest of this page describes the Data Warehouse workflow. For Lakehouse-specific details, see the [Lakehouse guide](lakehouse.md).
@@ -70,7 +70,7 @@ The `dbt` object provides the same interface as in other adapters:
 
 ### The `spark` object
 
-The `spark` object is a standard PySpark `SparkSession`. Behind the scenes, the adapter configures it with Fabric's [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector?WT.mc_id=MVP_310840) so that `dbt.ref()` and `dbt.source()` read directly from your Data Warehouse.
+The `spark` object is a standard PySpark `SparkSession`. Behind the scenes, the adapter configures it with Fabric's [synapsesql connector](https://learn.microsoft.com/fabric/data-engineering/spark-data-warehouse-connector) so that `dbt.ref()` and `dbt.source()` read directly from your Data Warehouse.
 
 ---
 
@@ -79,7 +79,7 @@ The `spark` object is a standard PySpark `SparkSession`. Behind the scenes, the 
 Understanding the execution flow can help with debugging:
 
 1. **Code generation** — dbt compiles your Python model and wraps it with boilerplate that configures the Spark session and sets up the `synapsesql` connector for reads and writes.
-2. **Livy session** — The adapter connects to the [Livy API](https://learn.microsoft.com/fabric/data-engineering/lakehouse-api?WT.mc_id=MVP_310840) on your Lakehouse and either reuses an existing Spark session named `dbt-fabric` or creates a new one.
+2. **Livy session** — The adapter connects to the [Livy API](https://learn.microsoft.com/fabric/data-engineering/lakehouse-api) on your Lakehouse and either reuses an existing Spark session named `dbt-fabric` or creates a new one.
 3. **Statement execution** — The compiled code is submitted as a PySpark statement to the Livy session.
 4. **Write back** — The returned DataFrame is written to your Data Warehouse using `synapsesql` in `overwrite` mode.
 

@@ -1,46 +1,42 @@
-# dbt-fabric-samdebruyn
+# dbt-fabric
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/dbt-signature_tm_light.png">
-  <img alt="dbt logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/dbt-signature_tm.png">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/dbt-signature_tm_light.png">
+  <img alt="dbt logo" src="assets/dbt-signature_tm.png">
 </picture>
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png">
-  <img alt="Fabric logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png">
+  <source media="(prefers-color-scheme: dark)" srcset="assets/fabric.png">
+  <img alt="Fabric logo" src="assets/fabric.png">
 </picture>
 
-A maintained and extended fork of the [dbt-fabric](https://github.com/microsoft/dbt-fabric) adapter, supporting **both** Microsoft Fabric compute engines:
+The dbt adapter for Microsoft Fabric. Supports both Fabric compute engines from a single package, via two adapter types:
 
-- **Fabric Data Warehouse** — T-SQL, uses the mssql-python driver (`type: fabric`)
+- **Fabric Data Warehouse** — T-SQL, uses the [mssql-python](https://github.com/microsoft/mssql-python) driver, no separate ODBC installation required (`type: fabric`)
 - **Fabric Lakehouse** — Spark SQL via Livy sessions (`type: fabricspark`)
 
-The dbt-fabric adapter was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft. [Sam Debruyn](https://debruyn.dev), one of the original authors and core contributors, continues development and maintenance through this fork. It has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to Microsoft's version, which has seen limited investment since adoption.
+## Why?
 
-[![PyPI - Version](https://img.shields.io/pypi/v/dbt-fabric-samdebruyn)](https://pypi.org/project/dbt-fabric-samdebruyn/)
+Microsoft Fabric customers using dbt benefit from a single package that covers both compute engines, a comprehensive integration test suite running against real Fabric infrastructure, native support for Microsoft Purview metadata sync, Python models on both engines, and dbt-native implementations of Fabric-specific features (warehouse snapshots, cluster by, manual statistics, external tables via `OPENROWSET`) that plug into dbt's standard hooks, dispatch, and source mechanisms.
 
 ## Quick start
 
 ### Data Warehouse (T-SQL)
 
-Drop-in replacement for the original `dbt-fabric` adapter:
-
 ```bash
-pip install dbt-fabric-samdebruyn dbt-core
+pip install dbt-fabric dbt-core
 ```
-
-If you are migrating from the original adapter, all you need is `pip uninstall dbt-fabric` first.
 
 ### Lakehouse (Spark SQL)
 
 ```bash
-pip install dbt-fabric-samdebruyn[spark] dbt-core
+pip install dbt-fabric[spark] dbt-core
 ```
 
-This installs [dbt-spark](https://github.com/dbt-labs/dbt-spark) as a dependency. See the [Lakehouse guide](https://dbt-fabric.debruyn.dev/lakehouse/) for configuration and usage.
+This installs [dbt-spark](https://github.com/dbt-labs/dbt-spark) as a dependency. See the [Lakehouse guide](docs/lakehouse.md) for configuration and usage.
 
 ## Documentation
 
-Full documentation for using dbt with Microsoft Fabric is available at [dbt-fabric.debruyn.dev](https://dbt-fabric.debruyn.dev/).
+Full documentation is available at [microsoft.github.io/fabric-toolbox/dbt-fabric/](https://microsoft.github.io/fabric-toolbox/dbt-fabric/).
 
 ## Code of Conduct
 
@@ -50,6 +46,7 @@ Everyone interacting in this project's codebases, issues, discussions, and relat
 
 Special thanks to:
 
+* [Sam Debruyn](https://github.com/sdebruyn): primary author of dbt-fabric, who continued active development of the adapter through his fork and contributed this code to the Fabric Toolbox.
 * [Jacob Mastel](https://github.com/jacobm001): for his initial work on building dbt-sqlserver.
 * [Mikael Ene](https://github.com/mikaelene): for his initial work and continued maintenance on the dbt-sqlserver adapter.
 * [Anders Swanson](https://github.com/dataders): for his continued maintenance of the dbt-sqlserver adapter and the creation of the dbt-synapse adapter. And for his work at [dbt Labs](https://www.getdbt.com/).
