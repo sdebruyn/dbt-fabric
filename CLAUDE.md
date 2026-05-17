@@ -327,17 +327,13 @@ Fabric (T-SQL) and FabricSpark (Spark SQL) use fundamentally different SQL diale
 | String type | `varchar(MAX)` | `string` |
 | Timestamp | `datetime2(6)` | `timestamp` |
 | Identifier quoting | `[brackets]` | `` `backticks` `` |
-| Default materialization | `table` | `materialized_view` (lake view) |
+| Default materialization | `table` | `view` |
 | Connection | mssql-python (TDS) | Livy sessions (HTTP/REST) |
 | Catalog queries | `sys.tables`, `sys.views`, `sys.columns` | `SHOW TABLES`, `SHOW COLUMNS`, `DESCRIBE` |
 
 ### Materialized lake views in FabricSpark
 
-FabricSpark's default materialization is `materialized_view`, which creates Fabric "lake views". These support:
-- `PARTITIONED BY` clauses
-- `TBLPROPERTIES` (Spark table properties)
-- `CHECK` constraints with `ON MISMATCH` behavior
-- `CREATE OR REPLACE` semantics
+FabricSpark supports `materialized_view` as a materialization, which creates Fabric "lake views". These support `PARTITIONED BY`, `TBLPROPERTIES`, `CHECK` constraints with `ON MISMATCH`, and `CREATE OR REPLACE` semantics.
 
 ### mssql-python driver
 

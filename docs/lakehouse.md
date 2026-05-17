@@ -83,26 +83,9 @@ Key technical details:
 
 ## Materializations
 
-### Default materialization: `materialized_view`
+In addition to the standard dbt materializations, FabricSpark supports `materialized_view`, which creates Fabric [lake views](https://learn.microsoft.com/fabric/data-engineering/lakehouse-sql-analytics-endpoint?WT.mc_id=MVP_310840). Lake views support `PARTITIONED BY`, `TBLPROPERTIES`, and `CHECK` constraints with `ON MISMATCH` behavior.
 
-Unlike most dbt adapters where the default materialization is `view` or `table`, the FabricSpark adapter defaults to **`materialized_view`**. This creates Fabric [lake views](https://learn.microsoft.com/fabric/data-engineering/lakehouse-sql-analytics-endpoint?WT.mc_id=MVP_310840), a Fabric-specific concept.
-
-Lake views support:
-
-- `CREATE OR REPLACE` semantics
-- `PARTITIONED BY` clauses
-- `TBLPROPERTIES` (Spark table properties)
-- `CHECK` constraints with `ON MISMATCH` behavior
-
-### Supported materializations
-
-| Materialization | Supported | Notes |
-| --- | --- | --- |
-| `materialized_view` | Yes | Default. Creates a Fabric lake view. |
-| `table` | Yes | Creates a managed Delta table. |
-| `view` | Yes | Creates a Spark SQL view (`CREATE OR REPLACE VIEW`). |
-| `incremental` | Yes | Supports `append` and `insert_overwrite` strategies. `merge` and `delete+insert` are not supported. |
-| `ephemeral` | Yes | Standard CTE-based ephemeral models. |
+The incremental materialization supports `append` and `insert_overwrite` strategies.
 
 ---
 
@@ -187,7 +170,7 @@ A dbt run with many models will be significantly slower on FabricSpark than on F
 | SQL dialect | T-SQL | Spark SQL |
 | Connection | mssql-python (TDS protocol) | Livy sessions (HTTP REST) |
 | Identifier quoting | `[brackets]` | `` `backticks` `` |
-| Default materialization | `table` | `materialized_view` (lake view) |
+| Default materialization | `table` | `view` |
 | Views | Supported | Supported |
 | String type | `varchar(MAX)` | `string` |
 | Timestamp type | `datetime2(6)` | `timestamp` |
