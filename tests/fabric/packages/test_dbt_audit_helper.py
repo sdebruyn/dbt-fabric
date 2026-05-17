@@ -27,14 +27,6 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
                 "unit_test_wrappers": {"+enabled": False},
                 "data_tests": {
                     "compare_and_classify_query_results": {"+enabled": False},
-                    "compare_all_columns_with_summary": {"+enabled": False},
-                    "compare_all_columns_without_summary": {"+enabled": False},
-                    "compare_all_columns_concat_pk_with_summary": {"+enabled": False},
-                    "compare_all_columns_concat_pk_without_summary": {"+enabled": False},
-                    "compare_all_columns_with_summary_and_exclude": {"+enabled": False},
-                    "compare_all_columns_where_clause": {"+enabled": False},
-                    "compare_which_columns_differ": {"+enabled": False},
-                    "compare_which_columns_differ_exclude_cols": {"+enabled": False},
                     "compare_relation_columns": {"+materialized": "table"},
                 },
             }
