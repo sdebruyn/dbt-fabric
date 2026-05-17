@@ -1,7 +1,6 @@
-{#- Override: uses DATEPART(weekday, date) with manual ISO shift instead of EXTRACT(dow/isodow). T-SQL requires DATEPART('weekday') which is 1=Sunday-based, needing a CASE for ISO weeks. -#}
-
 {%- macro fabric__day_of_week(date, isoweek) -%}
 
+    {#- Upstream uses 'dayofweek' (0=Sunday). T-SQL 'weekday' returns 1=Sunday, so arithmetic differs. -#}
     {%- set dow = dbt_date.date_part('weekday', date) -%}
 
     {%- if isoweek -%}

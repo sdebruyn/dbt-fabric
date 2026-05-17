@@ -1,11 +1,10 @@
-{#- Override: inlines the fiscal year date logic as flat CTEs instead of nested subqueries. T-SQL in Fabric does not support nested CTEs (WITH inside WITH), requiring a single-level CTE chain. -#}
 {% macro get_fiscal_periods(dates, year_end_month, week_start_day, shift_year=1) %}
 {#
 This macro requires you to pass in a ref to a date dimension, created via
 dbt_date.get_date_dimension()s
 #}
 
-{#- inline version of get_fiscal_year_dates -#}
+{#- Upstream calls {{ dbt_date.get_fiscal_year_dates(...) }} as nested CTE. Fabric can't nest CTEs, so we inline it. -#}
 -- this gets all the dates within a fiscal year
 -- determined by the given year-end-month
 -- ending on the saturday closest to that month's end date
@@ -21,6 +20,7 @@ year_month_end as (
         fsc_date_dimension d
     where
         d.month_of_year = {{ year_end_month }}
+    {#- Upstream uses GROUP BY 1,2. T-SQL doesn't support positional GROUP BY. -#}
     group by
         d.year_number - {{ shift_year }},
         d.month_end_date
@@ -118,6 +118,7 @@ fscl_year_w13 as (
         f.*,
         -- We count the weeks in a 13 week period
         -- and separate the 4-5-4 week sequences
+        {#- Upstream uses mod(..., 13). T-SQL uses % operator. -#}
         cast(
             (f.fiscal_week_of_year-1) as {{ dbt.type_int() }}
             ) % 13 as w13_number,
@@ -174,4 +175,5 @@ select
     period_of_quarter as fiscal_period_of_quarter
 from
     fscl_periods_quarters
+{#- Upstream has ORDER BY 1,2 here. Removed: Fabric doesn't support ORDER BY in views/subqueries. -#}
 {% endmacro %}

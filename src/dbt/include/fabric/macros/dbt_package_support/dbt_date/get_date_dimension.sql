@@ -1,6 +1,4 @@
-{#- Override: inlines all CTEs into a single flat query instead of nested CTEs with ordering. T-SQL in Fabric does not support nested CTEs or ORDER BY in subqueries, requiring a flattened structure. -#}
 {% macro fabric__get_date_dimension(start_date, end_date) %}
-{#- Inlined version of the original macro without the ordering because nested CTEs are not supported -#}
 
 {%- set datepart="day" -%}
 
@@ -14,6 +12,7 @@
 {%- set end_date = dbt_date.tomorrow() -%}
 {%- endif -%}
 
+{#- Upstream calls get_base_dates() as nested subquery. Fabric can't nest CTEs, so we inline date_spine + base_dates. -#}
 with date_spine as
 (
 
@@ -88,4 +87,5 @@ select
     cast({{ last_day('d.date_day', 'year') }} as date) as year_end_date
 from
     dates_with_prior_year_dates d
+{#- Upstream has ORDER BY 1 here. Removed: Fabric doesn't support ORDER BY in views/subqueries. -#}
 {% endmacro %}
