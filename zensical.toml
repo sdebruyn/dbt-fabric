@@ -39,6 +39,7 @@ nav = [
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
     { "External tables" = "external-tables.md" },
     { "Catalog statistics" = "catalog-stats.md" },
+    { "Known limitations" = "limitations.md" },
   ] },
   { "Package support" = [
     { "Overview" = "packages/index.md" },

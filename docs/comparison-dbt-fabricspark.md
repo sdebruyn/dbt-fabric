@@ -68,7 +68,7 @@ Notable differences:
 | **Token Credential** | Yes | Yes |
 | **Workload Identity** | Yes (federated OIDC) | No |
 | **Static Access Token** | Yes | Yes |
-| **Fabric Notebook** | No | Yes |
+| **Fabric Notebook** | Yes (currently broken due to Microsoft scope issue) | Yes |
 
 ### Livy session management
 
@@ -92,6 +92,7 @@ Notable differences:
 | **[Python model](python-models.md) support** | Submit Python models to Livy |
 | **Workload identity auth** | Federated OIDC for CI/CD |
 | **Shared T-SQL + Spark** | One package, two adapters |
+| **Cross-workspace 4-part naming** | `workspace.lakehouse.schema.table` for snapshots and table reads |
 | **Capability declarations** | `SchemaMetadataByRelations`, `TableLastModifiedMetadata` |
 | **PEP 249 cursor** | Proper type conversion for all Spark SQL types |
 
@@ -101,9 +102,7 @@ Notable differences:
 |---|---|
 | **MLV REST API** | On-demand refresh, scheduled refresh via Fabric API |
 | **OneLake shortcuts** | `ShortcutClient` for shortcut CRUD |
-| **Fabric Notebook auth** | Ambient auth inside notebooks |
 | **Local Livy mode** | Connect to local Livy for development |
-| **Cross-workspace 4-part naming** | Full read+write for `workspace.lakehouse.schema.table` |
 | **Credential validation** | UUID format, HTTPS domain whitelist |
 
 ### Lakehouse schema support
