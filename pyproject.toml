@@ -1,7 +1,7 @@
 [project]
 name = "dbt-fabric-samdebruyn"
 dynamic = ["version"]
-description = "A Microsoft Fabric Synapse Data Warehouse adapter plugin for dbt"
+description = "The dbt adapter for Microsoft Fabric Lakehouses and Data Warehouses"
 readme = "README.md"
 license = "MIT"
 authors = [
