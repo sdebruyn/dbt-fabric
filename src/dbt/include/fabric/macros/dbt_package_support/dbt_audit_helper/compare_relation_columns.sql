@@ -1,5 +1,8 @@
-{#- Uses sys.columns instead of INFORMATION_SCHEMA (not supported in Fabric distributed mode).
-    Replaces USING clause with explicit ON; uses CASE WHEN instead of boolean expressions. -#}
+{#- Uses sys.columns/sys.objects instead of INFORMATION_SCHEMA (not supported in
+    Fabric distributed mode). Joins sys.objects (not sys.tables) so views are
+    included. Uses row_number() for ordinal position since column_id can have
+    gaps after schema changes. Replaces USING with explicit ON and boolean
+    expressions with CASE WHEN. -#}
 {% macro fabric__compare_relation_columns(a_relation, b_relation) %}
 
 select
@@ -19,7 +22,7 @@ full outer join ({{ fabric__get_columns_in_relation_sql(b_relation) }}) b_cols
 
 {% macro fabric__get_columns_in_relation_sql(relation) %}
   select
-      c.column_id as ordinal_position,
+      row_number() over (order by c.column_id) as ordinal_position,
       c.name as column_name,
       t.name as data_type,
       c.max_length as character_maximum_length,
@@ -27,8 +30,8 @@ full outer join ({{ fabric__get_columns_in_relation_sql(b_relation) }}) b_cols
       c.scale as numeric_scale
   from sys.columns c
   inner join sys.types t on c.user_type_id = t.user_type_id
-  inner join sys.tables tbl on c.object_id = tbl.object_id
-  inner join sys.schemas s on tbl.schema_id = s.schema_id
-  where tbl.name = '{{ relation.identifier }}'
+  inner join sys.objects o on c.object_id = o.object_id
+  inner join sys.schemas s on o.schema_id = s.schema_id
+  where o.name = '{{ relation.identifier }}'
     and s.name = '{{ relation.schema }}'
 {% endmacro %}

@@ -1,14 +1,9 @@
 {#- T-SQL has no boolean column type. Bare boolean expressions like
     `a.col = b.col and a.pk is not null` and `coalesce(..., false)` are
-    replaced with CASE WHEN → 0/1 integers. -#}
+    replaced with CASE WHEN → 0/1 integers.
+    Uses inline subqueries instead of CTEs so the output can be nested
+    inside UNION ALL (as compare_all_columns does). -#}
 {% macro fabric__compare_column_values_verbose(a_query, b_query, primary_key, column_to_compare) -%}
-with a_query as (
-    {{ a_query }}
-),
-
-b_query as (
-    {{ b_query }}
-)
     select
         coalesce(a_query.{{ primary_key }}, b_query.{{ primary_key }}) as primary_key,
         '{{ column_to_compare }}' as column_name,
@@ -17,7 +12,9 @@ b_query as (
                 and a_query.{{ primary_key }} is not null
                 and b_query.{{ primary_key }} is not null then 1
             when a_query.{{ column_to_compare }} is null
-                and b_query.{{ column_to_compare }} is null then 1
+                and b_query.{{ column_to_compare }} is null
+                and a_query.{{ primary_key }} is not null
+                and b_query.{{ primary_key }} is not null then 1
             else 0
         end as perfect_match,
         case
@@ -43,8 +40,8 @@ b_query as (
             else 0
         end as conflicting_values
 
-    from a_query
+    from ({{ a_query }}) a_query
 
-    full outer join b_query on (a_query.{{ primary_key }} = b_query.{{ primary_key }})
+    full outer join ({{ b_query }}) b_query on (a_query.{{ primary_key }} = b_query.{{ primary_key }})
 
 {% endmacro %}

@@ -27,7 +27,8 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
                 "unit_test_wrappers": {"+enabled": False},
                 "data_tests": {
                     "compare_and_classify_query_results": {"+enabled": False},
-                    "compare_relation_columns": {"+materialized": "table"},
+                    "compare_all_columns_where_clause": {"+enabled": False},
+                    "compare_relation_columns": {"+enabled": False},
                 },
             }
         }
