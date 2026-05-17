@@ -92,7 +92,6 @@ Notable differences:
 | **[Python model](python-models.md) support** | Submit Python models to Livy |
 | **Workload identity auth** | Federated OIDC for CI/CD |
 | **Shared T-SQL + Spark** | One package, two adapters |
-| **Cross-workspace 4-part naming** | `workspace.lakehouse.schema.table` for snapshots and table reads |
 | **Capability declarations** | `SchemaMetadataByRelations`, `TableLastModifiedMetadata` |
 | **PEP 249 cursor** | Proper type conversion for all Spark SQL types |
 
