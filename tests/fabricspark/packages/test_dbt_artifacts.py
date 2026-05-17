@@ -1,5 +1,6 @@
 import pytest
 
+from dbt.tests.util import run_dbt
 from tests.packages.base_package_test import BaseDbtPackageTests
 
 
@@ -35,3 +36,21 @@ class TestDbtArtifacts(BaseDbtPackageTests):
                 {"package": "dbt-labs/dbt_utils", "version": dbt_utils_version},
             ]
         }
+
+    @pytest.fixture(scope="class")
+    def models_config(self):
+        return {
+            "dbt_artifacts": {
+                "+file_format": "delta",
+            }
+        }
+
+    def test_package(self, project, dbt_core_bug_workaround):
+        run_dbt(["deps"])
+        run_dbt(
+            [
+                "build",
+                "--exclude",
+                "microbatch",
+            ],
+        )
