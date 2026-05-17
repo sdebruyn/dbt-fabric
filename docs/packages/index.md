@@ -26,21 +26,18 @@ dispatch:
     search_order: ['your_project_name', 'dbt', 'audit_helper']
 ```
 
-Replace `your_project_name` with the `name` field from your `dbt_project.yml`. Only include entries for the packages you actually use. The `insert_by_period` materialization does not require dispatch configuration.
+Replace `your_project_name` with the `name` field from your `dbt_project.yml`. Only include entries for the packages you actually use.
 
 The `dbt` entry in the search order tells dbt to check the adapter's built-in macros (the "global project namespace") before falling back to the package's defaults. This is how the adapter's T-SQL-compatible macros take priority.
 
 ## Supported packages
 
-| Package | Macro overrides | Tested version | Integration tested |
-|---|---|---|---|
-| [dbt-utils](dbt-utils.md) | 16 | 1.3.3 | Yes |
-| [dbt-date](dbt-date.md) | 16 | 0.17.2 | Yes |
-| [dbt-expectations](dbt-expectations.md) | 10 | -- | No |
-| [insert_by_period](insert-by-period.md) | 7 | -- | No |
-| [dbt-audit-helper](dbt-audit-helper.md) | 5 | -- | No |
-| [dbt-external-tables](dbt-external-tables.md) | 5 | 0.11.0 | Yes |
+| Package | Tested version | Integration tested |
+|---|---|---|
+| [dbt-utils](dbt-utils.md) | 1.3.3 | Yes |
+| [dbt-date](dbt-date.md) | 0.17.2 | Yes |
+| [dbt-expectations](dbt-expectations.md) | -- | No |
+| [dbt-audit-helper](dbt-audit-helper.md) | -- | No |
+| [dbt-external-tables](dbt-external-tables.md) | 0.11.0 | Yes |
 
 "Tested version" indicates the version against which the adapter runs automated integration tests in CI. Packages without a tested version have macro overrides that are expected to work but are not verified automatically.
-
-Macros from a supported package that are **not** listed as overridden on the individual package pages work without any adapter-specific override. They either generate standard SQL that Fabric already accepts, or dbt's built-in adapter macros (like `dbt.dateadd`, `dbt.datediff`) handle the translation.

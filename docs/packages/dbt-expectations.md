@@ -1,6 +1,6 @@
 # dbt-expectations
 
-**Macro overrides:** 10 | **Integration tested:** No
+**Integration tested:** No
 
 [dbt-expectations](https://github.com/calogica/dbt-expectations) provides data quality tests inspired by Great Expectations. The overrides address T-SQL incompatibilities in statistical functions, boolean handling, and subquery syntax.
 
@@ -15,6 +15,10 @@ dispatch:
   - macro_namespace: dbt_expectations
     search_order: ['your_project_name', 'dbt', 'dbt_expectations']
 ```
+
+## Macro compatibility
+
+<!-- TODO: fill in full macro table like dbt-utils -->
 
 ## Overridden macros
 

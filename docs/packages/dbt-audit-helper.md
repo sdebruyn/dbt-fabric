@@ -1,6 +1,6 @@
 # dbt-audit-helper
 
-**Macro overrides:** 5 | **Integration tested:** No
+**Integration tested:** No
 
 [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper) provides macros for comparing relations and queries during data model refactoring. The overrides address T-SQL incompatibilities with `EXCEPT`, `INTERSECT`, type casting, and system catalog queries.
 
@@ -15,6 +15,10 @@ dispatch:
   - macro_namespace: audit_helper
     search_order: ['your_project_name', 'dbt', 'audit_helper']
 ```
+
+## Macro compatibility
+
+<!-- TODO: fill in full macro table like dbt-utils -->
 
 ## Overridden macros
 

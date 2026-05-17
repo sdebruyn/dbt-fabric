@@ -47,8 +47,11 @@ nav = [
     { "dbt-expectations" = "packages/dbt-expectations.md" },
     { "dbt-audit-helper" = "packages/dbt-audit-helper.md" },
     { "dbt-external-tables" = "packages/dbt-external-tables.md" },
+  ] },
+  { "Materializations" = [
     { "insert_by_period" = "packages/insert-by-period.md" },
   ] },
+
 ]
 
 [project.theme]

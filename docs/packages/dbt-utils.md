@@ -1,6 +1,6 @@
 # dbt-utils
 
-**Tested version:** 1.3.3 | **Macro overrides:** 16 | **Integration tested:** Yes
+**Tested version:** 1.3.3 | **Integration tested:** Yes
 
 [dbt-utils](https://github.com/dbt-labs/dbt-utils) is the most widely used dbt community package, providing generic tests, SQL helpers, and schema management utilities.
 
@@ -12,44 +12,89 @@ dispatch:
     search_order: ['your_project_name', 'dbt', 'dbt_utils']
 ```
 
-## Overridden macros
+## Macro compatibility
 
-The following macros have T-SQL-compatible overrides in this adapter:
+Legend: ✅ = supported on Fabric, ❌ = not supported on Fabric
+
+Macros marked with **(override)** have a T-SQL-compatible override in this adapter. All other supported macros work without any adapter-specific override.
 
 ### Generic tests
 
-| Macro | Why overridden |
-|---|---|
-| `test_at_least_one` | Subquery requires column alias in T-SQL; uses `TOP 1` instead of `LIMIT 1` |
-| `test_expression_is_true` | T-SQL boolean handling differences |
-| `test_not_empty_string` | T-SQL string function syntax |
-| `test_mutually_exclusive_ranges` | T-SQL window function and boolean syntax |
-| `test_relationships_where` | T-SQL subquery syntax |
-| `test_sequential_values` | T-SQL requires table alias for subqueries; uses `PARTITION BY` syntax |
-| `test_not_null_where` | T-SQL `WHERE` clause handling |
-| `test_unique_where` | T-SQL `WHERE` clause handling |
+| Macro | Status | Notes |
+|---|---|---|
+| `accepted_range` | ✅ | |
+| `at_least_one` | ✅ **(override)** | Subquery requires column alias; uses `TOP 1` instead of `LIMIT 1` |
+| `cardinality_equality` | ✅ | |
+| `equal_rowcount` | ✅ **(override)** | T-SQL subquery and comparison syntax |
+| `equality` | ✅ | |
+| `expression_is_true` | ✅ **(override)** | T-SQL boolean handling differences |
+| `fewer_rows_than` | ✅ **(override)** | T-SQL subquery and comparison syntax |
+| `mutually_exclusive_ranges` | ✅ **(override)** | T-SQL window function and boolean syntax |
+| `not_accepted_values` | ✅ | |
+| `not_constant` | ✅ | |
+| `not_empty_string` | ✅ **(override)** | T-SQL string function syntax |
+| `not_null_proportion` | ✅ | |
+| `not_null_where` | ✅ **(override)** | T-SQL `WHERE` clause handling |
+| `recency` | ✅ | |
+| `relationships_where` | ✅ **(override)** | T-SQL subquery syntax |
+| `sequential_values` | ✅ **(override)** | T-SQL requires table alias; uses `PARTITION BY` syntax |
+| `unique_combination_of_columns` | ✅ | |
+| `unique_where` | ✅ **(override)** | T-SQL `WHERE` clause handling |
 
 ### SQL helpers
 
-| Macro | Why overridden |
-|---|---|
-| `deduplicate` | Uses T-SQL `ROW_NUMBER()` pattern without introducing extra columns |
-| `generate_series` | Uses T-SQL `generate_series()` function |
-| `generate_surrogate_key` | Uses `HASHBYTES('md5', ...)` with T-SQL concat and cast |
-| `get_tables_by_pattern_sql` | Queries `INFORMATION_SCHEMA` with T-SQL-compatible pattern matching |
-| `width_bucket` | Implements bucket logic with T-SQL arithmetic (no native `WIDTH_BUCKET`) |
+| Macro | Status | Notes |
+|---|---|---|
+| `date_spine` | ✅ | |
+| `deduplicate` | ✅ **(override)** | Uses T-SQL `ROW_NUMBER()` pattern |
+| `generate_series` | ✅ **(override)** | Uses T-SQL `generate_series()` function |
+| `generate_surrogate_key` | ✅ **(override)** | Uses `HASHBYTES('md5', ...)` with T-SQL concat and cast |
+| `get_column_values` | ✅ | |
+| `get_filtered_columns_in_relation` | ✅ | |
+| `get_query_results_as_dict` | ✅ | |
+| `get_relations_by_pattern` | ✅ | |
+| `get_relations_by_prefix` | ✅ | |
+| `get_single_value` | ✅ | |
+| `group_by` | ❌ | T-SQL does not support positional `GROUP BY` (e.g., `GROUP BY 1, 2`) |
+| `haversine_distance` | ✅ | |
+| `nullcheck` | ✅ | |
+| `nullcheck_table` | ✅ | |
+| `pivot` | ✅ | |
+| `safe_add` | ✅ | |
+| `safe_divide` | ✅ | |
+| `safe_subtract` | ✅ | |
+| `star` | ✅ | |
+| `union_relations` | ✅ | |
+| `unpivot` | ✅ | |
+| `width_bucket` | ✅ **(override)** | Implements bucket logic with T-SQL arithmetic (no native `WIDTH_BUCKET`) |
 
-### Schema cleanup
+### Web macros
 
-| Macro | Why overridden |
-|---|---|
-| `drop_old_relations` | Uses `sys.tables`/`sys.views` system views |
-| `drop_schema_by_name` | Uses dbt's `drop_schema` API |
-| `drop_schemas_by_prefixes` | Iterates schemas using T-SQL system catalog |
+| Macro | Status | Notes |
+|---|---|---|
+| `get_url_host` | ✅ | |
+| `get_url_parameter` | ✅ | |
+| `get_url_path` | ✅ | |
 
-## Unsupported generic tests
+### Jinja helpers
 
-The `group_by` generic test is **not supported**. T-SQL does not support positional `GROUP BY` (e.g., `GROUP BY 1, 2`), which is required by the test's implementation. All other dbt-utils generic tests work as expected.
+| Macro | Status | Notes |
+|---|---|---|
+| `log_info` | ✅ | |
+| `pretty_log_format` | ✅ | |
+| `pretty_time` | ✅ | |
+| `slugify` | ✅ | |
+
+### Schema cleanup (internal)
+
+These macros are used for schema management, not typically called directly in models:
+
+| Macro | Status | Notes |
+|---|---|---|
+| `drop_old_relations` | ✅ **(override)** | Uses `sys.tables`/`sys.views` system views |
+| `drop_schema_by_name` | ✅ **(override)** | Uses dbt's `drop_schema` API |
+| `drop_schemas_by_prefixes` | ✅ **(override)** | Iterates schemas using T-SQL system catalog |
+| `get_tables_by_pattern_sql` | ✅ **(override)** | Queries `INFORMATION_SCHEMA` with T-SQL-compatible pattern matching |
 
 ## Additional macros
 
@@ -57,7 +102,3 @@ This adapter also provides two standalone T-SQL utility macros that complement d
 
 - `surrogate_key` -- Enhanced version with configurable `col_type` and `use_binary_hash` options for T-SQL-specific surrogate key generation
 - `cast_hash_to_str` -- Converts a `varbinary` hash to `varchar(32)` for use in tools that require string keys (e.g., Power BI relationships)
-
-## Macros that work without override
-
-All other dbt-utils macros (e.g., `star`, `pivot`, `unpivot`, `union_relations`, `get_column_values`, `date_spine`, etc.) work on Fabric without any adapter-specific override.

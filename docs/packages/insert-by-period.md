@@ -1,6 +1,6 @@
 # insert_by_period
 
-**Macro overrides:** 7 | **Integration tested:** No
+**Integration tested:** No
 
 [insert_by_period](https://github.com/dbt-labs/dbt-labs-experimental-features/tree/main/insert_by_period) is an experimental materialization from dbt Labs that loads data incrementally by time period. This adapter provides a complete T-SQL implementation of the materialization and its helper macros.
 
