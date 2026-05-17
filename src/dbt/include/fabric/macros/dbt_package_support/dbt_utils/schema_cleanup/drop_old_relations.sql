@@ -1,4 +1,6 @@
--- Tidyed up version of Jacob Matson's contribution in the dbt-sqlserver slack channel https://app.slack.com/client/T0VLPD22H/CMRMDDQ9W/thread/CMRMDDQ9W-1625096967.079800 
+{#- Override: queries information_schema.tables with T-SQL-specific concat_ws and bracket-escaped
+    database names. Upstream uses pg_catalog or information_schema with ANSI SQL. -#}
+-- Tidyed up version of Jacob Matson's contribution in the dbt-sqlserver slack channel https://app.slack.com/client/T0VLPD22H/CMRMDDQ9W/thread/CMRMDDQ9W-1625096967.079800
 
 {% macro fabric__drop_old_relations(dry_run='false') %}
     {% if execute %}

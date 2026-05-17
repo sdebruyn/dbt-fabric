@@ -1,3 +1,4 @@
+{#- Override: uses CONCAT + RIGHT for zero-padding instead of TO_CHAR(date, 'IYYY-"W"IW'). T-SQL requires manual string construction with RIGHT('0'+cast, 2) for ISO year-week formatting. -#}
 {%- macro fabric__iso_year_week(date) -%}
     case
         when {{ dbt_date.iso_week_of_year(date) }} = 1

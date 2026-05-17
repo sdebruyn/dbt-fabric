@@ -1,3 +1,5 @@
+{#- Override: queries sys.schemas with LIKE instead of information_schema.schemata.
+    T-SQL uses sys.schemas for schema enumeration; Fabric does not support all ANSI catalog views. -#}
 {% macro fabric__drop_schemas_by_prefixes(prefixes) %}
     {# Ensure input is a list to iterate later #}
     {% set prefix_list = [prefixes] if prefixes is string else prefixes %}

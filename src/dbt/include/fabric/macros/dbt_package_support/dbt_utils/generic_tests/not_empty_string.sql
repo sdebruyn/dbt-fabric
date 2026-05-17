@@ -24,6 +24,7 @@
     errors as (
 
         select * from all_values
+        {#- Upstream uses length() = 0. T-SQL LEN() ignores trailing spaces; datalength() is reliable. -#}
         where datalength({{ column_name }}) = 0
 
     )

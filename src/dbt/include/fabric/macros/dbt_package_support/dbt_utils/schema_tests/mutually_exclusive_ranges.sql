@@ -1,3 +1,5 @@
+{#- Override: uses CASE WHEN for boolean checks and integer flags (1/0) instead of true/false.
+    T-SQL has no native boolean type; conditional logic must use integer expressions. -#}
 {% macro fabric__test_mutually_exclusive_ranges(model, lower_bound_column, upper_bound_column, partition_by=None, gaps='allowed', zero_length_range_allowed=False) %}
 
 {% if gaps == 'not_allowed' %}

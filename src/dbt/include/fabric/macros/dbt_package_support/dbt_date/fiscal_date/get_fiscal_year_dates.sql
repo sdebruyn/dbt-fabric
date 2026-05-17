@@ -1,3 +1,4 @@
+{#- Override: uses DATEDIFF/DATEADD for week boundary calculations instead of interval arithmetic and DATE_TRUNC. T-SQL requires explicit DATEDIFF/DATEADD for all date math operations. -#}
 {% macro fabric__get_fiscal_year_dates(dates, year_end_month, week_start_day, shift_year) %}
 -- this gets all the dates within a fiscal year
 -- determined by the given year-end-month

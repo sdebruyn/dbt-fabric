@@ -16,6 +16,7 @@ with a as (
 
     select
       {{ select_gb_cols }}
+      {#- Synthetic join key: T-SQL FULL JOIN requires an explicit ON clause (upstream uses subqueries) -#}
       1 as id_dbtutils_test_fewer_rows_than,
       count(*) as count_our_model
     from {{ model }}
@@ -52,6 +53,7 @@ counts as (
 final as (
 
     select *,
+        {#- Upstream uses GREATEST(). T-SQL has no GREATEST; emulated with CASE. -#}
         case
             when count_our_model > count_comparison_model then (count_our_model - count_comparison_model)
             when count_our_model = count_comparison_model then 1

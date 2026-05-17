@@ -1,3 +1,4 @@
+{#- Override: inlines all CTEs into a single flat query instead of nested CTEs with ordering. T-SQL in Fabric does not support nested CTEs or ORDER BY in subqueries, requiring a flattened structure. -#}
 {% macro fabric__get_date_dimension(start_date, end_date) %}
 {#- Inlined version of the original macro without the ordering because nested CTEs are not supported -#}
 

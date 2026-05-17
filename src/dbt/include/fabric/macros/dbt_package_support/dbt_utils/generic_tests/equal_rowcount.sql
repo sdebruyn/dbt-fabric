@@ -20,6 +20,7 @@ with a as (
 
     select
       {{ select_gb_cols }}
+      {#- Synthetic join key: T-SQL FULL JOIN requires an explicit ON clause (upstream uses subqueries) -#}
       1 as id_dbtutils_test_equal_rowcount,
       count(*) as count_a
     from {{ model }}

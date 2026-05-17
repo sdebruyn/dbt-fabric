@@ -1,3 +1,5 @@
+{#- Override: implements width_bucket using CEILING and modulo arithmetic.
+    T-SQL has no native WIDTH_BUCKET() function; this emulates it with CEILING and CASE. -#}
 {% macro fabric__width_bucket(expr, min_value, max_value, num_buckets) -%}
 
     {% set bin_size -%}

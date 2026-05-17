@@ -20,6 +20,7 @@
 
 {%- endfor -%}
 
+{#- Upstream uses md5() directly. T-SQL has no md5(); dbt.hash() resolves to HASHBYTES. -#}
 {%- if fields|length > 1 %}
     {{ dbt.hash(dbt.concat(fields)) }}
 {%- else -%}

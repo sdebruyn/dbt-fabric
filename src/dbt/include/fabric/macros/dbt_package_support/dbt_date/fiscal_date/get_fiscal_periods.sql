@@ -1,3 +1,4 @@
+{#- Override: inlines the fiscal year date logic as flat CTEs instead of nested subqueries. T-SQL in Fabric does not support nested CTEs (WITH inside WITH), requiring a single-level CTE chain. -#}
 {% macro get_fiscal_periods(dates, year_end_month, week_start_day, shift_year=1) %}
 {#
 This macro requires you to pass in a ref to a date dimension, created via
