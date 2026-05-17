@@ -1,5 +1,4 @@
 import logging
-import threading
 import time
 import urllib.parse
 from typing import Any, Self
@@ -11,8 +10,6 @@ from dbt.adapters.fabric.base_credentials import BaseFabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 
 logger = logging.getLogger(__name__)
-
-_livy_session_thread_lock = threading.Lock()
 
 
 class FabricApiError(dbt_common.exceptions.DbtRuntimeError):
@@ -39,7 +36,6 @@ class FabricApiClient:
         self._workspace_id: str | None = None
         self._cached_warehouses: list[dict] | None = None
         self._cached_lakehouses: list[dict] | None = None
-        self._livy_session_id: str | None = None
         self._warehouse_snapshot_operations: dict[str, str] = {}
 
     @classmethod
@@ -418,123 +414,81 @@ class FabricApiClient:
             f"/lakehouses/{lakehouse_id}/livyapi/versions/{self._LIVY_API_VERSION}"
         )
 
-    def get_existing_livy_session(self) -> str | None:
-        """Find an active Livy session matching the configured name, or return None."""
-        url = self.get_livy_base_api_uri() + "/sessions"
-        response = self._api_get(url)
-        sessions = response.json().get("items", [])
-        for session in sessions:
-            if session["name"] == self._credentials.livy_session_name and session["livyState"] in (
-                "idle",
-                "starting",
-                "running",
-                "busy",
-            ):
-                return session["id"]
-        return None
-
-    def initialize_livy_session(self) -> str:
-        """Create a new Livy session and wait briefly for it to start."""
-        url = self.get_livy_base_api_uri() + "/sessions"
-        body = {"name": self._credentials.livy_session_name, "ttl": "30s"}
-
-        max_attempts = 3
-        backoff_seconds = 5
-        last_exception: Exception | None = None
-
-        for attempt in range(1, max_attempts + 1):
-            try:
-                response = self._api_post(url, body)
-                time.sleep(10)
-                return response.json()["id"]
-            except FabricApiError as e:
-                is_transient = e.status_code == 404 or 500 <= e.status_code < 600
-
-                if not is_transient or attempt == max_attempts:
-                    raise
-
-                last_exception = e
-                wait_time = backoff_seconds * (2 ** (attempt - 1))
-                logger.warning(
-                    f"Livy session creation returned a transient error "
-                    f"(attempt {attempt}/{max_attempts}), retrying in {wait_time}s: {e}"
-                )
-                time.sleep(wait_time)
-
-        assert last_exception is not None
-        raise last_exception
-
-    def get_livy_session_id(self) -> str:
-        """Return the active Livy session ID, reusing an existing session or creating one.
-
-        Thread-safe: uses a lock to prevent multiple sessions from being created
-        concurrently when dbt runs with multiple threads.
-        """
-        if self._livy_session_id is None:
-            with _livy_session_thread_lock:
-                self._livy_session_id = (
-                    self.get_existing_livy_session() or self.initialize_livy_session()
-                )
-        return self._livy_session_id
-
-    def get_livy_session_base_uri(self) -> str:
-        """Build the API URI for the current Livy session."""
-        return self.get_livy_base_api_uri() + f"/sessions/{self.get_livy_session_id()}"
-
-    def get_livy_session_state(self) -> str:
-        """Query the current state of the Livy session (idle, busy, starting, etc.)."""
-        response = self._api_get(self.get_livy_session_base_uri())
-        return response.json().get("state", "unknown")
-
-    def get_livy_statement(self, statement_id: int) -> dict[str, Any]:
-        """Fetch the current status and output of a Livy statement.
+    def acquire_hc_session(self, session_tag: str) -> dict[str, Any]:
+        """POST /highConcurrencySessions to acquire an HC session (= one REPL).
 
         Args:
-            statement_id: The statement ID returned by a submit call.
+            session_tag: Deterministic tag so Fabric packs all REPLs from
+                the same process onto one underlying Livy session.
+
+        Returns:
+            The JSON response body containing at least ``id`` and ``state``.
         """
-        url = self.get_livy_session_base_uri() + f"/statements/{statement_id}"
+        url = self.get_livy_base_api_uri() + "/highConcurrencySessions"
+        body: dict[str, Any] = {
+            "sessionTag": session_tag,
+            "name": self._credentials.livy_session_name,
+        }
+        response = self._api_post(url, body)
+        return response.json()
+
+    def get_hc_session(self, hc_id: str) -> dict[str, Any]:
+        """Poll the state of an HC session.
+
+        Returns:
+            JSON with ``state``, and when idle also ``sessionId`` and ``replId``.
+        """
+        url = self.get_livy_base_api_uri() + f"/highConcurrencySessions/{hc_id}"
         response = self._api_get(url)
         return response.json()
 
-    def submit_livy_python_statement(self, code: str) -> int:
-        """Submit Python code to the Livy session and return the statement ID.
-
-        Args:
-            code: The Python/PySpark code to execute.
-        """
-        url = self.get_livy_session_base_uri() + "/statements"
-        response = self._api_post(url, {"code": code, "kind": "pyspark"})
-        return response.json()["id"]
-
-    def submit_livy_sql_statement(self, code: str) -> int:
-        """Submit SQL code to the Livy session and return the statement ID.
-
-        Args:
-            code: The Spark SQL code to execute.
-        """
-        url = self.get_livy_session_base_uri() + "/statements"
+    def submit_hc_sql_statement(self, livy_session_id: str, repl_id: str, code: str) -> int:
+        """Submit a SQL statement via an HC REPL. Returns the statement ID."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{livy_session_id}"
+            + f"/repls/{repl_id}/statements"
+        )
         response = self._api_post(url, {"code": code, "kind": "sql"})
         return response.json()["id"]
 
-    def delete_livy_session(self) -> None:
-        """Delete the current Livy session and clear the cached session ID."""
-        if self._livy_session_id is None:
-            return
-        session_id = self._livy_session_id
-        url = self.get_livy_base_api_uri() + f"/sessions/{session_id}"
+    def submit_hc_python_statement(self, livy_session_id: str, repl_id: str, code: str) -> int:
+        """Submit a Python statement via an HC REPL. Returns the statement ID."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{livy_session_id}"
+            + f"/repls/{repl_id}/statements"
+        )
+        response = self._api_post(url, {"code": code, "kind": "pyspark"})
+        return response.json()["id"]
+
+    def get_hc_statement(
+        self, livy_session_id: str, repl_id: str, statement_id: int
+    ) -> dict[str, Any]:
+        """Fetch the status and output of an HC REPL statement."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{livy_session_id}"
+            + f"/repls/{repl_id}/statements/{statement_id}"
+        )
+        response = self._api_get(url)
+        return response.json()
+
+    def cancel_hc_statement(self, livy_session_id: str, repl_id: str, statement_id: int) -> str:
+        """Cancel a running HC REPL statement."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{livy_session_id}"
+            + f"/repls/{repl_id}/statements/{statement_id}/cancel"
+        )
+        response = self._api_post(url, {})
+        return response.json()["msg"]
+
+    def delete_hc_session(self, hc_id: str) -> None:
+        """Release an HC session (REPL slot). Best-effort; ignores 404."""
+        url = self.get_livy_base_api_uri() + f"/highConcurrencySessions/{hc_id}"
         try:
             self._api_delete(url)
         except FabricApiError as e:
             if e.status_code != 404:
                 raise
-        self._livy_session_id = None
-
-    def cancel_livy_statement(self, statement_id: int) -> str:
-        """Cancel a running Livy statement.
-
-        Args:
-            statement_id: The statement ID to cancel.
-        """
-        url = self.get_livy_session_base_uri() + f"/statements/{statement_id}/cancel"
-        response = self._api_post(url, {})
-        return response.json()["msg"]

@@ -45,37 +45,36 @@ The FabricSpark adapter does not use the [`host`](configuration.md#host) option 
 
 ## How it works
 
-The FabricSpark adapter executes all SQL through Fabric Livy sessions. Here is the execution flow:
+The FabricSpark adapter executes all SQL through Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840). Each dbt thread gets its own REPL inside a shared underlying Livy session. Here is the execution flow:
 
 ```mermaid
 sequenceDiagram
     participant dbt
     participant Adapter
-    participant Livy API
+    participant HC Livy API
     participant Spark Session
 
     dbt->>Adapter: Compiled Spark SQL
-    Adapter->>Livy API: GET /sessions (find existing session)
-    alt Session exists
-        Livy API-->>Adapter: Session ID
-    else No session
-        Adapter->>Livy API: POST /sessions (create new)
-        Livy API-->>Adapter: Session ID
-        Note over Adapter,Spark Session: Session startup: 1-5 minutes
+    Adapter->>HC Livy API: POST /highConcurrencySessions (acquire REPL)
+    alt Underlying session exists (warm)
+        HC Livy API-->>Adapter: HC session ID + REPL ID
+    else No underlying session
+        Note over HC Livy API,Spark Session: Spark startup
+        HC Livy API-->>Adapter: HC session ID + REPL ID
     end
-    Adapter->>Livy API: POST /sessions/{id}/statements
-    Livy API->>Spark Session: Execute Spark SQL
+    Adapter->>HC Livy API: POST /highConcurrencySessions/{id}/repls/{replId}/statements
+    HC Livy API->>Spark Session: Execute Spark SQL (in REPL)
     loop Poll every 3 seconds
-        Adapter->>Livy API: GET /statements/{id}
-        Livy API-->>Adapter: Status + results (when done)
+        Adapter->>HC Livy API: GET /highConcurrencySessions/{id}/repls/{replId}/statements/{stmtId}
+        HC Livy API-->>Adapter: Status + results (when done)
     end
     Adapter-->>dbt: Parsed results
 ```
 
 Key technical details:
 
-- **Session reuse** -- All statements in a dbt run share the same Livy session (named `dbt-fabric-samdebruyn` by default). This avoids the overhead of creating a new Spark session for each model.
-- **Session TTL** -- Sessions are created with a TTL of 30 seconds. If the session is idle for longer than that after the dbt run finishes, Fabric will automatically clean it up.
+- **One REPL per thread** -- Each dbt thread acquires its own REPL inside a shared underlying Livy session. Statements from different REPLs execute in parallel.
+- **Deterministic session tag** -- The adapter computes a session tag from `(workspace_id, lakehouse_id)`. Fabric packs all REPLs with the same tag onto one underlying Livy session, enabling warm session reuse across dbt invocations.
 - **Polling interval** -- The adapter polls for statement completion every 3 seconds.
 - **Rate limiting** -- The Fabric Livy API enforces rate limits. The adapter handles HTTP 429 responses automatically using the `Retry-After` header.
 - **DB-API 2.0 cursor** -- Results are returned as JSON and parsed into a [PEP 249](https://peps.python.org/pep-0249/) compatible cursor, so dbt interacts with the Lakehouse the same way it interacts with any other database.
@@ -125,17 +124,45 @@ SELECT [my column] FROM [my_schema].[my_table]
 
 ---
 
+## High-concurrency Livy
+
+The adapter uses Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840). Each dbt thread acquires its own HC session -- and therefore its own REPL -- inside a single underlying Livy session shared via a deterministic `sessionTag` derived from `(workspace_id, lakehouse_id)`. Statements from different REPLs execute in **parallel** inside the same Spark application, so increasing `threads` in your profile directly increases throughput.
+
+### Session reuse across runs
+
+The session tag is deterministic: every dbt invocation targeting the same workspace + lakehouse produces the same tag. Fabric snap-attaches new REPLs onto the still-warm underlying Livy session, skipping the Spark cold-start entirely on subsequent runs.
+
+### `threads > 5`
+
+Fabric packs up to **5 REPLs onto one underlying Livy session** (see the [HC Livy key concepts](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840#key-concepts)). With `threads > 5`, dbt still works correctly -- Fabric spins up a second underlying Livy session to host the 6th REPL onwards.
+
+| Property | Shared across underlying sessions? |
+| --- | --- |
+| OneLake Delta tables (dbt model outputs) | Yes -- same lakehouse storage |
+| Catalog / metastore (`SELECT FROM <other_model>`) | Yes -- same Fabric catalog |
+| Temp views (`CREATE TEMPORARY VIEW ...`) | No -- REPL/session-local |
+| Session-level Spark configs (`SET spark.sql.X = ...`) | No |
+| Cached datasets / UDFs / broadcast vars | No |
+
+Because dbt-fabricspark materializations always write permanent Delta / lake view objects, model-to-model `ref`s resolve correctly regardless of which underlying session produced or consumes the table.
+
+!!! note "Cost tradeoff"
+
+    Each additional underlying Livy session is a separate Spark cluster billed for the duration of the run plus the idle timeout. Keep `threads ≤ 5` for the cheapest profile; raise it only when the extra parallelism beats the extra compute spend.
+
+---
+
 ## Performance considerations
 
 The Livy API architecture has inherent performance characteristics that are important to understand.
 
 ### Session startup
 
-Creating a new Spark session can take **1-5 minutes**. The adapter reuses sessions within a run, so this overhead is paid once per `dbt run`. Subsequent runs may reuse an existing session if it is still alive.
+Creating a new Spark session takes some time. The adapter reuses sessions within a run, so this overhead is paid once per `dbt run`. Subsequent runs may reuse an existing session if it is still alive. The [high-concurrency Livy](#high-concurrency-livy) session tag is deterministic, so subsequent runs can skip startup entirely by reattaching to a warm session.
 
 ### Statement execution
 
-Each SQL statement involves multiple HTTP API calls (submit + poll). This is inherently slower than a direct database connection like the TDS protocol used by the Data Warehouse adapter.
+Each SQL statement involves multiple HTTP API calls (submit + poll). This is inherently slower than a direct database connection like the TDS protocol used by the Data Warehouse adapter. Statements from different threads execute in parallel via [high-concurrency Livy](#high-concurrency-livy), significantly improving wall-clock time for multi-model runs.
 
 ### Polling overhead
 
@@ -147,7 +174,7 @@ Fabric applies rate limits to the Livy API. The adapter handles HTTP 429 respons
 
 ### Practical impact
 
-A dbt run with many models will be significantly slower on FabricSpark than on Fabric Data Warehouse. This is inherent to the Livy API architecture, not a limitation of the adapter.
+A dbt run with many models will be significantly slower on FabricSpark than on Fabric Data Warehouse. This is inherent to the Livy API architecture, not a limitation of the adapter. [High-concurrency Livy](#high-concurrency-livy) reduces this gap by running statements in parallel.
 
 ### Recommendations
 
@@ -194,7 +221,7 @@ See the [Python models guide](python-models.md) for writing and debugging Python
 - **No Spark SQL views** -- only tables and materialized lake views (Fabric lake views) are supported.
 - **No incremental merge strategy** -- the Spark SQL `MERGE` syntax in Fabric Lakehouse is not supported by the adapter. Use `append` or `insert_overwrite` instead.
 - **API rate limiting** -- can slow down large runs with many models.
-- **Session startup time** -- 1-5 minutes for the first statement in a run.
+- **Session startup time** -- creating a new Spark session adds latency to the first statement in a run.
 - **Data Warehouse-only features** -- [CLUSTER BY](cluster-by.md), [warehouse snapshots](warehouse-snapshots.md), and [catalog statistics](catalog-stats.md) are not available for Lakehouse.
 
 ---
