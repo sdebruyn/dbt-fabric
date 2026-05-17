@@ -1,6 +1,5 @@
 import pytest
 
-from dbt.tests.util import run_dbt
 from tests.packages.base_package_test import BaseDbtPackageTests
 
 
@@ -43,14 +42,9 @@ class TestDbtArtifacts(BaseDbtPackageTests):
             "dbt_artifacts": {
                 "+file_format": "delta",
             },
+            "artifacts_integration_tests": {
+                "microbatch": {
+                    "+partition_by": ["transaction_ts"],
+                },
+            },
         }
-
-    def test_package(self, project, dbt_core_bug_workaround):
-        run_dbt(["deps"])
-        run_dbt(
-            [
-                "build",
-                "--exclude",
-                "microbatch",
-            ],
-        )
