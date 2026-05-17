@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import sys
 from pathlib import Path
@@ -12,16 +13,34 @@ from tests.spark_remote.spark_job_client import SparkJobClient, SparkJobResult
 from tests.spark_remote.sync import ProjectSync, check_prerequisites
 
 
+def _worktree_key(project_root: Path) -> str:
+    """Derive a stable short key from the worktree's absolute path.
+
+    Args:
+        project_root: Absolute path to the project root.
+
+    Returns:
+        8-character hex digest, stable across runs from the same directory.
+    """
+    return hashlib.md5(str(project_root).encode()).hexdigest()[:8]
+
+
 class RemoteTestOrchestrator:
     """Coordinates remote test execution: sync, job submission, and result retrieval.
 
-    Each invocation uses a unique ``run_id`` to isolate concurrent runs on
-    OneLake and in the Spark Job Definition namespace.
+    Uses a two-level namespace on OneLake:
+
+    - **worktree_key** (hash of project root path) — determines the project
+      upload path. Stable across runs from the same worktree, enabling
+      incremental sync. Also used to name and reuse the Spark Job Definition.
+    - **run_id** (random UUID fragment) — determines the artifacts path.
+      Unique per invocation, preventing concurrent runs from overwriting
+      each other's results.
 
     Args:
         api_client: Authenticated FabricApiClient for API communication.
         project_root: Local path to the dbt-fabric project root.
-        run_id: Unique identifier for this test run (used in OneLake paths).
+        run_id: Unique identifier for this test run.
         job_name: Base display name of the Spark Job Definition.
     """
 
@@ -35,6 +54,7 @@ class RemoteTestOrchestrator:
         self._api_client = api_client
         self._project_root = project_root
         self._run_id = run_id
+        self._worktree_key = _worktree_key(project_root)
         self._job_name = job_name
         self._local_results_dir = project_root / "remote-test-results" / run_id
 
@@ -76,24 +96,33 @@ class RemoteTestOrchestrator:
             job_name=job_name,
         )
 
+    def _make_sync(self) -> ProjectSync:
+        """Create a ProjectSync configured for this worktree and run."""
+        return ProjectSync(
+            self._api_client.get_workspace_id(),
+            self._api_client.get_lakehouse_id(),
+            self._project_root,
+            self._worktree_key,
+            self._run_id,
+        )
+
     def sync_project(self) -> None:
-        """Upload the project to a per-run lakehouse directory via azcopy.
+        """Upload the project to a per-worktree lakehouse directory via azcopy.
+
+        Uses incremental sync — only files that changed since the last upload
+        from this worktree are transferred.
 
         Raises:
             RuntimeError: If azcopy sync fails.
         """
-        workspace_id = self._api_client.get_workspace_id()
-        lakehouse_id = self._api_client.get_lakehouse_id()
-        sync = ProjectSync(workspace_id, lakehouse_id, self._project_root, self._run_id)
-        sync.upload()
+        self._make_sync().upload()
 
     def run_spark_job(self, pytest_args: list[str]) -> SparkJobResult:
         """Submit a Spark job to run pytest remotely and wait for completion.
 
-        Creates a per-run Spark Job Definition (``{job_name}-{run_id}``) pointing
-        to the uploaded entry point, passes the run ID as the first command-line
-        argument so the entry point can locate its project and artifacts directories,
-        and deletes the job definition after completion.
+        Reuses the Spark Job Definition for this worktree if one exists,
+        otherwise creates a new one. Passes both the worktree key and run ID
+        to the entry point so it can locate the project and artifacts directories.
 
         Args:
             pytest_args: Command-line arguments to forward to the remote pytest invocation.
@@ -109,20 +138,25 @@ class RemoteTestOrchestrator:
 
         job_client = SparkJobClient(self._api_client)
 
-        executable_path = (
-            f"abfss://{workspace_id}@onelake.dfs.fabric.microsoft.com"
-            f"/{lakehouse_id}/Files/dbt-remote-runs/{self._run_id}/project"
-            f"/tests/spark_remote/spark_entry_point.py"
-        )
-        job_definition_name = f"{self._job_name}-{self._run_id}"
-        item_id = job_client.create_spark_job_definition(
-            name=job_definition_name,
-            lakehouse_id=lakehouse_id,
-            executable_path=executable_path,
-        )
-        print(f"  Created Spark Job Definition: {job_definition_name} ({item_id})")
+        job_definition_name = f"{self._job_name}-{self._worktree_key}"
+        existing = job_client.find_by_name(job_definition_name)
+        if existing:
+            item_id = existing["id"]
+            print(f"  Reusing Spark Job Definition: {job_definition_name} ({item_id})")
+        else:
+            executable_path = (
+                f"abfss://{workspace_id}@onelake.dfs.fabric.microsoft.com"
+                f"/{lakehouse_id}/Files/dbt-remote-runs/projects/{self._worktree_key}"
+                f"/tests/spark_remote/spark_entry_point.py"
+            )
+            item_id = job_client.create_spark_job_definition(
+                name=job_definition_name,
+                lakehouse_id=lakehouse_id,
+                executable_path=executable_path,
+            )
+            print(f"  Created Spark Job Definition: {job_definition_name} ({item_id})")
 
-        full_args = [self._run_id, *pytest_args]
+        full_args = [self._worktree_key, self._run_id, *pytest_args]
         print(f"  Remote pytest args: {' '.join(pytest_args)}")
         item_id, job_instance_id = job_client.run_on_demand(item_id, full_args)
 
@@ -133,14 +167,10 @@ class RemoteTestOrchestrator:
         print(f"  Job URL: {job_url}")
         print("\nWaiting for Spark job...")
 
-        result = job_client.poll_until_done(item_id, job_instance_id)
-
-        job_client.delete_spark_job_definition(item_id)
-
-        return result
+        return job_client.poll_until_done(item_id, job_instance_id)
 
     def download_results(self) -> Path | None:
-        """Download test result artifacts from the per-run lakehouse directory.
+        """Download test result artifacts from the per-run artifacts directory.
 
         Returns:
             Path to the results.xml file, or None if it was not produced.
@@ -148,7 +178,4 @@ class RemoteTestOrchestrator:
         Raises:
             RuntimeError: If azcopy download fails.
         """
-        workspace_id = self._api_client.get_workspace_id()
-        lakehouse_id = self._api_client.get_lakehouse_id()
-        sync = ProjectSync(workspace_id, lakehouse_id, self._project_root, self._run_id)
-        return sync.download_artifacts(self._local_results_dir)
+        return self._make_sync().download_artifacts(self._local_results_dir)

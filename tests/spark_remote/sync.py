@@ -13,30 +13,43 @@ EXCLUDE_PATTERNS = "*.pyc;*.pyo;*.egg-info"
 
 
 class ProjectSync:
-    """Syncs the local project to/from a per-run lakehouse directory via azcopy.
+    """Syncs the local project to/from OneLake via azcopy.
 
-    Each run gets isolated paths on OneLake to allow concurrent execution:
-    ``dbt-remote-runs/{run_id}/project/`` for the project and
-    ``dbt-remote-runs/{run_id}/artifacts/`` for test results.
+    Uses a two-level namespace for concurrent execution:
+
+    - ``dbt-remote-runs/projects/{worktree_key}/`` — project files, synced
+      incrementally per worktree (only changed files are transferred on
+      subsequent runs from the same worktree).
+    - ``dbt-remote-runs/artifacts/{run_id}/`` — test results, isolated per run.
 
     Args:
         workspace_id: Fabric workspace GUID.
         lakehouse_id: Lakehouse item GUID.
         project_root: Local path to the dbt-fabric project root.
+        worktree_key: Stable identifier for this worktree (hash of project root path).
         run_id: Unique identifier for this test run.
     """
 
-    def __init__(self, workspace_id: str, lakehouse_id: str, project_root: Path, run_id: str):
+    def __init__(
+        self,
+        workspace_id: str,
+        lakehouse_id: str,
+        project_root: Path,
+        worktree_key: str,
+        run_id: str,
+    ):
         self._project_root = project_root
+        self._worktree_key = worktree_key
         self._run_id = run_id
         self._onelake_base = (
             f"https://onelake.dfs.fabric.microsoft.com/{workspace_id}/{lakehouse_id}/Files"
         )
 
     def upload(self) -> None:
-        """Upload the project directory to a per-run lakehouse path.
+        """Upload the project directory to a per-worktree lakehouse path.
 
-        Generates a requirements file and sanitized test.env before syncing.
+        Uses incremental sync — only files that differ from the previous upload
+        of this worktree are transferred.
 
         Raises:
             RuntimeError: If azcopy sync or uv export fails.
@@ -44,7 +57,7 @@ class ProjectSync:
         self._generate_requirements()
         self._generate_test_env_remote()
 
-        target = f"{self._onelake_base}/dbt-remote-runs/{self._run_id}/project"
+        target = f"{self._onelake_base}/dbt-remote-runs/projects/{self._worktree_key}"
         print(f"  Syncing: {self._project_root} -> {target}")
 
         cmd = [
@@ -64,7 +77,7 @@ class ProjectSync:
         print("  Sync complete.")
 
     def download_artifacts(self, local_dir: Path) -> Path | None:
-        """Download test artifacts (junitxml) from the per-run lakehouse path.
+        """Download test artifacts (junitxml) from the per-run artifacts path.
 
         Args:
             local_dir: Local directory to sync artifacts into.
@@ -75,7 +88,7 @@ class ProjectSync:
         Raises:
             RuntimeError: If azcopy sync fails.
         """
-        source = f"{self._onelake_base}/dbt-remote-runs/{self._run_id}/artifacts"
+        source = f"{self._onelake_base}/dbt-remote-runs/artifacts/{self._run_id}"
         local_dir.mkdir(parents=True, exist_ok=True)
 
         cmd = [

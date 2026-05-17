@@ -1,9 +1,9 @@
 """Entry point for remote pytest execution on Fabric Spark.
 
-This script is submitted as a Spark Job Definition. It receives a run ID
-as its first argument (used to locate the per-run project and artifacts
-directories on the lakehouse), installs the project and its dependencies,
-then runs pytest with the remaining arguments.
+This script is submitted as a Spark Job Definition. It receives a worktree
+key and run ID as its first two arguments, which determine the project and
+artifacts paths on the lakehouse. It installs the project and its
+dependencies, then runs pytest with the remaining arguments.
 """
 
 from __future__ import annotations
@@ -18,19 +18,20 @@ LAKEHOUSE_ROOT = "/lakehouse/default"
 def main() -> None:
     """Install dependencies, configure env, run pytest, and write exit code.
 
-    The first positional argument is the run ID, which determines the project
-    and artifacts paths on the lakehouse. All remaining arguments are forwarded
-    to pytest. Ensures --junitxml is set so results can be collected.
+    The first positional argument is the worktree key (locates the project
+    directory), the second is the run ID (locates the artifacts directory).
+    All remaining arguments are forwarded to pytest.
 
     Raises:
         subprocess.CalledProcessError: If pip install fails.
         SystemExit: Always exits with the pytest exit code.
     """
-    run_id = sys.argv[1]
-    pytest_args = sys.argv[2:]
+    worktree_key = sys.argv[1]
+    run_id = sys.argv[2]
+    pytest_args = sys.argv[3:]
 
-    project_dir = f"{LAKEHOUSE_ROOT}/Files/dbt-remote-runs/{run_id}/project"
-    artifacts_dir = f"{LAKEHOUSE_ROOT}/Files/dbt-remote-runs/{run_id}/artifacts"
+    project_dir = f"{LAKEHOUSE_ROOT}/Files/dbt-remote-runs/projects/{worktree_key}"
+    artifacts_dir = f"{LAKEHOUSE_ROOT}/Files/dbt-remote-runs/artifacts/{run_id}"
 
     if os.path.isdir(artifacts_dir):
         for f in os.listdir(artifacts_dir):

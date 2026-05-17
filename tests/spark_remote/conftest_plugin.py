@@ -11,9 +11,10 @@ from tests.spark_remote.result_reporter import report_remote_results
 def remote_runtestloop(session: pytest.Session) -> bool:
     """Replace pytest's default test loop with remote Spark execution.
 
-    Generates a unique run ID to isolate concurrent runs, syncs the project
-    to a per-run lakehouse directory, submits a Spark job, downloads junitxml
-    results, and reports them back into the local session.
+    Generates a unique run ID per invocation (for artifact isolation) and
+    derives a stable worktree key from the project root (for incremental
+    project sync). Multiple agents in separate worktrees can run concurrently
+    without interference.
 
     Args:
         session: The pytest Session (already collected).
@@ -30,11 +31,14 @@ def remote_runtestloop(session: pytest.Session) -> bool:
     run_id = uuid4().hex[:8]
     remote_args = _build_remote_args(session)
 
-    print(f"\nRemote execution [{run_id}]: syncing project to lakehouse...")
     orchestrator = RemoteTestOrchestrator.from_env(run_id)
+    print(
+        f"\nRemote execution [run={run_id}, worktree={orchestrator._worktree_key}]:"
+        f" syncing project to lakehouse..."
+    )
     orchestrator.sync_project()
 
-    print(f"\nRemote execution [{run_id}]: submitting Spark job...")
+    print(f"\nRemote execution [run={run_id}]: submitting Spark job...")
     job_result = orchestrator.run_spark_job(remote_args)
 
     print(f"\n  {job_result.status} — downloading results...")
