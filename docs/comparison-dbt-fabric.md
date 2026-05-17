@@ -18,7 +18,7 @@ This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse
 | Materialization | dbt-fabric-samdebruyn (Fabric) | dbt-fabric-samdebruyn (FabricSpark) | microsoft/dbt-fabric |
 |---|---|---|---|
 | Table | ✅ | ✅ | ✅ |
-| View | ✅ | ❌ (Fabric Lakehouse limitation) | ✅ |
+| View | ✅ | ✅ | ✅ |
 | Incremental (append) | ✅ | ✅ | ✅ |
 | Incremental (delete+insert) | ✅ | ❌ | ✅ |
 | Incremental (merge) | ✅ | ✅ | ✅ |
