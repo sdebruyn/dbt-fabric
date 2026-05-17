@@ -17,7 +17,25 @@ class BaseDbtPackageTests:
         raise NotImplementedError("Subclasses must implement package_version")
 
     @pytest.fixture(scope="class")
-    def packages(self, package_name: str, package_repo: str, package_revision: str):
+    def dbt_utils_version(self) -> str:
+        return "1.3.3"
+
+    @pytest.fixture(scope="class")
+    def dbt_date_repo(self) -> str:
+        return "https://github.com/godatadriven/dbt-date"
+
+    @pytest.fixture(scope="class")
+    def dbt_date_revision(self) -> str:
+        return "0.17.2"
+
+    @pytest.fixture(scope="class")
+    def packages(
+        self,
+        package_name: str,
+        package_repo: str,
+        package_revision: str,
+        dbt_utils_version: str,
+    ):
         packages = [
             {"git": package_repo, "revision": package_revision},
             {
@@ -28,7 +46,7 @@ class BaseDbtPackageTests:
         ]
 
         if package_name != "dbt_utils":
-            packages.append({"package": "dbt-labs/dbt_utils", "version": "1.3.3"})
+            packages.append({"package": "dbt-labs/dbt_utils", "version": dbt_utils_version})
 
         return {"packages": packages}
 

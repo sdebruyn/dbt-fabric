@@ -34,8 +34,8 @@ class TestDbtUtils(BaseDbtPackageTests):
         return "https://github.com/dbt-labs/dbt-utils"
 
     @pytest.fixture(scope="class")
-    def package_revision(self) -> str:
-        return "1.3.3"
+    def package_revision(self, dbt_utils_version) -> str:
+        return dbt_utils_version
 
     @pytest.fixture(scope="class")
     def seeds_config(self):
