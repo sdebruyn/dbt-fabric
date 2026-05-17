@@ -147,6 +147,8 @@ sources:
 {{ assert_equal (actual_source_yaml | trim, expected_source_yaml | trim) }}
 """.strip()
 
+# Upstream expects "integer" and "text"; Fabric returns "int" and "varchar"
+# (codegen's default__format_column uses column.dtype which is the base type name)
 _TEST_GENERATE_MODEL_YAML = """
 {% set actual_model_yaml = codegen.generate_model_yaml(
     model_names=['data__a_relation']
@@ -257,6 +259,7 @@ unit_tests:
 {{ assert_equal (actual_model_yaml | trim, expected_model_yaml | trim) }}
 """.strip()
 
+# Upstream uses `true as my_bool_col`; Fabric has no boolean literal, use BIT
 _CREATE_SOURCE_TABLE_SQL = """
 {% macro create_source_table() %}
 
@@ -285,6 +288,9 @@ as select
 {% endmacro %}
 """.strip()
 
+# Upstream uses `select 'ok' limit 0` and `select 'fail'` (no alias).
+# Fabric needs TOP instead of LIMIT, and column aliases for CTE compatibility.
+# Added _strip_trailing_ws: codegen Jinja templates produce trailing whitespace.
 _ASSERT_EQUAL_SQL = """
 {% macro _strip_trailing_ws(text) %}
     {% set lines = text.split('\\n') %}
