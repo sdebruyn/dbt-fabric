@@ -154,14 +154,7 @@ A detailed review of the upstream's Python source code reveals several significa
 
 ### Global mutable state
 
-The upstream stores critical runtime state in module-level and class-level global variables:
-
-- **Authentication token** (`livysession.py` line 35): A single `accessToken: AccessToken = None` global shared by all threads. While a `_token_lock` protects the refresh path, other code reads `accessToken.token` after releasing the lock, creating a data race in multi-threaded dbt runs.
-- **Livy session** (`livysession.py` line 1327): `LivySessionManager.livy_global_session` is a class variable mutated from multiple threads. The lock only protects `connect()`/`disconnect()`, but `is_new_session_required` is set outside the lock at multiple call sites.
-- **Connection managers** (`connections.py` line 93): A class-level `connection_managers = {}` dict mutated at runtime, with no cleanup between test runs.
-- **Relation state** (`relation.py` lines 44-45): `_schemas_enabled` and `_identifier_prefix` are `ClassVar` attributes mutated at connection time, meaning all relation instances across all threads share the same value.
-
-This adapter uses proper instance-based encapsulation: `FabricTokenProvider` (per-scope token caching), `FabricApiClient` (singleton with thread-safe session lock), and no module-level mutable state.
+The upstream stores critical runtime state in module-level and class-level global variables — authentication tokens, Livy session handles, connection managers, and relation configuration are all shared across threads via globals or `ClassVar` attributes. This leads to data races in multi-threaded dbt runs (e.g., reading a token after releasing its lock, mutating session state outside locks). This adapter uses instance-based encapsulation with no module-level mutable state.
 
 ### atexit handler for session cleanup
 
