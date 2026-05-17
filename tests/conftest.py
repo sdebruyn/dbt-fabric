@@ -51,6 +51,11 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
         **_auth_kwargs_from_env(),
     }
 
+    if base_api_uri := os.getenv("FABRIC_TEST_BASE_API_URI"):
+        target["fabric_base_api_uri"] = base_api_uri
+    if powerbi_api_uri := os.getenv("FABRIC_TEST_POWERBI_BASE_API_URI"):
+        target["powerbi_base_api_uri"] = powerbi_api_uri
+
     if adapter_type == "fabric":
         adapter_settings = {
             "type": "fabric",
@@ -121,9 +126,7 @@ def _requires_spark(collection_path, tests_root):
         return False
     if parts[0] == "fabricspark":
         return True
-    if "fabricspark" in collection_path.name:
-        return True
-    return False
+    return "fabricspark" in collection_path.name
 
 
 @functools.lru_cache(maxsize=1)
@@ -144,20 +147,22 @@ def pytest_ignore_collect(collection_path, config):
 
     top_dir = parts[0]
 
-    if config.getoption("--dw", default=False):
-        if _requires_spark(collection_path, tests_root):
-            return True
+    if config.getoption("--dw", default=False) and _requires_spark(collection_path, tests_root):
+        return True
     if config.getoption("--de", default=False) and top_dir == "fabric":
         return True
 
     if _requires_spark(collection_path, tests_root) and not _spark_extra_available():
-        if config.getoption("--de", default=False):
+        if config.getoption("--remote", default=False):
+            pass
+        elif config.getoption("--de", default=False):
             pytest.exit(
                 "The spark extra is required for FabricSpark tests. "
                 "Install with: uv sync --extra spark",
                 returncode=4,
             )
-        return True
+        else:
+            return True
 
     return None
 
@@ -246,7 +251,11 @@ def profiles_root(tmpdir_factory, prefix):
 
 
 @pytest.fixture(scope="session", autouse=True)
-def livy_session_lifecycle():
+def livy_session_lifecycle(request):
+    if request.config.getoption("--remote", default=False):
+        yield
+        return
+
     session_name = os.getenv("FABRIC_TEST_LIVY_SESSION_NAME")
     lakehouse_name = os.getenv("FABRIC_TEST_LAKEHOUSE_NAME")
     workspace_name = os.getenv("FABRIC_TEST_WORKSPACE_NAME")
@@ -329,7 +338,7 @@ def project(
                     where lower(s.name) = '{self.test_schema.lower()}'
                     """
             result = self.run_sql(sql, fetch="all")
-            return {model_name: materialization for (model_name, materialization) in result}
+            return dict(result)
 
     return TestProjInfoFabric(
         project_root=project_setup.project_root,

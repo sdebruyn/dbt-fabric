@@ -83,17 +83,38 @@ class FabricApiClient:
             raise FabricApiError(method, url, response.status_code, response.text)
         return response
 
-    def _api_get(self, url: str) -> requests.Response:
+    @property
+    def base_url(self) -> str:
+        """The Fabric REST API base URL from credentials."""
+        return self._credentials.fabric_base_api_uri
+
+    def api_get(self, url: str) -> requests.Response:
+        """Send an authenticated GET request with 429 retry."""
         return self._api_request(url, method="get")
 
-    def _api_post(self, url: str, body: dict) -> requests.Response:
+    def api_post(self, url: str, body: dict) -> requests.Response:
+        """Send an authenticated POST request with 429 retry."""
         return self._api_request(url, method="post", body=body)
 
-    def _api_patch(self, url: str, body: dict) -> requests.Response:
+    def api_patch(self, url: str, body: dict) -> requests.Response:
+        """Send an authenticated PATCH request with 429 retry."""
         return self._api_request(url, method="patch", body=body)
 
-    def _api_delete(self, url: str) -> requests.Response:
+    def api_delete(self, url: str) -> requests.Response:
+        """Send an authenticated DELETE request with 429 retry."""
         return self._api_request(url, method="delete")
+
+    def _api_get(self, url: str) -> requests.Response:
+        return self.api_get(url)
+
+    def _api_post(self, url: str, body: dict) -> requests.Response:
+        return self.api_post(url, body)
+
+    def _api_patch(self, url: str, body: dict) -> requests.Response:
+        return self.api_patch(url, body)
+
+    def _api_delete(self, url: str) -> requests.Response:
+        return self.api_delete(url)
 
     def get_workspace_id(self) -> str:
         """Resolve the Fabric workspace ID from config or by looking up the workspace name.

@@ -32,7 +32,7 @@ class SparkJobClient:
 
     @property
     def _base_url(self) -> str:
-        return self._api_client._credentials.fabric_base_api_uri
+        return self._api_client.base_url
 
     @property
     def _workspace_id(self) -> str:
@@ -50,7 +50,7 @@ class SparkJobClient:
         items = []
         url: str | None = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions"
         while url:
-            resp = self._api_client._api_get(url)
+            resp = self._api_client.api_get(url)
             data = resp.json()
             items.extend(data.get("value", []))
             url = data.get("continuationUri")
@@ -113,7 +113,7 @@ class SparkJobClient:
         }
 
         url = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions"
-        resp = self._api_client._api_post(url, body)
+        resp = self._api_client.api_post(url, body)
         return resp.json()["id"]
 
     def run_on_demand(self, item_id: str, command_line_args: list[str]) -> tuple[str, str]:
@@ -134,11 +134,21 @@ class SparkJobClient:
             f"/items/{item_id}/jobs/instances?jobType=sparkjob"
         )
         body = {"executionData": {"commandLineArguments": shlex.join(command_line_args)}}
-        resp = self._api_client._api_post(url, body)
+        resp = self._api_client.api_post(url, body)
 
         location = resp.headers.get("Location", "")
-        parts = location.rstrip("/").split("/")
-        job_instance_id = parts[-1] if parts else ""
+        if not location:
+            raise FabricApiError(
+                "POST", url, resp.status_code, "No Location header in run_on_demand response"
+            )
+        job_instance_id = location.rstrip("/").split("/")[-1]
+        if not job_instance_id:
+            raise FabricApiError(
+                "POST",
+                url,
+                resp.status_code,
+                f"Could not parse job instance ID from Location: {location}",
+            )
         return item_id, job_instance_id
 
     def delete_spark_job_definition(self, item_id: str) -> None:
@@ -151,7 +161,7 @@ class SparkJobClient:
             FabricApiError: If the API request fails.
         """
         url = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions/{item_id}"
-        self._api_client._api_delete(url)
+        self._api_client.api_delete(url)
 
     def get_job_instance(self, item_id: str, job_instance_id: str) -> dict:
         """Get the current state of a job instance.
@@ -170,7 +180,7 @@ class SparkJobClient:
             f"{self._base_url}/workspaces/{self._workspace_id}"
             f"/items/{item_id}/jobs/instances/{job_instance_id}"
         )
-        return self._api_client._api_get(url).json()
+        return self._api_client.api_get(url).json()
 
     def poll_until_done(
         self, item_id: str, job_instance_id: str, interval: int = 10, timeout: int = 1800
@@ -247,7 +257,7 @@ class SparkJobClient:
         )
         for attempt in range(max_retries):
             try:
-                return self._api_client._api_get(url).json()
+                return self._api_client.api_get(url).json()
             except FabricApiError:
                 if attempt == max_retries - 1:
                     raise

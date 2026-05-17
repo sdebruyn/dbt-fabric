@@ -102,74 +102,35 @@ def _report_item_result(item: pytest.Item, result: JunitTestResult) -> None:
         result: Parsed JunitTestResult from the remote junitxml.
     """
     ihook = item.ihook
+    keywords = dict.fromkeys(item.keywords, 1)
 
-    setup_report = TestReport(
-        nodeid=item.nodeid,
-        location=item.location,
-        keywords=dict.fromkeys(item.keywords, 1),
-        outcome="passed",
-        longrepr=None,
-        when="setup",
-        duration=0,
-    )
-    ihook.pytest_runtest_logreport(report=setup_report)
-
-    if result.outcome == "passed":
-        call_report = TestReport(
-            nodeid=item.nodeid,
-            location=item.location,
-            keywords=dict.fromkeys(item.keywords, 1),
-            outcome="passed",
-            longrepr=None,
-            when="call",
-            duration=result.duration,
-            sections=result.sections,
-        )
+    if result.outcome == "skipped":
+        longrepr = ("", 0, result.skip_reason or "Skipped")
     elif result.outcome == "failed":
-        call_report = TestReport(
-            nodeid=item.nodeid,
-            location=item.location,
-            keywords=dict.fromkeys(item.keywords, 1),
-            outcome="failed",
-            longrepr=result.failure_message,
-            when="call",
-            duration=result.duration,
-            sections=result.sections,
-        )
-    elif result.outcome == "skipped":
-        call_report = TestReport(
-            nodeid=item.nodeid,
-            location=item.location,
-            keywords=dict.fromkeys(item.keywords, 1),
-            outcome="skipped",
-            longrepr=("", 0, result.skip_reason or "Skipped"),
-            when="call",
-            duration=result.duration,
-            sections=result.sections,
-        )
+        longrepr = result.failure_message
+    elif result.outcome == "passed":
+        longrepr = None
     else:
-        call_report = TestReport(
+        longrepr = f"Unknown outcome: {result.outcome}"
+
+    outcome = "failed" if result.outcome not in ("passed", "skipped") else result.outcome
+
+    for when, phase_outcome, phase_longrepr, duration in (
+        ("setup", "passed", None, 0),
+        ("call", outcome, longrepr, result.duration),
+        ("teardown", "passed", None, 0),
+    ):
+        report = TestReport(
             nodeid=item.nodeid,
             location=item.location,
-            keywords=dict.fromkeys(item.keywords, 1),
-            outcome="failed",
-            longrepr=f"Unknown outcome: {result.outcome}",
-            when="call",
-            duration=result.duration,
-            sections=result.sections,
+            keywords=keywords,
+            outcome=phase_outcome,
+            longrepr=phase_longrepr,
+            when=when,
+            duration=duration,
+            sections=result.sections if when == "call" else [],
         )
-    ihook.pytest_runtest_logreport(report=call_report)
-
-    teardown_report = TestReport(
-        nodeid=item.nodeid,
-        location=item.location,
-        keywords=dict.fromkeys(item.keywords, 1),
-        outcome="passed",
-        longrepr=None,
-        when="teardown",
-        duration=0,
-    )
-    ihook.pytest_runtest_logreport(report=teardown_report)
+        ihook.pytest_runtest_logreport(report=report)
 
 
 def _parse_junitxml(path: Path) -> list[JunitTestResult]:
