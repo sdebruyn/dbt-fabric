@@ -1,3 +1,5 @@
+{#- Upstream uses UNPIVOT or LATERAL. T-SQL UNPIVOT requires fixed types; we use UNION ALL instead.
+    ROW_NUMBER() ORDER BY uses a subquery trick since T-SQL requires ORDER BY in window functions. #}
 {% macro fabric__test_expect_select_column_values_to_be_unique_within_record(model,
                                                     column_list,
                                                     quote_columns,

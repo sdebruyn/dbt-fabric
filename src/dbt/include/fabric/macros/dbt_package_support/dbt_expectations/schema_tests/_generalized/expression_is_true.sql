@@ -1,3 +1,4 @@
+{#- T-SQL has no boolean type. Upstream compares `= true`; we use `CASE WHEN ... THEN 1` and compare `= 1`. #}
 {% macro fabric__expression_is_true(model, expression, test_condition, group_by_columns, row_condition) %}
 
 {% if test_condition == "= true" %}

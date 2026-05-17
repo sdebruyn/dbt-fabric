@@ -1,3 +1,4 @@
+{#- Upstream uses STDDEV(). T-SQL spells it STDEV(). #}
 {%- macro _get_metric_expression(metric_column, take_logs) -%}
 
 {%- if take_logs %}
