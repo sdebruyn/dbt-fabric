@@ -30,8 +30,8 @@ nav = [
     { "Configuration" = "configuration.md" },
   ] },
   { "Feature guides" = [
-    { "Microsoft Purview integration" = "purview-integration.md" },
     { "Python models" = "python-models.md" },
+    { "Microsoft Purview integration" = "purview-integration.md" },
     { "Lakehouse (Spark SQL)" = "lakehouse.md" },
     { "Warehouse snapshots" = "warehouse-snapshots.md" },
     { "External tables" = "external-tables.md" },
