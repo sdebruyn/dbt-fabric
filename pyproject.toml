@@ -1,12 +1,9 @@
 [project]
-name = "dbt-fabric-samdebruyn"
+name = "dbt-fabric"
 dynamic = ["version"]
 description = "The dbt adapter for Microsoft Fabric Lakehouses and Data Warehouses"
 readme = "README.md"
 license = "MIT"
-authors = [
-    {name = "Sam Debruyn"}
-]
 requires-python = ">=3.11,<3.14"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
@@ -46,10 +43,10 @@ docs = [
 ]
 
 [project.urls]
-"Documentation" = "http://dbt-fabric.debruyn.dev/"
-"Changelog" = "https://github.com/sdebruyn/dbt-fabric/releases"
-"Issue Tracker" = "https://github.com/sdebruyn/dbt-fabric/issues"
-Homepage = "https://github.com/sdebruyn/dbt-fabric"
+"Documentation" = "https://microsoft.github.io/fabric-toolbox/dbt-fabric/"
+"Changelog" = "https://github.com/microsoft/fabric-toolbox/blob/main/CHANGELOG.md"
+"Issue Tracker" = "https://github.com/microsoft/fabric-toolbox/issues"
+Homepage = "https://github.com/microsoft/fabric-toolbox/tree/main/tools/dbt-fabric"
 
 [build-system]
 requires = ["hatchling"]

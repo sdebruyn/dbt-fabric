@@ -1,12 +1,11 @@
 [project]
 site_dir = "docs_build/site"
-site_name = "dbt-fabric-samdebruyn"
-site_description = "Documentation for dbt-fabric-samdebruyn"
-site_url = "https://dbt-fabric.debruyn.dev"
-site_author = "Sam Debruyn"
-repo_url = "https://github.com/sdebruyn/dbt-fabric"
-repo_name = "sdebruyn/dbt-fabric"
-edit_uri = "edit/main/docs/"
+site_name = "dbt-fabric"
+site_description = "Documentation for the dbt adapter for Microsoft Fabric"
+site_url = "https://microsoft.github.io/fabric-toolbox/dbt-fabric/"
+repo_url = "https://github.com/microsoft/fabric-toolbox"
+repo_name = "microsoft/fabric-toolbox"
+edit_uri = "edit/main/tools/dbt-fabric/docs/"
 copyright = """
 dbt and dbt Core are trademarks of dbt Labs, Inc.
 Microsoft and Microsoft Fabric are trademarks of the Microsoft Corporation.
@@ -18,9 +17,7 @@ watch = ["README.md"]
 nav = [
   { "Home" = [
     { "Overview" = "index.md" },
-    { "Comparison with Microsoft's adapters" = "feature-comparison.md" },
-    { "Detailed comparison with microsoft/dbt-fabric" = "comparison-dbt-fabric.md" },
-    { "Detailed comparison with microsoft/dbt-fabricspark" = "comparison-dbt-fabricspark.md" },
+    { "Features" = "features.md" },
     { "Contributing" = "contributing.md" },
     { "License" = "license.md" },
   ] },
@@ -98,24 +95,9 @@ accent = "light green"
 toggle.icon = "lucide/moon"
 toggle.name = "Switch to light mode"
 
-[project.extra.analytics]
-provider = "custom"
-
 [[project.extra.social]]
 icon = "fontawesome/brands/github"
-link = "https://github.com/sdebruyn/dbt-fabric"
-
-[[project.extra.social]]
-icon = "fontawesome/brands/linkedin"
-link = "https://www.linkedin.com/in/samueldebruyn/"
-
-[[project.extra.social]]
-icon = "fontawesome/brands/x-twitter"
-link = "https://x.com/s_debruyn"
-
-[[project.extra.social]]
-icon = "fontawesome/solid/globe"
-link = "https://debruyn.dev"
+link = "https://github.com/microsoft/fabric-toolbox"
 
 [project.markdown_extensions.abbr]
 [project.markdown_extensions.admonition]

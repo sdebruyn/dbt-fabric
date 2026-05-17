@@ -364,7 +364,7 @@ wheels = [
 ]
 
 [[package]]
-name = "dbt-fabric-samdebruyn"
+name = "dbt-fabric"
 source = { editable = "." }
 dependencies = [
     { name = "azure-identity" },
