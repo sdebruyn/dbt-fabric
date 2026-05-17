@@ -1,7 +1,7 @@
 import pytest
 
 from dbt.tests.util import run_dbt
-from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+from tests.packages.base_package_test import BaseDbtPackageTests
 
 
 class TestDbtExpectations(BaseDbtPackageTests):
