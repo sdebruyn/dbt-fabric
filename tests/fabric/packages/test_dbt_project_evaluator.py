@@ -19,6 +19,17 @@ _TSQL_REPLACEMENTS = [
     ("coalesce(is_enabled, True) = True", "coalesce(is_enabled, cast(1 as bit)) = cast(1 as bit)"),
     ("unioned_with_calc.database,", "unioned_with_calc.[database],"),
     ("unioned_with_calc.schema,", "unioned_with_calc.[schema],"),
+    ("not is_excluded", "is_excluded = 0"),
+    ("not parent_is_excluded", "parent_is_excluded = 0"),
+    ("not child_is_excluded", "child_is_excluded = 0"),
+    (" || ", " + "),
+    ("then true", "then 1"),
+    ("else false", "else 0"),
+    ("when database is NULL", "when [database] is NULL"),
+    ('["database",', '["[database]",'),
+    ('["schema",', '["[schema]",'),
+    (', "schema",', ', "[schema]",'),
+    (", FALSE)", ", cast(0 as bit))"),
 ]
 
 _TSQL_REGEX_REPLACEMENTS = [
@@ -31,8 +42,20 @@ _TSQL_REGEX_REPLACEMENTS = [
         r"right(file_path, charindex('/', reverse(file_path)) - 1)",
     ),
     (
-        r"^(\s+)(.+?)\s+as\s+(is_\{\{[^}]+\}\}|is_test_\w+|is_public),\s*$",
+        r"^(\s+)(.+?(?:\s+(?:like|and|or)\s+|[=<>!]).+?)\s+as\s+(is_\{\{[^}]+\}\}|is_test_\w+|is_public),\s*$",
         r"\1case when \2 then cast(1 as bit) else cast(0 as bit) end as \3,",
+    ),
+    (
+        r"^(\s+)((?:\w+\.)?(?:is_\w+|has_\w+))\s+as\s+(is_\{\{[^}]+\}\}|is_test_\w+|is_public),\s*$",
+        r"\1case when \2 = 1 then cast(1 as bit) else cast(0 as bit) end as \3,",
+    ),
+    (
+        r"^(\s+(?:where|and|or|when)\s+)((?:\w+\.)?(?:is_\w+|has_\w+))\s*$",
+        r"\1\2 = 1",
+    ),
+    (
+        r"\(\s*\n\s+all_graph_resources\.resource_type = 'test'\s*\n\s+and models\.is_primary_relationship\s*\n\s+\) as is_primary_test_relationship",
+        r"case when all_graph_resources.resource_type = 'test' and models.is_primary_relationship = 1 then cast(1 as bit) else cast(0 as bit) end as is_primary_test_relationship",
     ),
 ]
 
