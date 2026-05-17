@@ -16,7 +16,7 @@ with windowed as (
             {{ partition_gb_cols }}
             order by {{ column_name }}
         ) as {{ previous_column_name }}
-    {#- T-SQL requires all derived tables to have an alias -#}
+    {#- T-SQL requires all derived tables to have an alias #}
     from {{ model }} required_alias_for_tsql
 ),
 

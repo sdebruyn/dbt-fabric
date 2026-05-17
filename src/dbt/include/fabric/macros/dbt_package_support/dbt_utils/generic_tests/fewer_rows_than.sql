@@ -53,7 +53,7 @@ counts as (
 final as (
 
     select *,
-        {#- Upstream uses GREATEST(). T-SQL has no GREATEST; emulated with CASE. -#}
+        {#- Upstream uses GREATEST(). T-SQL has no GREATEST; emulated with CASE. #}
         case
             when coalesce(count_our_model, 0) > coalesce(count_comparison_model, 0) then (coalesce(count_our_model, 0) - coalesce(count_comparison_model, 0))
             when coalesce(count_our_model, 0) = coalesce(count_comparison_model, 0) then 1

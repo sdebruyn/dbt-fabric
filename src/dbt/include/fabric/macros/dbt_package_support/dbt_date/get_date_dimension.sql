@@ -12,8 +12,24 @@
 {%- set end_date = dbt_date.tomorrow() -%}
 {%- endif -%}
 
-with base_dates as (
-    {{ dbt_date.get_base_dates(start_date, end_date) }}
+{#- Upstream calls get_base_dates() which produces a nested CTE.
+    Fabric doesn't allow nested CTEs in CREATE VIEW, so we inline it. #}
+with date_spine as
+(
+
+    {{ dbt_date.date_spine(
+        datepart=datepart,
+        start_date=start_date,
+        end_date=end_date,
+       )
+    }}
+
+),
+base_dates as (
+    select
+        cast(d.date_{{ datepart }} as {{ dbt.type_timestamp() }}) as date_{{ datepart }}
+    from
+        date_spine d
 ),
 dates_with_prior_year_dates as (
 
@@ -72,5 +88,5 @@ select
     cast({{ last_day('d.date_day', 'year') }} as date) as year_end_date
 from
     dates_with_prior_year_dates d
-{#- Upstream has ORDER BY 1 here. Removed: Fabric doesn't support ORDER BY in views/subqueries. -#}
+{#- Upstream has ORDER BY 1 here. Removed: Fabric doesn't support ORDER BY in views/subqueries. #}
 {% endmacro %}
