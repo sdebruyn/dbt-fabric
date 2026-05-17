@@ -110,6 +110,10 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers", "requires_purview: skip unless FABRIC_TEST_PURVIEW_ENDPOINT is set"
     )
+    config.addinivalue_line(
+        "markers",
+        "cross_workspace: skip unless FABRIC_TEST_CROSS_WORKSPACE_NAME is set",
+    )
 
 
 def _requires_spark(collection_path, tests_root):
@@ -170,7 +174,9 @@ def pytest_collection_modifyitems(config, items):
     skip_grants = pytest.mark.skip(reason="need --with-grants option to run")
     skip_python = pytest.mark.skip(reason="need --with-python option to run")
     skip_purview = pytest.mark.skip(reason="FABRIC_TEST_PURVIEW_ENDPOINT not set")
+    skip_cross_workspace = pytest.mark.skip(reason="FABRIC_TEST_CROSS_WORKSPACE_NAME not set")
     has_purview = bool(os.getenv("FABRIC_TEST_PURVIEW_ENDPOINT"))
+    has_cross_workspace = bool(os.getenv("FABRIC_TEST_CROSS_WORKSPACE_NAME"))
     tests_root = Path(__file__).parent
 
     for item in items:
@@ -184,6 +190,9 @@ def pytest_collection_modifyitems(config, items):
 
         if "requires_purview" in item.keywords and not has_purview:
             item.add_marker(skip_purview)
+
+        if "cross_workspace" in item.keywords and not has_cross_workspace:
+            item.add_marker(skip_cross_workspace)
 
         if adapter_type is not None and tests_child_path != adapter_type:
             item.add_marker(
@@ -274,6 +283,14 @@ def purview_client(
 ) -> PurviewClient:
     assert credentials.purview_endpoint, "purview_endpoint must be set in profile"
     return PurviewClient(credentials.purview_endpoint, fabric_token_provider)
+
+
+@pytest.fixture(scope="class")
+def cross_workspace_config():
+    return {
+        "workspace_name": os.getenv("FABRIC_TEST_CROSS_WORKSPACE_NAME"),
+        "lakehouse_name": os.getenv("FABRIC_TEST_CROSS_LAKEHOUSE_NAME"),
+    }
 
 
 def _deep_merge(base: dict, override: dict) -> dict:
