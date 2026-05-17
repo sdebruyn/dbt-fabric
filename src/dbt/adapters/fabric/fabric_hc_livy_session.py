@@ -45,14 +45,15 @@ class HCSessionState:
 
 
 class HighConcurrencyLivySession:
-    """One HC REPL per dbt thread — same interface as ``LivySession``.
+    """One HC REPL per dbt thread.
 
     Acquires an HC session via ``POST /highConcurrencySessions``, polls until
     the underlying Livy session is idle and a REPL is allocated, then submits
     statements through the REPL endpoint.
 
-    Cleanup happens via ``close()`` which DELETEs the HC session, freeing the
-    REPL slot immediately.
+    ``close()`` DELETEs this instance's HC session (REPL slot) only — the
+    underlying Spark session is managed by Fabric and stays alive for other
+    REPLs and processes.
     """
 
     _POLLING_INTERVAL = 3
