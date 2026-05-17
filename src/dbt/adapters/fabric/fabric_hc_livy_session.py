@@ -1,7 +1,10 @@
 import hashlib
+import json
 import time
 from dataclasses import dataclass
 from typing import Any
+
+import requests
 
 from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient, FabricApiError
@@ -9,8 +12,14 @@ from dbt.adapters.fabric.fabric_livy_session import LivySessionResult
 
 logger = AdapterLogger("fabricspark")
 
-_ACQUIRING_STATES = frozenset({"NotStarted", "starting", "AcquiringHighConcurrencySession"})
 _TERMINAL_BAD_STATES = frozenset({"Dead", "Killed", "Failed", "Error"})
+_TRANSIENT_EXCEPTIONS = (
+    FabricApiError,
+    requests.exceptions.ConnectionError,
+    requests.exceptions.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+    json.JSONDecodeError,
+)
 
 
 def derive_session_tag(workspace_id: str, lakehouse_id: str) -> str:
@@ -84,9 +93,11 @@ class HighConcurrencyLivySession:
             try:
                 body = self._fabric_api_client.acquire_hc_session(tag)
                 break
-            except FabricApiError as e:
-                is_transient = e.status_code == 404 or 500 <= e.status_code < 600
-                if not is_transient or attempt == max_attempts:
+            except _TRANSIENT_EXCEPTIONS as e:
+                is_api_error = isinstance(e, FabricApiError)
+                if is_api_error and not (e.status_code == 404 or 500 <= e.status_code < 600):
+                    raise
+                if attempt == max_attempts:
                     raise
                 last_exception = e
                 wait_time = backoff_seconds * (2 ** (attempt - 1))
@@ -126,7 +137,7 @@ class HighConcurrencyLivySession:
             try:
                 body = self._fabric_api_client.get_hc_session(self._state.hc_id)
                 consecutive_errors = 0
-            except FabricApiError as e:
+            except _TRANSIENT_EXCEPTIONS as e:
                 consecutive_errors += 1
                 if consecutive_errors >= self._MAX_CONSECUTIVE_TRANSIENT_ERRORS:
                     raise

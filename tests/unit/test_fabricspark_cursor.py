@@ -89,7 +89,7 @@ class TestCancel:
 
         cursor.cancel()
 
-        livy_session._fabric_api_client.cancel_livy_statement.assert_called_once_with(42)
+        livy_session.cancel_statement.assert_called_once_with(42)
         assert cursor._statement_id is None
 
     def test_cancel_noop_when_no_statement(self):
