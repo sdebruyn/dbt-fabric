@@ -62,10 +62,10 @@ sequenceDiagram
         Note over HC Livy API,Spark Session: Spark startup
         HC Livy API-->>Adapter: HC session ID + REPL ID
     end
-    Adapter->>HC Livy API: POST /sessions/{id}/repls/{replId}/statements
+    Adapter->>HC Livy API: POST /highConcurrencySessions/{id}/repls/{replId}/statements
     HC Livy API->>Spark Session: Execute Spark SQL (in REPL)
     loop Poll every 3 seconds
-        Adapter->>HC Livy API: GET /statements/{id}
+        Adapter->>HC Livy API: GET /highConcurrencySessions/{id}/repls/{replId}/statements/{stmtId}
         HC Livy API-->>Adapter: Status + results (when done)
     end
     Adapter-->>dbt: Parsed results

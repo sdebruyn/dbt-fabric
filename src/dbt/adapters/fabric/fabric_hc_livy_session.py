@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import json
 import time
@@ -115,7 +116,13 @@ class HighConcurrencyLivySession:
             raise RuntimeError(f"HC acquire response missing 'id': {body}")
 
         self._state.hc_id = str(hc_id)
-        self._poll_until_idle()
+        try:
+            self._poll_until_idle()
+        except Exception:
+            with contextlib.suppress(Exception):
+                self._fabric_api_client.delete_hc_session(str(hc_id))
+            self._state = HCSessionState()
+            raise
         self._state.is_dead = False
         logger.debug(
             f"HC session ready: hc_id={self._state.hc_id} "
@@ -165,6 +172,10 @@ class HighConcurrencyLivySession:
         """Re-acquire this thread's HC session if it was marked dead."""
         if self._state.is_dead or self._state.hc_id is None:
             logger.debug("HC REPL marked stale — re-acquiring")
+            if self._state.hc_id is not None:
+                with contextlib.suppress(Exception):
+                    self._fabric_api_client.delete_hc_session(self._state.hc_id)
+                self._state = HCSessionState()
             self.wait_for_session_ready()
 
     def cancel_statement(self, statement_id: int) -> None:
