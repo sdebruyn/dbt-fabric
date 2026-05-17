@@ -1,0 +1,37 @@
+import pytest
+
+from tests.packages.base_package_test import BaseDbtPackageTests
+
+
+class TestDbtArtifacts(BaseDbtPackageTests):
+    @pytest.fixture(scope="class")
+    def package_name(self) -> str:
+        return "dbt_artifacts"
+
+    @pytest.fixture(scope="class")
+    def package_repo(self) -> str:
+        return "https://github.com/brooklyn-data/dbt_artifacts"
+
+    @pytest.fixture(scope="class")
+    def package_revision(self) -> str:
+        return "2.10.1"
+
+    @pytest.fixture(scope="class")
+    def packages(
+        self,
+        package_name: str,
+        package_repo: str,
+        package_revision: str,
+        dbt_utils_version: str,
+    ):
+        return {
+            "packages": [
+                {"git": package_repo, "revision": package_revision},
+                {
+                    "git": package_repo,
+                    "revision": package_revision,
+                    "subdirectory": "integration_test_project",
+                },
+                {"package": "dbt-labs/dbt_utils", "version": dbt_utils_version},
+            ]
+        }
