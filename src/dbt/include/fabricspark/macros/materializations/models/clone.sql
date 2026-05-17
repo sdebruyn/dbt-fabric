@@ -19,16 +19,16 @@
       {{ return(relations) }}
   {%- endif -%}
 
-  {%- set target_relation = this.incorporate(type='materialized_view') -%}
+  {%- set target_relation = this.incorporate(type='view') -%}
 
   {% if existing_relation is not none %}
       {{ drop_relation_if_exists(existing_relation) }}
   {% endif %}
 
-  {%- set clone_sql = "select * from " ~ defer_relation -%}
-
   {% call statement('main') %}
-      {{ get_create_materialized_view_as_sql(target_relation, clone_sql) }}
+      create or replace view {{ target_relation }} as (
+          select * from {{ defer_relation }}
+      )
   {% endcall %}
 
   {%- set grant_config = config.get('grants') -%}

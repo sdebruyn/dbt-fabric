@@ -11,19 +11,11 @@
        inside_transaction. We split into outside/inside to match dbt-adapters' default pattern. #}
     {{ run_hooks(pre_hooks, inside_transaction=False) }}
 
-    {# Upstream create_or_replace_view() only checks old_relation.is_table via handle_existing_table().
-       We check any non-view type (table, materialized_view) since FabricSpark has more relation types.
-       We also raise an explicit error instead of silently dropping when --full-refresh is not set. #}
+    {# Upstream create_or_replace_view() drops any non-view relation unconditionally via
+       handle_existing_table(). We match that behavior for all non-view types (table,
+       materialized_view) since CREATE OR REPLACE VIEW cannot replace a table. #}
     {%- if old_relation is not none and not old_relation.is_view -%}
-        {%- if should_full_refresh() -%}
-            {% do adapter.drop_relation(old_relation) %}
-        {%- else -%}
-            {{ exceptions.raise_compiler_error(
-                "Cannot create view " ~ target_relation
-                ~ " because a relation of type '" ~ old_relation.type
-                ~ "' already exists. Use --full-refresh to drop it first."
-            ) }}
-        {%- endif -%}
+        {% do adapter.drop_relation(old_relation) %}
     {%- endif -%}
 
     {{ run_hooks(pre_hooks, inside_transaction=True) }}
@@ -38,6 +30,8 @@
 
     {% set should_revoke = should_revoke(exists_as_view, full_refresh_mode=True) %}
     {% do apply_grants(target_relation, grant_config, should_revoke=should_revoke) %}
+
+    {% do persist_docs(target_relation, model) %}
 
     {{ run_hooks(post_hooks, inside_transaction=True) }}
     {{ run_hooks(post_hooks, inside_transaction=False) }}
