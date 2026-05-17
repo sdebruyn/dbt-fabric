@@ -12,8 +12,6 @@ from dbt.adapters.fabric.livy_result import LivySessionResult
 
 _thread_local = threading.local()
 
-_thread_local = threading.local()
-
 
 class FabricLivyHelper(PythonJobHelper):
     _sql_endpoint: str | None = None
