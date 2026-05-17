@@ -6,9 +6,7 @@ from pathlib import Path
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
-from dbt.adapters.fabricspark.fabricspark_credentials import (
-    FabricSparkCredentials,
-)
+from dbt.adapters.fabricspark.fabricspark_credentials import FabricSparkCredentials
 from tests.conftest import _auth_kwargs_from_env
 from tests.spark_remote.spark_job_client import SparkJobClient, SparkJobResult
 from tests.spark_remote.sync import ProjectSync, check_prerequisites
@@ -63,7 +61,7 @@ class RemoteTestOrchestrator:
         workspace_id = self._api_client.get_workspace_id()
         lakehouse_id = self._api_client.get_lakehouse_id()
 
-        job_client = SparkJobClient(workspace_id, self._get_token)
+        job_client = SparkJobClient(self._api_client)
 
         existing = job_client.find_by_name(self._job_name)
         if existing:
@@ -99,6 +97,3 @@ class RemoteTestOrchestrator:
         lakehouse_id = self._api_client.get_lakehouse_id()
         sync = ProjectSync(workspace_id, lakehouse_id, self._project_root)
         return sync.download_artifacts(self._local_results_dir)
-
-    def _get_token(self) -> str:
-        return self._api_client._token_provider.get_access_token()

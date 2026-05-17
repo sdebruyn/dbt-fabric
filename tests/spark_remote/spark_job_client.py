@@ -5,12 +5,8 @@ import json
 import shlex
 import time
 from dataclasses import dataclass
-from typing import Callable
 
-import requests
-
-FABRIC_API_BASE = "https://api.fabric.microsoft.com"
-FABRIC_CREDENTIAL_SCOPE = "https://analysis.windows.net/powerbi/api/.default"
+from dbt.adapters.fabric.fabric_api_client import FabricApiClient, FabricApiError
 
 
 @dataclass
@@ -23,39 +19,25 @@ class SparkJobResult:
 
 
 class SparkJobClient:
-    def __init__(self, workspace_id: str, token_provider_fn: Callable[[], str]):
-        self._workspace_id = workspace_id
-        self._token_provider_fn = token_provider_fn
+    def __init__(self, api_client: FabricApiClient):
+        self._api_client = api_client
 
-    def _headers(self) -> dict[str, str]:
-        token = self._token_provider_fn()
-        return {
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        }
+    @property
+    def _base_url(self) -> str:
+        return self._api_client._credentials.fabric_base_api_uri
 
-    def _get(self, url_or_path: str, **kwargs) -> requests.Response:
-        url = url_or_path if url_or_path.startswith("http") else f"{FABRIC_API_BASE}{url_or_path}"
-        resp = requests.get(url, headers=self._headers(), **kwargs)
-        resp.raise_for_status()
-        return resp
-
-    def _post(
-        self, url_or_path: str, json_data: dict | None = None, **kwargs
-    ) -> requests.Response:
-        url = url_or_path if url_or_path.startswith("http") else f"{FABRIC_API_BASE}{url_or_path}"
-        resp = requests.post(url, headers=self._headers(), json=json_data, **kwargs)
-        resp.raise_for_status()
-        return resp
+    @property
+    def _workspace_id(self) -> str:
+        return self._api_client.get_workspace_id()
 
     def list_spark_job_definitions(self) -> list[dict]:
         items = []
-        path = f"/v1/workspaces/{self._workspace_id}/sparkJobDefinitions"
-        while path:
-            resp = self._get(path)
+        url: str | None = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions"
+        while url:
+            resp = self._api_client._api_get(url)
             data = resp.json()
             items.extend(data.get("value", []))
-            path = data.get("continuationUri")
+            url = data.get("continuationUri")
         return items
 
     def find_by_name(self, name: str) -> dict | None:
@@ -90,34 +72,36 @@ class SparkJobClient:
             },
         }
 
-        path = f"/v1/workspaces/{self._workspace_id}/sparkJobDefinitions"
-        resp = self._post(path, json_data=body)
+        url = f"{self._base_url}/workspaces/{self._workspace_id}/sparkJobDefinitions"
+        resp = self._api_client._api_post(url, body)
         return resp.json()["id"]
 
     def run_on_demand(self, item_id: str, command_line_args: list[str]) -> tuple[str, str]:
-        path = (
-            f"/v1/workspaces/{self._workspace_id}/items/{item_id}/jobs/instances?jobType=sparkjob"
+        url = (
+            f"{self._base_url}/workspaces/{self._workspace_id}"
+            f"/items/{item_id}/jobs/instances?jobType=sparkjob"
         )
         body = {"executionData": {"commandLineArguments": shlex.join(command_line_args)}}
-        resp = self._post(path, json_data=body)
+        resp = self._api_client._api_post(url, body)
 
         location = resp.headers.get("Location", "")
-        # Location header format: .../items/{item_id}/jobs/instances/{job_instance_id}
         parts = location.rstrip("/").split("/")
         job_instance_id = parts[-1] if parts else ""
         return item_id, job_instance_id
 
     def get_job_instance(self, item_id: str, job_instance_id: str) -> dict:
-        path = (
-            f"/v1/workspaces/{self._workspace_id}/items/{item_id}/jobs/instances/{job_instance_id}"
+        url = (
+            f"{self._base_url}/workspaces/{self._workspace_id}"
+            f"/items/{item_id}/jobs/instances/{job_instance_id}"
         )
-        return self._get(path).json()
+        return self._api_client._api_get(url).json()
 
     def poll_until_done(
         self, item_id: str, job_instance_id: str, interval: int = 10, timeout: int = 1800
     ) -> SparkJobResult:
+        workspace_id = self._workspace_id
         job_url = (
-            f"https://app.fabric.microsoft.com/groups/{self._workspace_id}"
+            f"https://app.fabric.microsoft.com/groups/{workspace_id}"
             f"/sparkJobDefinitions/{item_id}/runs/{job_instance_id}"
         )
         start = time.time()
@@ -155,13 +139,14 @@ class SparkJobClient:
             time.sleep(interval)
 
     def _get_with_retry(self, item_id: str, job_instance_id: str, max_retries: int = 3) -> dict:
-        path = (
-            f"/v1/workspaces/{self._workspace_id}/items/{item_id}/jobs/instances/{job_instance_id}"
+        url = (
+            f"{self._base_url}/workspaces/{self._workspace_id}"
+            f"/items/{item_id}/jobs/instances/{job_instance_id}"
         )
         for attempt in range(max_retries):
             try:
-                return self._get(path).json()
-            except requests.exceptions.RequestException:
+                return self._api_client._api_get(url).json()
+            except FabricApiError:
                 if attempt == max_retries - 1:
                     raise
                 time.sleep(2 ** (attempt + 1))
