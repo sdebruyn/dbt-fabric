@@ -39,7 +39,8 @@ dev = [
     "dbt-core>=1.9.6,<1.13.0",
     "dbt-tests-adapter>=1.19.7,<2.0",
     # Linting & formatting
-    "ruff>=0.15.1"
+    "ruff>=0.15.1",
+    "junitparser>=5.0.0",
 ]
 docs = [
     "zensical>=0.0.41",

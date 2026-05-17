@@ -3,54 +3,61 @@ from __future__ import annotations
 import textwrap
 from pathlib import Path
 
+from junitparser import TestCase
+
 from tests.spark_remote.result_reporter import _parse_junitxml, _reconstruct_nodeid
 
 
-def _make_testcase_element(**attrs):
-    import xml.etree.ElementTree as ET
-
-    return ET.fromstring("<testcase " + " ".join(f'{k}="{v}"' for k, v in attrs.items()) + " />")
+def _make_testcase(**attrs) -> TestCase:
+    case = TestCase()
+    case.name = attrs.get("name", "")
+    case.classname = attrs.get("classname", "")
+    if "file" in attrs:
+        case._elem.set("file", attrs["file"])
+    return case
 
 
 class TestReconstructNodeid:
     def test_simple_file_and_name(self):
-        el = _make_testcase_element(
+        case = _make_testcase(
             file="tests/unit/test_foo.py",
             classname="tests.unit.test_foo.TestFoo",
             name="test_bar",
         )
-        assert _reconstruct_nodeid(el) == "tests/unit/test_foo.py::TestFoo::test_bar"
+        assert _reconstruct_nodeid(case) == "tests/unit/test_foo.py::TestFoo::test_bar"
 
     def test_no_class_in_classname(self):
-        el = _make_testcase_element(
+        case = _make_testcase(
             file="tests/unit/test_foo.py",
             classname="tests.unit.test_foo",
             name="test_standalone",
         )
-        assert _reconstruct_nodeid(el) == "tests/unit/test_foo.py::test_standalone"
+        assert _reconstruct_nodeid(case) == "tests/unit/test_foo.py::test_standalone"
 
     def test_parametrized_name(self):
-        el = _make_testcase_element(
+        case = _make_testcase(
             file="tests/unit/test_foo.py",
             classname="tests.unit.test_foo.TestParams",
             name="test_add[1-2-3]",
         )
-        assert _reconstruct_nodeid(el) == "tests/unit/test_foo.py::TestParams::test_add[1-2-3]"
+        assert _reconstruct_nodeid(case) == "tests/unit/test_foo.py::TestParams::test_add[1-2-3]"
 
     def test_nested_class(self):
-        el = _make_testcase_element(
+        case = _make_testcase(
             file="tests/unit/test_foo.py",
             classname="tests.unit.test_foo.TestOuter.TestInner",
             name="test_deep",
         )
-        assert _reconstruct_nodeid(el) == "tests/unit/test_foo.py::TestOuter::TestInner::test_deep"
+        assert (
+            _reconstruct_nodeid(case) == "tests/unit/test_foo.py::TestOuter::TestInner::test_deep"
+        )
 
     def test_fallback_no_file_attr(self):
-        el = _make_testcase_element(
+        case = _make_testcase(
             classname="tests.unit.test_foo.TestClass",
             name="test_method",
         )
-        assert _reconstruct_nodeid(el) == "tests/unit/test_foo.py::TestClass::test_method"
+        assert _reconstruct_nodeid(case) == "tests/unit/test_foo.py::TestClass::test_method"
 
 
 class TestParseJunitxml:

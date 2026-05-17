@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
 from _pytest.reports import TestReport
+from junitparser import Error, Failure, JUnitXml, Skipped, TestCase
 
 from tests.spark_remote.spark_job_client import SparkJobResult
 
@@ -146,89 +146,81 @@ def _parse_junitxml(path: Path) -> list[JunitTestResult]:
         path: Path to the junitxml file.
 
     Returns:
-        List of JunitTestResult, one per <testcase> element.
-
-    Raises:
-        ET.ParseError: If the XML is malformed.
+        List of JunitTestResult, one per test case.
     """
-    tree = ET.parse(path)
-    root = tree.getroot()
+    xml = JUnitXml.fromfile(str(path))
 
     results = []
-    for testcase in root.iter("testcase"):
-        nodeid = _reconstruct_nodeid(testcase)
-        duration = float(testcase.get("time", "0"))
+    for suite in xml:
+        for case in suite:
+            if not isinstance(case, TestCase):
+                continue
+            nodeid = _reconstruct_nodeid(case)
+            duration = case.time or 0.0
 
-        failure_el = testcase.find("failure")
-        error_el = testcase.find("error")
-        skipped_el = testcase.find("skipped")
+            sections: list[tuple[str, str]] = []
+            if case.system_out:
+                sections.append(("Captured stdout (remote)", case.system_out))
+            if case.system_err:
+                sections.append(("Captured stderr (remote)", case.system_err))
 
-        sections: list[tuple[str, str]] = []
-        stdout_el = testcase.find("system-out")
-        if stdout_el is not None and stdout_el.text:
-            sections.append(("Captured stdout (remote)", stdout_el.text))
-        stderr_el = testcase.find("system-err")
-        if stderr_el is not None and stderr_el.text:
-            sections.append(("Captured stderr (remote)", stderr_el.text))
+            failure_entry = None
+            skip_entry = None
+            for entry in case.result:
+                if isinstance(entry, (Failure, Error)):
+                    failure_entry = entry
+                    break
+                if isinstance(entry, Skipped):
+                    skip_entry = entry
 
-        if failure_el is not None:
-            results.append(
-                JunitTestResult(
-                    nodeid=nodeid,
-                    outcome="failed",
-                    duration=duration,
-                    failure_message=failure_el.text or failure_el.get("message", ""),
-                    sections=sections,
+            if failure_entry is not None:
+                results.append(
+                    JunitTestResult(
+                        nodeid=nodeid,
+                        outcome="failed",
+                        duration=duration,
+                        failure_message=failure_entry.text or failure_entry.message or "",
+                        sections=sections,
+                    )
                 )
-            )
-        elif error_el is not None:
-            results.append(
-                JunitTestResult(
-                    nodeid=nodeid,
-                    outcome="failed",
-                    duration=duration,
-                    failure_message=error_el.text or error_el.get("message", ""),
-                    sections=sections,
+            elif skip_entry is not None:
+                results.append(
+                    JunitTestResult(
+                        nodeid=nodeid,
+                        outcome="skipped",
+                        duration=duration,
+                        skip_reason=skip_entry.message or "Skipped",
+                        sections=sections,
+                    )
                 )
-            )
-        elif skipped_el is not None:
-            results.append(
-                JunitTestResult(
-                    nodeid=nodeid,
-                    outcome="skipped",
-                    duration=duration,
-                    skip_reason=skipped_el.get("message", "Skipped"),
-                    sections=sections,
+            else:
+                results.append(
+                    JunitTestResult(
+                        nodeid=nodeid,
+                        outcome="passed",
+                        duration=duration,
+                        sections=sections,
+                    )
                 )
-            )
-        else:
-            results.append(
-                JunitTestResult(
-                    nodeid=nodeid,
-                    outcome="passed",
-                    duration=duration,
-                    sections=sections,
-                )
-            )
 
     return results
 
 
-def _reconstruct_nodeid(testcase: ET.Element) -> str:
-    """Reconstruct a pytest node ID from junitxml testcase attributes.
+def _reconstruct_nodeid(case: TestCase) -> str:
+    """Reconstruct a pytest node ID from a junitparser TestCase.
 
     Handles the mapping from junitxml's (file, classname, name) triple back to
     pytest's ``file::Class::method`` format.
 
     Args:
-        testcase: An XML <testcase> element with file, classname, and name attributes.
+        case: A junitparser TestCase with classname and name attributes.
 
     Returns:
         A pytest-compatible node ID string (e.g. "tests/test_foo.py::TestBar::test_baz").
     """
-    file_attr = testcase.get("file")
-    classname = testcase.get("classname", "")
-    name = testcase.get("name", "")
+    file_attr = case._elem.get("file")
+    classname = case.classname or ""
+    name = case.name or ""
 
     if file_attr:
         file_module = file_attr.replace("/", ".").removesuffix(".py")
