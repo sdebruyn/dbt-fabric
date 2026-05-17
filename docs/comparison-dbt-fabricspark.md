@@ -33,7 +33,6 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 | Code reuse | High (inherits dbt-spark + shared base) | None (self-contained) |
 | Maintenance burden | Lower per-adapter, coupled to dbt-spark | Higher, no external coupling |
 | dbt-spark compatibility | Automatic (inherits macros/behaviors) | Manual (must reimplement) |
-| Customization surface | Limited by what dbt-spark exposes | Full control |
 
 ---
 
