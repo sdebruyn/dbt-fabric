@@ -61,43 +61,6 @@ AS select ...
 
 ---
 
-## Works with model contracts
-
-If your model has [contract enforcement](https://docs.getdbt.com/docs/collaborate/govern/model-contracts) enabled, the `CLUSTER BY` clause is added to the `CREATE TABLE` statement alongside the column constraints:
-
-```sql title="models/orders.sql"
-{{ config(
-    materialized='table',
-    cluster_by=['customer_id', 'order_date']
-) }}
-
-select
-    order_id,
-    order_date,
-    customer_id,
-    total_amount
-from {{ source('raw', 'orders') }}
-```
-
-```yaml title="models/schema.yml"
-models:
-  - name: orders
-    config:
-      contract:
-        enforced: true
-    columns:
-      - name: order_id
-        data_type: int
-      - name: order_date
-        data_type: date
-      - name: customer_id
-        data_type: int
-      - name: total_amount
-        data_type: decimal(18, 2)
-```
-
----
-
 ## Works with incremental models
 
 Clustering is also applied when incremental models create their initial table (full refresh or first run):
