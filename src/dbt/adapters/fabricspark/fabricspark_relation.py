@@ -79,7 +79,7 @@ class FabricSparkRelation(BaseRelation):
             if cfg is not None:
                 try:
                     ws_name = cfg.get("workspace_name")
-                except Exception:
+                except (AttributeError, TypeError):
                     ws_name = None
                 if ws_name:
                     kwargs["workspace"] = ws_name
@@ -105,12 +105,16 @@ class FabricSparkRelation(BaseRelation):
 
     def render(self) -> str:
         base = super().render()
-        if self.workspace and self.include_policy.get_part(ComponentName.Database):
+        if (
+            self.workspace
+            and self.database
+            and self.include_policy.get_part(ComponentName.Database)
+        ):
             quoted_ws = self.quoted(self.workspace)
             return f"{quoted_ws}.{base}" if base else quoted_ws
         return base
 
-    def incorporate(self, **kwargs):
+    def incorporate(self, **kwargs: Any) -> "FabricSparkRelation":
         if "workspace" not in kwargs:
             kwargs["workspace"] = self.workspace
         return super().incorporate(**kwargs)

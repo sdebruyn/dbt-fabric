@@ -188,6 +188,19 @@ class TestFabricSparkRelationWorkspace:
         assert r2.workspace == "Other WS"
         assert "`Other WS`" in str(r2)
 
+    def test_incorporate_can_clear_workspace(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace="My Workspace",
+        )
+        r2 = r.incorporate(workspace=None)
+        assert r2.workspace is None
+        assert "`My Workspace`" not in str(r2)
+        assert str(r2) == "`my_lakehouse`.`dbo`.my_model"
+
     def test_incorporate_can_override_workspace(self):
         r = FabricSparkRelation.create(
             database="my_lakehouse",
