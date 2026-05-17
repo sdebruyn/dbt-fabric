@@ -7,7 +7,7 @@ import requests
 from azure.identity import AzureCliCredential
 
 from dbt.tests.util import relation_from_name, run_dbt
-from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+from tests.packages.base_package_test import BaseDbtPackageTests
 
 TEST_CSV_CONTENT = (
     "id,name,amount,sale_date\n"

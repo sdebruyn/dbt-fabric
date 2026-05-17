@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from tests.fabric.packages.base_package_test import BaseDbtPackageTests
+from tests.packages.base_package_test import BaseDbtPackageTests
 
 _FISCAL_PERIODS_PATH = (
     Path(__file__).resolve().parents[3]

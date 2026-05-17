@@ -280,7 +280,7 @@ class TestGetCatalogForSingleRelation(BaseGetCatalogForSingleRelation):
 
 ### Community package integration tests
 
-For adding integration tests for community dbt packages, use the `community-package-tests` skill. See `tests/fabric/packages/base_package_test.py` for the `BaseDbtPackageTests` base class and existing tests in the same directory for examples.
+For adding integration tests for community dbt packages, use the `community-package-tests` skill. See `tests/packages/base_package_test.py` for the `BaseDbtPackageTests` base class and existing tests in the same directory for examples.
 
 ## CI/CD
 
