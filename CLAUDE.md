@@ -311,7 +311,7 @@ CI authenticates to Azure via OIDC (federated credentials, no secrets stored). T
 - **Quote style**: double quotes
 - **Lint rules**: isort (`I`) + no commented-out code (`ERA`)
 - **No comments in code** unless the _why_ is non-obvious
-- **Macro overrides require inline Jinja comments**: every macro that overrides an upstream or community package macro must have a `{#- ... -#}` header comment stating which macro it overrides (package + name), what specifically differs, and why. Annotate individual lines/blocks that diverge from upstream so a reader can compare without opening the original. Use `{#- ... #}` (no trailing dash) when the comment precedes SQL keywords to avoid whitespace-stripping issues
+- **Macro overrides require inline Jinja comments**: every macro that overrides another macro (adapter base classes, dbt-adapters, dbt-spark, or community packages) must have a `{#- ... -#}` header comment stating which macro it overrides (package + name), what specifically differs, and why. Annotate individual lines/blocks that diverge from upstream so a reader can compare without opening the original. Use `{#- ... #}` (no trailing dash) when the comment precedes SQL keywords to avoid whitespace-stripping issues
 - **Always run ruff before committing**: `uv run ruff format .` and `uv run ruff check --fix .` must pass before every commit
 - **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the project targets Python 3.13 and has no `from typing import Union` imports
 - **Class constants at the top**: group all class-level constants together at the top of the class body, before any methods
