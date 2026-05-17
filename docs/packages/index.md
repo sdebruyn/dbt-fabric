@@ -24,6 +24,8 @@ dispatch:
     search_order: ['your_project_name', 'dbt', 'dbt_external_tables']
   - macro_namespace: audit_helper
     search_order: ['your_project_name', 'dbt', 'audit_helper']
+  - macro_namespace: dbt_profiler
+    search_order: ['your_project_name', 'dbt', 'dbt_profiler']
 ```
 
 Replace `your_project_name` with the `name` field from your `dbt_project.yml`. Only include entries for the packages you actually use.
@@ -39,5 +41,6 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 | [dbt-expectations](dbt-expectations.md) | -- | No |
 | [dbt-audit-helper](dbt-audit-helper.md) | -- | No |
 | [dbt-external-tables](dbt-external-tables.md) | 0.11.0 | Yes |
+| [dbt-profiler](dbt-profiler.md) | 1.0.0 | Yes |
 
 "Tested version" indicates the version against which the adapter runs automated integration tests in CI. Packages without a tested version have macro overrides that are expected to work but are not verified automatically.
