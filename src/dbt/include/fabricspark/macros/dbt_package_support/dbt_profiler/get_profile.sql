@@ -39,7 +39,7 @@
 
   {# Use DESCRIBE TABLE EXTENDED instead of INFORMATION_SCHEMA.COLUMNS #}
   {% call statement('table_metadata', fetch_result=True) -%}
-    describe table extended {{ relation.schema }}.{{ relation.identifier }}
+    describe table extended {{ relation.include(database=false) }}
   {% endcall %}
   {% set columns_metadata = load_result('table_metadata').table %}
   {% set columns_metadata = columns_metadata.rename(columns_metadata.column_names | map('lower')) %}
