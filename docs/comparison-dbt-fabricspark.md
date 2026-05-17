@@ -20,21 +20,21 @@ This is the most significant difference and influences nearly every other compar
 This adapter's FabricSpark adapter uses **multiple inheritance**: `FabricSparkAdapter(BaseFabricAdapter, SparkAdapter)`. It inherits from dbt-spark's `SparkAdapter` and a shared `BaseFabricAdapter` also used by the T-SQL adapter.
 
 - **Plugin registration** declares `dependencies=["spark"]`, so dbt-spark's macros are available at runtime.
-- **Adapter code** is thin (~749 LOC) because it delegates heavily to dbt-spark and the shared base.
-- **Macros** (24 files) are primarily overrides of dbt-spark macros for Fabric-specific behavior.
+- **Adapter code** is thin because it delegates heavily to dbt-spark and the shared base.
+- **Macros** are primarily overrides of dbt-spark macros for Fabric-specific behavior.
 
 ### Upstream: standalone SQLAdapter
 
 The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-spark dependency.
 
 - **Plugin registration** has no `dependencies` -- all Spark SQL behavior is self-contained.
-- **Adapter code** is significantly larger (~4,387 LOC) because it reimplements everything dbt-spark would provide.
-- **Macros** (34 files) include utility functions normally inherited from dbt-spark.
+- **Adapter code** is significantly larger because it reimplements everything dbt-spark would provide.
+- **Macros** include utility functions normally inherited from dbt-spark.
 
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
 | Code reuse | High (inherits dbt-spark + shared base) | None (self-contained) |
-| Maintenance burden | Lower per-adapter, coupled to dbt-spark | Higher total LOC, no external coupling |
+| Maintenance burden | Lower per-adapter, coupled to dbt-spark | Higher, no external coupling |
 | dbt-spark compatibility | Automatic (inherits macros/behaviors) | Manual (must reimplement) |
 | Customization surface | Limited by what dbt-spark exposes | Full control |
 
@@ -116,19 +116,11 @@ Notable differences:
 
 ## Test suite
 
-| Metric | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
+| Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Test files** | 60 | 50 |
-| **Test classes** | ~183 | ~141 |
-| **Unit/functional split** | All integration | Unit (mock) + functional (real infra) |
-| **Schema mode toggle** | No | Yes (`--schema-mode` CLI flag) |
-| **Session sharding** | No | Yes (`--session-id-files` for xdist workers) |
-| **Fail-fast sentinel** | No | Yes (cross-worker abort on first failure) |
-| **Session reuse assertion** | No | Yes (verifies no extra sessions created) |
-
-**This adapter covers that upstream does not:** Purview tests, broader dbt-tests-adapter base class coverage (183 vs 141 classes).
-
-**Upstream covers that this adapter does not:** Unit tests (mock-based), cross-workspace tests, MLV lifecycle tests, OneLake shortcut tests, dual schema-mode testing, fail-fast sentinel, session reuse verification.
+| **Testing approach** | Integration tests against real Fabric | Unit tests (mock) + functional tests (real infra) |
+| **dbt-tests-adapter coverage** | Broad (standard adapter base classes) | Narrower (custom test suite) |
+| **Community package tests** | [Yes](packages/index.md) | No |
 
 ---
 
@@ -216,6 +208,6 @@ The upstream mixes camelCase (`tokenPrint`, `accessToken`, `_submitLivyCode`, `_
 
 ## Summary
 
-This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented). The fork's approach results in dramatically less code (749 LOC vs 4,387 LOC) with proper instance-based lifecycle management and no global mutable state.
+This adapter takes a **code-reuse approach** (thin adapter on dbt-spark), while the upstream takes a **self-contained approach** (everything reimplemented). The fork's approach results in significantly less code with proper instance-based lifecycle management and no global mutable state.
 
-The upstream has more Fabric-specific features (MLV REST API refresh, OneLake shortcuts, cross-workspace 4-part naming, local Livy mode), while this adapter offers broader dbt ecosystem integration (dbt-spark inheritance, Purview, capability declarations, shared T-SQL + Spark in one package) and significantly higher code quality.
+The upstream has more Fabric-specific features (MLV REST API refresh, OneLake shortcuts, local Livy mode), while this adapter offers broader dbt ecosystem integration (dbt-spark inheritance, Purview, capability declarations, shared T-SQL + Spark in one package) and significantly higher code quality.

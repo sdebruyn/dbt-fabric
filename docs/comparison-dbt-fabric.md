@@ -119,16 +119,6 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 
 ## Test suite
 
-### Test coverage
-
-| Metric | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
-|---|---|---|
-| **Test files** | 141 | 35 |
-| **Test classes** | 444 | 117 |
-| **Fabric (T-SQL) test classes** | 217 | 115 |
-| **FabricSpark test classes** | 183 | N/A |
-| **Unit test classes** | 43 | 2 |
-
 ### Coverage by area
 
 | Test Area | dbt-fabric-samdebruyn (Fabric) | dbt-fabric-samdebruyn (FabricSpark) | microsoft/dbt-fabric |
@@ -170,20 +160,9 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 | Timestamps | Yes | Yes | Yes |
 | Cluster by | Yes | - | Yes |
 | List relations | Yes | Yes | Yes |
-| Utility functions | 28 files, 40+ classes | 28 files, 40+ classes | 5 inline |
+| Utility functions | Yes | Yes | Yes |
 | Package integration tests | [Yes](packages/index.md) | [Yes](packages/index.md) | - |
 | OPENROWSET | Yes (via dbt-external-tables) | - | Yes |
-
-### Test infrastructure
-
-| Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
-|---|---|---|
-| **conftest.py** | 346 lines, multi-adapter routing, deep merge | 130 lines, profile-based selection |
-| **Adapter type detection** | Automatic from test file path | Single adapter, profile-based |
-| **CLI flags** | `--dw`, `--de`, `--with-grants`, `--with-python` | `--profile` |
-| **Session-scoped Livy management** | Yes | No |
-| **Log directory per test** | Yes | No |
-| **Deep merge for project_config_update** | Yes | No |
 
 ---
 
