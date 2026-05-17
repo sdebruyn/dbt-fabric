@@ -538,3 +538,82 @@ class FabricApiClient:
         url = self.get_livy_session_base_uri() + f"/statements/{statement_id}/cancel"
         response = self._api_post(url, {})
         return response.json()["msg"]
+
+    # ---- High-concurrency Livy API ----------------------------------------
+
+    def acquire_hc_session(self, session_tag: str) -> dict[str, Any]:
+        """POST /highConcurrencySessions to acquire an HC session (= one REPL).
+
+        Args:
+            session_tag: Deterministic tag so Fabric packs all REPLs from
+                the same process onto one underlying Livy session.
+
+        Returns:
+            The JSON response body containing at least ``id`` and ``state``.
+        """
+        url = self.get_livy_base_api_uri() + "/highConcurrencySessions"
+        body: dict[str, Any] = {
+            "sessionTag": session_tag,
+            "name": self._credentials.livy_session_name,
+        }
+        response = self._api_post(url, body)
+        return response.json()
+
+    def get_hc_session(self, hc_id: str) -> dict[str, Any]:
+        """Poll the state of an HC session.
+
+        Returns:
+            JSON with ``state``, and when idle also ``sessionId`` and ``replId``.
+        """
+        url = self.get_livy_base_api_uri() + f"/highConcurrencySessions/{hc_id}"
+        response = self._api_get(url)
+        return response.json()
+
+    def submit_hc_sql_statement(self, session_id: str, repl_id: str, code: str) -> int:
+        """Submit a SQL statement via an HC REPL. Returns the statement ID."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{session_id}"
+            + f"/repls/{repl_id}/statements"
+        )
+        response = self._api_post(url, {"code": code, "kind": "sql"})
+        return response.json()["id"]
+
+    def submit_hc_python_statement(self, session_id: str, repl_id: str, code: str) -> int:
+        """Submit a Python statement via an HC REPL. Returns the statement ID."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{session_id}"
+            + f"/repls/{repl_id}/statements"
+        )
+        response = self._api_post(url, {"code": code, "kind": "pyspark"})
+        return response.json()["id"]
+
+    def get_hc_statement(self, session_id: str, repl_id: str, statement_id: int) -> dict[str, Any]:
+        """Fetch the status and output of an HC REPL statement."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{session_id}"
+            + f"/repls/{repl_id}/statements/{statement_id}"
+        )
+        response = self._api_get(url)
+        return response.json()
+
+    def cancel_hc_statement(self, session_id: str, repl_id: str, statement_id: int) -> str:
+        """Cancel a running HC REPL statement."""
+        url = (
+            self.get_livy_base_api_uri()
+            + f"/highConcurrencySessions/{session_id}"
+            + f"/repls/{repl_id}/statements/{statement_id}/cancel"
+        )
+        response = self._api_post(url, {})
+        return response.json()["msg"]
+
+    def delete_hc_session(self, hc_id: str) -> None:
+        """Release an HC session (REPL slot). Best-effort; ignores 404."""
+        url = self.get_livy_base_api_uri() + f"/highConcurrencySessions/{hc_id}"
+        try:
+            self._api_delete(url)
+        except FabricApiError as e:
+            if e.status_code != 404:
+                raise

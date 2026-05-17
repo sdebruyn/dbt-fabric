@@ -446,6 +446,18 @@ The name of the Livy session. Sessions are reused across statements within a dbt
 
     This option is used by `type: fabricspark` for all SQL execution, and by `type: fabric` for Python model execution.
 
+### `high_concurrency`
+
+Default: `true`
+
+When `true`, the FabricSpark adapter uses Fabric's [high-concurrency Livy API](https://learn.microsoft.com/en-us/fabric/data-engineering/high-concurrency-livy?WT.mc_id=MVP_310840) so each dbt thread gets its own REPL inside a shared underlying Livy session. Statements execute in parallel instead of queuing FIFO. See the [high-concurrency Livy section](lakehouse.md#high-concurrency-livy) in the Lakehouse guide for details.
+
+Set to `false` to fall back to the single-session mode where all threads share one Livy session.
+
+!!! info "FabricSpark only"
+
+    This option only applies to `type: fabricspark`. It has no effect on `type: fabric`.
+
 ### `purview_endpoint`
 
 Alias: `purview`<br>

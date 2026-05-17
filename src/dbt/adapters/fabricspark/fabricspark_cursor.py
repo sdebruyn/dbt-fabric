@@ -142,7 +142,7 @@ class FabricSparkCursor:
         if self._connection is None:
             return
         if self._statement_id is not None and self._result is None:
-            self.get_livy_session()._fabric_api_client.cancel_livy_statement(self._statement_id)
+            self.get_livy_session().cancel_statement(self._statement_id)
             self._statement_id = None
 
     @property

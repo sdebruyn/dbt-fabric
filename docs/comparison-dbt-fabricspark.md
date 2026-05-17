@@ -75,8 +75,10 @@ Notable differences:
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
+| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | Yes (default on, instance-based lifecycle) | Yes (default on, `atexit` cleanup) |
 | **Session creation** | `FabricApiClient` singleton | `LivySessionManager` with static globals |
-| **Session reuse** | By session name | Via `session_id_file` + `reuse_session` flag |
+| **Session reuse** | By session name (singleton) / deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
+| **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
 | **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
 | **Session idle timeout** | 15 min default | 30 min default, configurable |
 | **Local Livy mode** | No | Yes (`livy_mode: local`) |
@@ -190,9 +192,9 @@ This adapter uses proper instance-based encapsulation: `FabricTokenProvider` (pe
 
 ### atexit handler for session cleanup
 
-The upstream registers an `atexit` handler at module import time (`livysession.py` lines 1314-1322) to delete Livy sessions on process exit. This is fragile: `atexit` handlers run in undefined order, logging/network may already be torn down, and merely importing the module registers the handler even if no session was created.
+The upstream registers `atexit` handlers at module import time (in both `singleton_livy.py` and `concurrent_livy.py`) to delete Livy sessions and HC sessions on process exit. This is fragile: `atexit` handlers run in undefined order, logging/network may already be torn down, and merely importing the module registers the handler even if no session was created. The HC implementation adds a second `atexit` handler with a global `_active_sessions` set, compounding the global mutable state problem.
 
-This adapter manages session lifecycle through dbt's normal connection manager `close()` path.
+This adapter manages session lifecycle through dbt's normal connection manager `close()` path — both for singleton Livy sessions and high-concurrency sessions.
 
 ### Exception swallowing
 

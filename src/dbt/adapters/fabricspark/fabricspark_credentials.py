@@ -5,6 +5,8 @@ from dbt.adapters.fabric.base_credentials import BaseFabricCredentials
 
 @dataclass
 class FabricSparkCredentials(BaseFabricCredentials):
+    high_concurrency: bool = True
+
     @property
     def type(self):
         return "fabricspark"

@@ -164,6 +164,10 @@ class LivySession:
                 statement_id=statement_id, success=False, error_message=str(e)
             )
 
+    def cancel_statement(self, statement_id: int) -> None:
+        """Cancel a running statement."""
+        self._fabric_api_client.cancel_livy_statement(statement_id)
+
     def run_statement(
         self, statement_code: str, statement_language: str, wait_for_result: bool = True
     ) -> LivySessionResult | int:
