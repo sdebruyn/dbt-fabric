@@ -49,9 +49,9 @@ class TestDbtProfiler(BaseDbtPackageTests):
         run_dbt(["deps"])
         results = run_dbt(["build"], expect_pass=False)
         failures = [r for r in results.results if r.status in ("error", "fail")]
-        # expect_column_to_exist uses Jinja True/False literals directly in SQL,
-        # which is invalid in T-SQL (no boolean keywords). This test in
-        # dbt_expectations does not use dispatch, so it cannot be overridden.
+        # dbt_expectations.expect_column_to_exist renders Jinja True/False directly in SQL
+        # (invalid T-SQL). The test is namespace-qualified in the package yml so a local
+        # override cannot take precedence. Upstream: metaplane/dbt-expectations#43
         expected = "expect_column_to_exist"
         unexpected = [f for f in failures if expected not in f.node.unique_id]
         assert not unexpected, f"Unexpected failures: {[f.node.unique_id for f in unexpected]}"
