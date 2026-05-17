@@ -32,9 +32,8 @@
   {% endif %}
 
   {% call statement('main') %}
-      create or replace view {{ target_relation }} as (
+      create or replace view {{ target_relation }} as
           select * from {{ defer_relation }}
-      )
   {% endcall %}
 
   {%- set grant_config = config.get('grants') -%}

@@ -1,8 +1,9 @@
 {% materialization view, adapter='fabricspark' %}
-    {%- set identifier = model['alias'] -%}
     {%- set grant_config = config.get('grants') -%}
 
-    {%- set old_relation = adapter.get_relation(database=database, schema=schema, identifier=identifier) -%}
+    {# Upstream create_or_replace_view() uses adapter.get_relation(); we use load_cached_relation(this)
+       for consistency with our other materializations (clone, materialized_view, incremental). #}
+    {%- set old_relation = load_cached_relation(this) -%}
     {%- set exists_as_view = (old_relation is not none and old_relation.is_view) -%}
 
     {%- set target_relation = this.incorporate(type='view') -%}
@@ -23,9 +24,8 @@
     {# Inline SQL instead of dispatching to get_create_view_as_sql() — Spark SQL uses
        CREATE OR REPLACE VIEW directly (no intermediate/rename/backup swap like dbt-adapters default). #}
     {% call statement('main') -%}
-        create or replace view {{ target_relation }} as (
+        create or replace view {{ target_relation }} as
             {{ sql }}
-        )
     {%- endcall %}
 
     {% set should_revoke = should_revoke(exists_as_view, full_refresh_mode=True) %}

@@ -57,7 +57,9 @@ class TestViewMaterialization:
             "view_on_table": "view",
         }
         check_relation_types(project.adapter, expected)
-        check_relations_equal(project.adapter, ["seed", "view_model", "table_model"])
+        check_relations_equal(
+            project.adapter, ["seed", "view_model", "table_model", "view_on_table"]
+        )
 
     def test_view_idempotent(self, project):
         results = run_dbt(["run"])
