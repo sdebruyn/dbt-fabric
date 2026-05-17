@@ -18,6 +18,8 @@ class TestDbtProjectEvaluator(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def packages(self, package_repo, package_revision, dbt_utils_version):
+        # integration_tests subdirectory has a local dependency on exclude_package/
+        # which can't be resolved when installed as a git subdirectory package
         return {
             "packages": [
                 {"git": package_repo, "revision": package_revision},
