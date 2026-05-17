@@ -171,7 +171,7 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 | Cluster by | Yes | - | Yes |
 | List relations | Yes | Yes | Yes |
 | Utility functions | 28 files, 40+ classes | 28 files, 40+ classes | 5 inline |
-| Package integration tests | Yes (dbt-utils, dbt-date, dbt-external-tables) | - | - |
+| Package integration tests | [Yes](packages/index.md) | [Yes](packages/index.md) | - |
 | OPENROWSET | Yes (via dbt-external-tables) | - | Yes |
 
 ### Test infrastructure
