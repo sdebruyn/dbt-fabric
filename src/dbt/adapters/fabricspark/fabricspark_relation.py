@@ -30,6 +30,7 @@ class FabricSparkIncludePolicy(SparkIncludePolicy):
 
 class FabricSparkRelationType(StrEnum):
     Table = "table"
+    View = "view"
     CTE = "cte"
     MaterializedView = "materialized_view"
     Ephemeral = "ephemeral"
@@ -50,6 +51,7 @@ class FabricSparkRelation(BaseRelation):
         default_factory=lambda: frozenset(
             {
                 FabricSparkRelationType.MaterializedView,
+                FabricSparkRelationType.View,
             }
         )
     )
@@ -72,6 +74,8 @@ class FabricSparkRelation(BaseRelation):
                 return FabricSparkRelationType.MaterializedView
             case "managed":
                 return FabricSparkRelationType.Table
+            case "view":
+                return FabricSparkRelationType.View
             case _:
                 return None
 

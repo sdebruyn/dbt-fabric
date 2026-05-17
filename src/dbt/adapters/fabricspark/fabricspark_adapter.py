@@ -82,13 +82,14 @@ class FabricSparkAdapter(BaseFabricAdapter, SparkAdapter):
             # Table Properties: [key=value, ...]
             # Location: abfss://...
 
-            # 2 possible types: MATERIALIZED_LAKE_VIEW or MANAGED (regular table)
+            # 3 possible types: MATERIALIZED_LAKE_VIEW, VIEW, or MANAGED (regular table)
 
-            rel_type: FabricSparkRelationType = (
-                FabricSparkRelationType.MaterializedView
-                if "Type: MATERIALIZED_LAKE_VIEW" in information
-                else FabricSparkRelationType.Table
-            )
+            if "Type: MATERIALIZED_LAKE_VIEW" in information:
+                rel_type = FabricSparkRelationType.MaterializedView
+            elif "Type: VIEW" in information:
+                rel_type = FabricSparkRelationType.View
+            else:
+                rel_type = FabricSparkRelationType.Table
 
             relation: FabricSparkRelation = self.Relation.create(
                 catalog=_workspace,
