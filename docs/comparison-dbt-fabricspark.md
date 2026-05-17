@@ -166,9 +166,9 @@ This adapter manages session lifecycle through dbt's normal connection manager `
 
 Both `LivySession.__exit__` and `LivyCursor.__exit__` return `True` (`livysession.py` lines 489-495, 855-859), which suppresses all exceptions — including database errors, timeouts, and `KeyboardInterrupt` — inside any `with` block using these objects.
 
-### Misleading security comment with actual regex bug
+### Regex bug in SQL sanitization
 
-`_getLivySQL()` (`livysession.py` lines 980-988) contains alarming security comments ("repurcursions of code injection... arbritary Python code") about code that now just strips SQL block comments. The comment was left behind from a previous implementation. Additionally, `re.sub(r"\s*/\*(.|\n)*?\*/\s*", "\n", sql, re.DOTALL)` passes `re.DOTALL` (integer value 16) as the `count` parameter instead of as `flags=re.DOTALL`, meaning it limits replacements to 16 instead of enabling dotall mode.
+`_getLivySQL()` passes `re.DOTALL` as the `count` parameter instead of `flags=re.DOTALL`, silently limiting comment-stripping to 16 replacements instead of enabling multiline matching.
 
 ### Dead code and copy-paste artifacts
 
