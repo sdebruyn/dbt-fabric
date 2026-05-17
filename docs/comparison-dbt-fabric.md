@@ -33,7 +33,7 @@ This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse
 | Materialized View | No | Yes (Fabric lake views) | No |
 | Python models | Yes (via Livy) | Yes (via Livy) | No |
 
-The `fabricspark` adapter introduces `materialized_view` as the default materialization (since Fabric Lakehouse doesn't support traditional SQL views, only Delta lake views created with `CREATE OR REPLACE MATERIALIZED LAKE VIEW`). The adapter also uniquely supports `insert_overwrite` for FabricSpark incremental models.
+The `fabricspark` adapter supports `materialized_view` as a materialization (creating Fabric lake views with `CREATE OR REPLACE MATERIALIZED LAKE VIEW`). The default materialization is `view`, matching standard dbt behavior. The adapter also uniquely supports `insert_overwrite` for FabricSpark incremental models.
 
 Both Python model support for Fabric DW (via Livy sessions writing through `synapsesql`) and FabricSpark (native PySpark via Livy) are exclusive to this adapter.
 
