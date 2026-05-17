@@ -59,7 +59,7 @@ sequenceDiagram
     alt Underlying session exists (warm)
         HC Livy API-->>Adapter: HC session ID + REPL ID
     else No underlying session
-        Note over HC Livy API,Spark Session: Spark startup: 1-5 minutes
+        Note over HC Livy API,Spark Session: Spark startup
         HC Livy API-->>Adapter: HC session ID + REPL ID
     end
     Adapter->>HC Livy API: POST /sessions/{id}/repls/{replId}/statements
@@ -158,7 +158,7 @@ The Livy API architecture has inherent performance characteristics that are impo
 
 ### Session startup
 
-Creating a new Spark session can take **1-5 minutes**. The adapter reuses sessions within a run, so this overhead is paid once per `dbt run`. Subsequent runs may reuse an existing session if it is still alive. The [high-concurrency Livy](#high-concurrency-livy) session tag is deterministic, so subsequent runs can skip startup entirely by reattaching to a warm session.
+Creating a new Spark session takes some time. The adapter reuses sessions within a run, so this overhead is paid once per `dbt run`. Subsequent runs may reuse an existing session if it is still alive. The [high-concurrency Livy](#high-concurrency-livy) session tag is deterministic, so subsequent runs can skip startup entirely by reattaching to a warm session.
 
 ### Statement execution
 
@@ -221,7 +221,7 @@ See the [Python models guide](python-models.md) for writing and debugging Python
 - **No Spark SQL views** -- only tables and materialized lake views (Fabric lake views) are supported.
 - **No incremental merge strategy** -- the Spark SQL `MERGE` syntax in Fabric Lakehouse is not supported by the adapter. Use `append` or `insert_overwrite` instead.
 - **API rate limiting** -- can slow down large runs with many models.
-- **Session startup time** -- 1-5 minutes for the first statement in a run.
+- **Session startup time** -- creating a new Spark session adds latency to the first statement in a run.
 - **Data Warehouse-only features** -- [CLUSTER BY](cluster-by.md), [warehouse snapshots](warehouse-snapshots.md), and [catalog statistics](catalog-stats.md) are not available for Lakehouse.
 
 ---
