@@ -1,3 +1,5 @@
+from unittest.mock import Mock
+
 import pytest
 
 from dbt.adapters.exceptions.compilation import ApproximateMatchError
@@ -51,6 +53,41 @@ class TestFabricSparkRelationRendering:
             schema="dbo",
             identifier="my_model",
             type=FabricSparkRelationType.Table,
+        )
+        rendered = str(r)
+        assert rendered == "`my_lakehouse`.`dbo`.my_model"
+
+    def test_renders_four_part_name_with_workspace(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace="My Workspace",
+        )
+        rendered = str(r)
+        assert rendered == "`My Workspace`.`my_lakehouse`.`dbo`.my_model"
+
+    def test_workspace_omitted_when_database_excluded(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace="My Workspace",
+        )
+        without_db = r.include(database=False)
+        rendered = str(without_db)
+        assert "`My Workspace`" not in rendered
+        assert rendered == "`dbo`.my_model"
+
+    def test_workspace_none_renders_three_part_name(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace=None,
         )
         rendered = str(r)
         assert rendered == "`my_lakehouse`.`dbo`.my_model"
@@ -123,3 +160,98 @@ class TestFabricSparkRelationCasePreservation:
                 schema="testschema",
                 identifier="my_model",
             )
+
+
+class TestFabricSparkRelationWorkspace:
+    def test_incorporate_preserves_workspace(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace="My Workspace",
+        )
+        r2 = r.incorporate(path={"identifier": "new_model"})
+        assert r2.workspace == "My Workspace"
+        assert "`My Workspace`" in str(r2)
+        assert "new_model" in str(r2)
+
+    def test_incorporate_can_set_workspace(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+        )
+        assert r.workspace is None
+        r2 = r.incorporate(workspace="Other WS")
+        assert r2.workspace == "Other WS"
+        assert "`Other WS`" in str(r2)
+
+    def test_incorporate_can_clear_workspace(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace="My Workspace",
+        )
+        r2 = r.incorporate(workspace=None)
+        assert r2.workspace is None
+        assert "`My Workspace`" not in str(r2)
+        assert str(r2) == "`my_lakehouse`.`dbo`.my_model"
+
+    def test_incorporate_can_override_workspace(self):
+        r = FabricSparkRelation.create(
+            database="my_lakehouse",
+            schema="dbo",
+            identifier="my_model",
+            type=FabricSparkRelationType.Table,
+            workspace="Original WS",
+        )
+        r2 = r.incorporate(workspace="New WS")
+        assert r2.workspace == "New WS"
+        assert "`New WS`" in str(r2)
+        assert "`Original WS`" not in str(r2)
+
+    def test_create_from_pulls_workspace_from_config(self):
+        quoting = Mock()
+        quoting.quoting = {}
+        relation_config = Mock()
+        relation_config.database = "my_lakehouse"
+        relation_config.schema = "dbo"
+        relation_config.identifier = "my_model"
+        relation_config.quoting_dict = {}
+        relation_config.config = {"workspace_name": "Config Workspace"}
+        relation_config.catalog_name = None
+        r = FabricSparkRelation.create_from(quoting, relation_config)
+        assert r.workspace == "Config Workspace"
+        assert "`Config Workspace`" in str(r)
+
+    def test_create_from_without_workspace_config(self):
+        quoting = Mock()
+        quoting.quoting = {}
+        relation_config = Mock()
+        relation_config.database = "my_lakehouse"
+        relation_config.schema = "dbo"
+        relation_config.identifier = "my_model"
+        relation_config.quoting_dict = {}
+        relation_config.config = {}
+        relation_config.catalog_name = None
+        r = FabricSparkRelation.create_from(quoting, relation_config)
+        assert r.workspace is None
+        assert str(r) == "`my_lakehouse`.`dbo`.my_model"
+
+    def test_create_from_workspace_kwarg_takes_precedence(self):
+        quoting = Mock()
+        quoting.quoting = {}
+        relation_config = Mock()
+        relation_config.database = "my_lakehouse"
+        relation_config.schema = "dbo"
+        relation_config.identifier = "my_model"
+        relation_config.quoting_dict = {}
+        relation_config.config = {"workspace_name": "Config WS"}
+        relation_config.catalog_name = None
+        r = FabricSparkRelation.create_from(quoting, relation_config, workspace="Kwarg WS")
+        assert r.workspace == "Kwarg WS"
+        assert "`Kwarg WS`" in str(r)

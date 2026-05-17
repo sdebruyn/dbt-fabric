@@ -1,10 +1,11 @@
 import builtins
 from dataclasses import dataclass, field
+from typing import Any
 
 from dbt_common.dataclass_schema import StrEnum
 
 from dbt.adapters.base.relation import BaseRelation, InformationSchema
-from dbt.adapters.contracts.relation import Policy
+from dbt.adapters.contracts.relation import ComponentName, HasQuoting, Policy, RelationConfig
 from dbt.adapters.spark.relation import SparkIncludePolicy, SparkQuotePolicy
 from dbt.adapters.utils import classproperty
 
@@ -47,6 +48,7 @@ class FabricSparkRelation(BaseRelation):
     quote_character: str = "`"
     require_alias: bool = False
     information: str | None = None
+    workspace: str | None = None
     replaceable_relations: frozenset[FabricSparkRelationType] = field(
         default_factory=lambda: frozenset(
             {
@@ -66,6 +68,24 @@ class FabricSparkRelation(BaseRelation):
     type: FabricSparkRelationType | None = None  # type: ignore
 
     @classmethod
+    def create_from(
+        cls,
+        quoting: HasQuoting,
+        relation_config: RelationConfig,
+        **kwargs: Any,
+    ) -> "FabricSparkRelation":
+        if "workspace" not in kwargs:
+            cfg = getattr(relation_config, "config", None)
+            if cfg is not None:
+                try:
+                    ws_name = cfg.get("workspace_name")
+                except (AttributeError, TypeError):
+                    ws_name = None
+                if ws_name:
+                    kwargs["workspace"] = ws_name
+        return super().create_from(quoting, relation_config, **kwargs)
+
+    @classmethod
     def try_translate_type(cls, relation_type: str | None) -> FabricSparkRelationType | None:
         if relation_type is None:
             return None
@@ -82,6 +102,26 @@ class FabricSparkRelation(BaseRelation):
     @classproperty
     def get_relation_type(cls) -> builtins.type[FabricSparkRelationType]:
         return FabricSparkRelationType
+
+    def render(self) -> str:
+        base = super().render()
+        # Require identifier so that schema-level renders (without_identifier())
+        # stay workspace-free — needed for check_schema_exists and local DDL.
+        if (
+            self.workspace
+            and self.identifier
+            and self.database
+            and self.include_policy.get_part(ComponentName.Database)
+            and self.include_policy.get_part(ComponentName.Identifier)
+        ):
+            quoted_ws = self.quoted(self.workspace)
+            return f"{quoted_ws}.{base}" if base else quoted_ws
+        return base
+
+    def incorporate(self, **kwargs: Any) -> "FabricSparkRelation":
+        if "workspace" not in kwargs:
+            kwargs["workspace"] = self.workspace
+        return super().incorporate(**kwargs)
 
     def information_schema(self, view_name=None) -> InformationSchema:
         # some of our data comes from jinja, where things can be `Undefined`.

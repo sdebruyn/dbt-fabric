@@ -5,6 +5,7 @@
         identifier=tmp_identifier,
         schema=target_relation.schema,
         database=target_relation.database,
+        workspace=target_relation.workspace,
         type='table'
     ) -%}
 

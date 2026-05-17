@@ -8,6 +8,8 @@
   {# dbt-spark: file_format config + validation removed -- Fabric Lakehouse only supports Delta #}
   {%- set grant_config = config.get('grants') -%}
 
+  {%- set workspace_name = config.get('workspace_name') -%}
+
   {# dbt-spark: database=none -- FabricSpark supports 3-part names #}
   {% set target_relation_exists, target_relation = get_or_create_relation(
           database=model.database,
@@ -15,11 +17,19 @@
           identifier=target_table,
           type='table') -%}
 
+  {# Propagate workspace for cross-workspace 4-part naming #}
+  {%- if workspace_name -%}
+    {% set target_relation = target_relation.incorporate(workspace=workspace_name) %}
+  {%- endif -%}
+
   {%- if not target_relation.is_table -%}
     {% do exceptions.relation_wrong_type(target_relation, 'table') %}
   {%- endif -%}
 
-  {% if not adapter.check_schema_exists(model.database, model.schema) %}
+  {# dbt-spark: unconditional check_schema_exists -- cross-workspace skipped because
+     create_schema uses without_identifier() which strips workspace from render().
+     Cross-workspace users must ensure the target schema exists beforehand. #}
+  {% if not workspace_name and not adapter.check_schema_exists(model.database, model.schema) %}
     {% do create_schema(target_relation) %}
   {% endif %}
 
