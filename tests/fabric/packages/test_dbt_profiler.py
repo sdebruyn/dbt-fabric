@@ -48,10 +48,10 @@ class TestDbtProfiler(BaseDbtPackageTests):
     def test_package(self, project, dbt_core_bug_workaround):
         run_dbt(["deps"])
         results = run_dbt(["build"], expect_pass=False)
-        errors = [r for r in results.results if r.status == "error"]
+        failures = [r for r in results.results if r.status in ("error", "fail")]
         # expect_column_to_exist uses Jinja True/False literals directly in SQL,
         # which is invalid in T-SQL (no boolean keywords). This test in
         # dbt_expectations does not use dispatch, so it cannot be overridden.
         expected = "expect_column_to_exist"
-        unexpected = [e for e in errors if expected not in e.node.unique_id]
-        assert not unexpected, f"Unexpected errors: {[e.node.unique_id for e in unexpected]}"
+        unexpected = [f for f in failures if expected not in f.node.unique_id]
+        assert not unexpected, f"Unexpected failures: {[f.node.unique_id for f in unexpected]}"

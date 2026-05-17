@@ -18,6 +18,7 @@ where value_field not in (
         {% if quote -%}
         '{{ value }}'
         {%- elif value is boolean or value | string | upper in ('TRUE', 'FALSE') -%}
+        {# T-SQL has no TRUE/FALSE keywords unlike PostgreSQL, so quote them as strings #}
         '{{ value | string | upper }}'
         {%- else -%}
         {{ value }}
