@@ -46,7 +46,7 @@
         ) dbt_ah_b
         on dbt_ah_a.dbt_audit_surrogate_key = dbt_ah_b.dbt_audit_surrogate_key
     ) dbt_ah_calculated
-    {#- lateral view inline replaces upstream's UNION ALL over CTE `calculated` -#}
+    {#- lateral view inline replaces upstream's UNION ALL over CTE `calculated` #}
     lateral view inline(array(
         {% for column in columns %}
             named_struct('column_name', '{{ column }}', 'has_difference', {{ column | lower }}_has_difference)
