@@ -84,7 +84,7 @@ class TestDbtDate(BaseDbtPackageTests):
     time_stamp_utc. round_timestamp adds 12h then truncates: 14:35+12h = next
     day. Upstream hardcodes '2021-06-07' assuming a non-UTC offset; we fix it. -#}
 {% macro get_test_dates() -%}
-{{ dbt_date_integration_tests.get_test_dates() | replace("'2021-06-07' as DATETIME2(6)) as rounded_timestamp,", "'2021-06-08' as DATETIME2(6)) as rounded_timestamp,") }}
+{{ dbt_date_integration_tests.get_test_dates() | replace("'2021-06-07' as datetime2(6)) as rounded_timestamp,", "'2021-06-08' as datetime2(6)) as rounded_timestamp,") }}
 {%- endmacro %}
 """,
         }
