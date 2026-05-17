@@ -20,12 +20,19 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
     def models_config(self):
         return {
             "audit_helper_integration_tests": {
+                # struct models use _basic_json_function which only has
+                # implementations for specific adapters, not fabricspark
                 "unit_test_placeholder_models": {
                     "unit_test_struct_model_a": {"+enabled": False},
                     "unit_test_struct_model_b": {"+enabled": False},
                 },
+                # unit_compare_classify_struct depends on the disabled struct
+                # models; unit_quick_are_queries_identical calls
+                # quick_are_queries_identical() which is not implemented for
+                # fabricspark; remaining wrappers depend on these
                 "unit_test_wrappers": {"+enabled": False},
                 "data_tests": {
+                    # Spark: distinct window functions are unsupported
                     "compare_and_classify_query_results": {"+enabled": False},
                 },
             }
