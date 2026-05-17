@@ -77,7 +77,7 @@ dispatch:
 The key insight is that `'dbt'` is the `GLOBAL_PROJECT_NAME` constant in dbt-core. When `get_from_package("dbt", macro_name)` is called during dispatch, it searches the `global_project_namespace` — which contains all adapter-internal macros (everything under `src/dbt/include/fabric/macros/`). This means putting `'dbt'` first in the `search_order` makes dbt find our `fabric__create_external_table` before the package's version.
 
 When adding override macros for a community package:
-1. Place the override macros in `src/dbt/include/fabric/macros/dbt_package_support/<package_name>/`
+1. Place the override macros in `src/dbt/include/fabric/macros/dbt_package_support/<package_name>/` (or `fabricspark/` equivalent)
 2. Only override leaf macros that the package dispatches to — don't override orchestration macros that already use dispatched calls
 3. Document the required `dispatch` config in the docs page for that feature
 
@@ -311,6 +311,7 @@ CI authenticates to Azure via OIDC (federated credentials, no secrets stored). T
 - **Quote style**: double quotes
 - **Lint rules**: isort (`I`) + no commented-out code (`ERA`)
 - **No comments in code** unless the _why_ is non-obvious
+- **Macro overrides require inline Jinja comments**: every macro that overrides another macro (adapter base classes, dbt-adapters, dbt-spark, or community packages) must have a `{#- ... -#}` header comment stating which macro it overrides (source + name), what specifically differs, and why. Annotate individual lines/blocks that diverge from upstream so a reader can compare without opening the original. Use `{#- ... #}` (no trailing dash) when the comment precedes SQL keywords to avoid whitespace-stripping issues
 - **Always run ruff before committing**: `uv run ruff format .` and `uv run ruff check --fix .` must pass before every commit
 - **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the project targets Python 3.13 and has no `from typing import Union` imports
 - **Class constants at the top**: group all class-level constants together at the top of the class body, before any methods
