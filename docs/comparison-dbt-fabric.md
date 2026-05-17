@@ -2,16 +2,14 @@
 
 This document provides a detailed technical comparison between this adapter ([sdebruyn/dbt-fabric](https://github.com/sdebruyn/dbt-fabric), published as `dbt-fabric-samdebruyn`) and the upstream Microsoft repository ([microsoft/dbt-fabric](https://github.com/microsoft/dbt-fabric), published as `dbt-fabric`). For a higher-level overview, see the [feature comparison](feature-comparison.md).
 
-**Last updated:** 2026-05-16
-
 ---
 
 ## Compute engine support
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **Fabric Data Warehouse (T-SQL)** | Yes (`fabric` adapter type) | Yes (`fabric` adapter type) |
-| **Fabric Lakehouse / Spark SQL** | Yes (`fabricspark` adapter type) | No |
+| **Fabric Data Warehouse (T-SQL)** | ✅ (`fabric` adapter type) | ✅ (`fabric` adapter type) |
+| **Fabric Lakehouse / Spark SQL** | ✅ (`fabricspark` adapter type) | ❌ |
 | **Number of adapter types** | 2 | 1 |
 
 This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse via Spark SQL over Livy sessions. This includes a complete PEP 249 cursor/connection implementation, Livy session management, and 20 FabricSpark-specific macro files. The upstream supports only the Data Warehouse (T-SQL) adapter.
@@ -20,18 +18,18 @@ This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse
 
 | Materialization | dbt-fabric-samdebruyn (Fabric) | dbt-fabric-samdebruyn (FabricSpark) | microsoft/dbt-fabric |
 |---|---|---|---|
-| Table | Yes | Yes | Yes |
-| View | Yes | No (Fabric Lakehouse limitation) | Yes |
-| Incremental (append) | Yes | Yes | Yes |
-| Incremental (delete+insert) | Yes | No | Yes |
-| Incremental (merge) | Yes | Yes | Yes |
-| Incremental (insert_overwrite) | No | Yes | No |
-| Incremental (microbatch) | Yes | Yes | Yes |
-| Ephemeral | Yes | Yes | Yes |
-| Snapshot | Yes | Yes | Yes |
-| Clone | Yes | Yes | Yes |
-| Materialized View | No | Yes (Fabric lake views) | No |
-| Python models | Yes (via Livy) | Yes (via Livy) | No |
+| Table | ✅ | ✅ | ✅ |
+| View | ✅ | ❌ (Fabric Lakehouse limitation) | ✅ |
+| Incremental (append) | ✅ | ✅ | ✅ |
+| Incremental (delete+insert) | ✅ | ❌ | ✅ |
+| Incremental (merge) | ✅ | ✅ | ✅ |
+| Incremental (insert_overwrite) | ❌ | ✅ | ❌ |
+| Incremental (microbatch) | ✅ | ✅ | ✅ |
+| Ephemeral | ✅ | ✅ | ✅ |
+| Snapshot | ✅ | ✅ | ✅ |
+| Clone | ✅ | ✅ | ✅ |
+| Materialized View | ❌ | ✅ (Fabric lake views) | ❌ |
+| Python models | ✅ (via Livy) | ✅ (via Livy) | ❌ |
 
 The `fabricspark` adapter supports `materialized_view` as a materialization (creating Fabric lake views with `CREATE OR REPLACE MATERIALIZED LAKE VIEW`). The default materialization is `view`, matching standard dbt behavior. The adapter also uniquely supports `insert_overwrite` for FabricSpark incremental models.
 
@@ -41,20 +39,20 @@ Both Python model support for Fabric DW (via Livy sessions writing through `syna
 
 | Authentication Method | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| ActiveDirectoryServicePrincipal | Yes | Yes |
-| ActiveDirectoryPassword | Yes | Yes |
-| ActiveDirectoryInteractive | Yes | Yes |
-| ActiveDirectoryDefault (auto) | Yes (default) | Yes |
-| Azure CLI | Yes | Yes |
-| Environment credentials | Yes | Yes |
-| Device Code Flow | Yes | No |
-| Managed Identity (MSI) | Yes | No |
-| Fabric Notebook (`notebookutils`) | Yes (currently broken) | Yes (`fabricnotebook`) |
-| Synapse Spark (mssparkutils) | No (Synapse-specific, not applicable to Fabric) | Yes (`synapsespark`) |
-| ActiveDirectoryAccessToken | No (removed) | Yes |
-| Windows Login | Yes | Yes |
-| `token_credential` (custom class) | Yes | No |
-| `workload_identity` (federated) | Yes | No |
+| ActiveDirectoryServicePrincipal | ✅ | ✅ |
+| ActiveDirectoryPassword | ✅ | ✅ |
+| ActiveDirectoryInteractive | ✅ | ✅ |
+| ActiveDirectoryDefault (auto) | ✅ (default) | ✅ |
+| Azure CLI | ✅ | ✅ |
+| Environment credentials | ✅ | ✅ |
+| Device Code Flow | ✅ | ❌ |
+| Managed Identity (MSI) | ✅ | ❌ |
+| Fabric Notebook (`notebookutils`) | ✅ (currently broken) | ✅ (`fabricnotebook`) |
+| Synapse Spark (mssparkutils) | ❌ (Synapse-specific, not applicable to Fabric) | ✅ (`synapsespark`) |
+| ActiveDirectoryAccessToken | ❌ (removed) | ✅ |
+| Windows Login | ✅ | ✅ |
+| `token_credential` (custom class) | ✅ | ❌ |
+| `workload_identity` (federated) | ✅ | ❌ |
 | SQL Authentication | Rejected | Rejected |
 
 This adapter supports 11 authentication methods via a unified `FabricTokenProvider` class. Notable additions over upstream:
@@ -70,7 +68,7 @@ The upstream uses separate standalone functions per auth method, while this adap
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
 | **SQL driver** | `mssql-python` (bundles ODBC Driver 18) | `pyodbc` (requires separate ODBC install) |
-| **Separate ODBC driver install** | No (bundled in Python package) | Yes (ODBC Driver 18 for SQL Server) |
+| **Separate ODBC driver install** | ❌ (bundled in Python package) | ✅ (ODBC Driver 18 for SQL Server) |
 | **System dependency** | None (all bundled) | ODBC driver manager + driver |
 | **Connection pooling** | Via mssql-python | `pyodbc.pooling = True` |
 
@@ -86,8 +84,8 @@ The upstream has only a single `get_tables_by_pattern` utility macro and no pack
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **OPENROWSET source macro** | No | Yes (`openrowset_source()`) |
-| **dbt-external-tables override** | Yes (creates views wrapping OPENROWSET) | No |
+| **OPENROWSET source macro** | ❌ | ✅ (`openrowset_source()`) |
+| **dbt-external-tables override** | ✅ (creates views wrapping OPENROWSET) | ❌ |
 | **Supported formats** | Parquet, CSV, JSONL (via dbt-external-tables) | Parquet, CSV, JSONL (via `openrowset_source()`) |
 
 The upstream implements a standalone `openrowset_source()` macro for file-based ingestion. This adapter instead provides this functionality through a [dbt-external-tables](external-tables.md) package override, which creates views wrapping OPENROWSET queries. This integrates with dbt's standard source staging workflow (`dbt run-operation stage_external_sources`), providing lineage tracking and source freshness support out of the box.
@@ -123,111 +121,78 @@ The upstream's warehouse snapshot approach hooks into the connection manager's `
 
 | Test Area | dbt-fabric-samdebruyn (Fabric) | dbt-fabric-samdebruyn (FabricSpark) | microsoft/dbt-fabric |
 |---|---|---|---|
-| Basic operations | Yes | Yes | Yes |
-| Column types | Yes | Yes | Yes |
-| Concurrency | Yes | Yes | Yes |
-| Catalog | Yes | Yes | Yes |
-| Incremental | Yes | Yes | Yes |
-| Microbatch | Yes | - | Yes |
-| Ephemeral | Yes | Yes | Yes |
-| Snapshots | Yes | Yes | Yes |
-| Snapshot configs | Yes | - | Yes |
-| Constraints | Yes | Yes | Yes |
-| dbt clone | Yes | Yes | Yes |
-| dbt show | Yes | Yes | Yes |
-| dbt debug | Yes | Yes | Yes |
-| Store test failures | Yes | Yes | Yes |
-| Unit testing | Yes | Yes | - |
-| Aliases | Yes | Yes | Yes |
-| Caching | Yes | Yes | Yes |
-| Persist docs | Yes | Yes | - |
-| Hooks | Yes | Yes | - |
-| Query comment | Yes | Yes | Yes |
-| Quoting | Yes | - | Yes |
-| Schema | Yes | - | Yes |
-| Sources | Yes | - | Yes |
-| Seeds | Yes | Yes | Yes |
-| Relations | Yes | Yes | Yes |
-| Functions | Yes | Yes | - |
-| Sample mode | Yes | Yes | - |
-| Empty | Yes | Yes | Yes |
-| Grants | Yes | Yes | - |
-| Python models | Yes | Yes | - |
-| Purview integration | Yes | Yes | - |
-| Warehouse snapshots | Yes | - | - |
-| Data types | Yes | Yes | Yes |
-| Null compare | Yes | Yes | Yes |
-| Timestamps | Yes | Yes | Yes |
-| Cluster by | Yes | - | Yes |
-| List relations | Yes | Yes | Yes |
-| Utility functions | Yes | Yes | Yes |
-| Package integration tests | [Yes](packages/index.md) | [Yes](packages/index.md) | - |
-| OPENROWSET | Yes (via dbt-external-tables) | - | Yes |
+| Basic operations | ✅ | ✅ | ✅ |
+| Column types | ✅ | ✅ | ✅ |
+| Concurrency | ✅ | ✅ | ✅ |
+| Catalog | ✅ | ✅ | ✅ |
+| Incremental | ✅ | ✅ | ✅ |
+| Microbatch | ✅ | - | ✅ |
+| Ephemeral | ✅ | ✅ | ✅ |
+| Snapshots | ✅ | ✅ | ✅ |
+| Snapshot configs | ✅ | - | ✅ |
+| Constraints | ✅ | ✅ | ✅ |
+| dbt clone | ✅ | ✅ | ✅ |
+| dbt show | ✅ | ✅ | ✅ |
+| dbt debug | ✅ | ✅ | ✅ |
+| Store test failures | ✅ | ✅ | ✅ |
+| Unit testing | ✅ | ✅ | - |
+| Aliases | ✅ | ✅ | ✅ |
+| Caching | ✅ | ✅ | ✅ |
+| Persist docs | ✅ | ✅ | - |
+| Hooks | ✅ | ✅ | - |
+| Query comment | ✅ | ✅ | ✅ |
+| Quoting | ✅ | - | ✅ |
+| Schema | ✅ | - | ✅ |
+| Sources | ✅ | - | ✅ |
+| Seeds | ✅ | ✅ | ✅ |
+| Relations | ✅ | ✅ | ✅ |
+| Functions | ✅ | ✅ | - |
+| Sample mode | ✅ | ✅ | - |
+| Empty | ✅ | ✅ | ✅ |
+| Grants | ✅ | ✅ | - |
+| Python models | ✅ | ✅ | - |
+| Purview integration | ✅ | ✅ | - |
+| Warehouse snapshots | ✅ | - | - |
+| Data types | ✅ | ✅ | ✅ |
+| Null compare | ✅ | ✅ | ✅ |
+| Timestamps | ✅ | ✅ | ✅ |
+| Cluster by | ✅ | - | ✅ |
+| List relations | ✅ | ✅ | ✅ |
+| Utility functions | ✅ | ✅ | ✅ |
+| Package integration tests | [✅](packages/index.md) | [✅](packages/index.md) | - |
+| OPENROWSET | ✅ (via dbt-external-tables) | - | ✅ |
 
 ---
 
 ## dbt Core compatibility
 
-### Dependencies
-
-| Dependency | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
-|---|---|---|
-| **dbt-common** | >=1.37.3, <2.0 | >=1.0.4, <2.0 |
-| **dbt-adapters** | >=1.22.6, <2.0 | >=1.1.1, <2.0 |
-| **dbt-core** (dev) | >=1.9.6, <1.13.0 | >=1.8.0 |
-| **dbt-spark** | >=1.10.1 (optional) | Not used |
-| **SQL driver** | mssql-python >=1.4.0 | pyodbc >=5.2.0 |
-| **Azure Identity** | >=1.12.0 | >=1.14.0 |
-
-### Python version support
-
-| Python Version | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
-|---|---|---|
-| 3.8-3.10 | No | Listed in classifiers |
-| 3.11 | Yes (tested in CI) | Yes |
-| 3.12 | Yes (tested in CI) | Not listed |
-| 3.13 | Yes (tested in CI, primary) | Not listed |
+For supported dbt-core and Python versions, see the [compatibility page](compatibility.md).
 
 ### dbt feature compatibility
 
 | dbt Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **Microbatch incremental** | Yes | Yes |
-| **Cluster by** | Yes | Yes |
-| **dbt show** | Yes | Yes |
-| **dbt clone** | Yes | Yes |
-| **Unit testing** | Yes | Yes (custom macros) |
-| **Sample mode** | Yes | Not tested |
-| **Functions** | Yes | No |
+| **Microbatch incremental** | ✅ | ✅ |
+| **Cluster by** | ✅ | ✅ |
+| **dbt show** | ✅ | ✅ |
+| **dbt clone** | ✅ | ✅ |
+| **Unit testing** | ✅ | ✅ |
+| **Sample mode** | ✅ | Not tested |
+| **Functions** | ✅ | ❌ |
 
 ---
 
-## CI/CD
+## CI/CD and maturity
 
 | Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
 |---|---|---|
-| **DW test matrix** | Python 3.11/3.12/3.13 on weekly; 3.13 on PR/push | Python 3.11 only |
-| **DE (Spark) test matrix** | Weekly + on-demand via `/test-de` PR comment | N/A |
-| **Auth in CI** | OIDC federated credentials (`workload_identity`) | OIDC via Azure login action |
-| **Runner** | `ubuntu-latest` | Custom Docker container |
-| **Package manager** | uv | pip |
-| **Concurrency control** | Yes | No |
-| **Test log artifacts** | Uploaded on every run | Not uploaded |
-| **Path-based triggers** | Yes | No |
-
----
-
-## Maturity
-
-| Metric | dbt-fabric-samdebruyn | microsoft/dbt-fabric |
-|---|---|---|
-| **Total commits on main** | 1,671 | 1,207 |
-| **Commits since Jan 2024** | 577 | 113 |
-| **Last commit date** | 2026-05-16 | 2026-03-29 |
-| **Latest release** | v1.11.3b0 | v1.9.9 |
-| **dbt Core compatibility** | Up to 1.12 | Up to 1.10 |
+| **Integration tests on PR** | ✅ (runs on every push to main and on-demand per PR) | ❌ (no automated test runs on PRs) |
+| **Multi-version Python testing** | ✅ (3.11, 3.12, 3.13) | Only 3.11 |
+| **FabricSpark (Lakehouse) testing** | ✅ (weekly + on-demand) | N/A |
+| **Latest dbt Core support** | Up to 1.12 | Up to 1.10 |
+| **Active development** | ✅ (weekly releases) | Sporadic |
 | **Build system** | Hatchling + uv | setuptools + pip |
-| **Documentation** | Dedicated docs site | 1 page (OPENROWSET) |
+| **Documentation** | [Dedicated docs site](https://dbt-fabric.debruyn.dev) | 1 page (OPENROWSET) |
 | **Type annotations** | Modern (PEP 604) | Legacy (typing module) |
 | **Linter** | ruff | pre-commit (flake8, black, mypy) |
 | **Code review** | Human-reviewed | Signs of unreviewed AI-generated code (see below) |

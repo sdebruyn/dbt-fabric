@@ -5,9 +5,6 @@ This report provides a detailed technical comparison between the **FabricSpark a
 | | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
 | **PyPI package** | `dbt-fabric-samdebruyn[spark]` | `dbt-fabricspark` |
-| **Latest version** | v1.11.3b0 | v1.11.0 |
-
-**Last updated:** 2026-05-16
 
 ---
 
@@ -46,14 +43,14 @@ The upstream is **fully standalone**: `FabricSparkAdapter(SQLAdapter)`. No dbt-s
 
 | Materialization | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Table** | Yes (via dbt-spark) | Yes (custom implementation) |
-| **View** | Yes | Yes |
+| **Table** | ✅ (via dbt-spark) | ✅ (custom implementation) |
+| **View** | ✅ | ✅ |
 | **Incremental** | append, merge, insert_overwrite, microbatch | append, merge, insert_overwrite, microbatch |
-| **Snapshot** | Yes | Yes |
-| **Ephemeral** | Yes | Yes |
-| **Materialized View / Lake View** | Yes (standard dbt MV pattern) | Yes (Fabric-specific MLV with REST API refresh) |
-| **Clone** | Yes | Yes |
-| **Seed** | Yes (via dbt-spark) | Yes (custom implementation) |
+| **Snapshot** | ✅ | ✅ |
+| **Ephemeral** | ✅ | ✅ |
+| **Materialized View / Lake View** | ✅ (standard dbt MV pattern) | ✅ (Fabric-specific MLV with REST API refresh) |
+| **Clone** | ✅ | ✅ |
+| **Seed** | ✅ (via dbt-spark) | ✅ (custom implementation) |
 
 Notable differences:
 
@@ -63,26 +60,26 @@ Notable differences:
 
 | Method | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Azure CLI** | Yes | Yes |
-| **Service Principal** | Yes | Yes |
-| **Token Credential** | Yes | Yes |
-| **Workload Identity** | Yes (federated OIDC) | No |
-| **Static Access Token** | Yes | Yes |
-| **Fabric Notebook** | Yes (currently broken due to Microsoft scope issue) | Yes |
+| **Azure CLI** | ✅ | ✅ |
+| **Service Principal** | ✅ | ✅ |
+| **Token Credential** | ✅ | ✅ |
+| **Workload Identity** | ✅ (federated OIDC) | ❌ |
+| **Static Access Token** | ✅ | ✅ |
+| **Fabric Notebook** | ✅ (currently broken due to Microsoft scope issue) | ✅ |
 
 ### Livy session management
 
 | Feature | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | Yes (HC-only, instance-based lifecycle) | Yes (default on, `atexit` cleanup) |
+| **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | ✅ (HC-only, instance-based lifecycle) | ✅ (default on, `atexit` cleanup) |
 | **Session creation** | `FabricApiClient` singleton | `LivySessionManager` with static globals |
 | **Session reuse** | Deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
 | **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
 | **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
 | **Session idle timeout** | 15 min default | 30 min default, configurable |
-| **Local Livy mode** | No | Yes (`livy_mode: local`) |
+| **Local Livy mode** | ❌ | ✅ (`livy_mode: local`) |
 | **Statement timeout** | 24 hours | 12 hours (configurable) |
-| **Thread-safe token refresh** | No | Yes (`_token_lock`) |
+| **Thread-safe token refresh** | ❌ | ✅ (`_token_lock`) |
 
 ### Unique to this adapter
 
@@ -120,20 +117,13 @@ Notable differences:
 |---|---|---|
 | **Testing approach** | Integration tests against real Fabric | Unit tests (mock) + functional tests (real infra) |
 | **dbt-tests-adapter coverage** | Broad (standard adapter base classes) | Narrower (custom test suite) |
-| **Community package tests** | [Yes](packages/index.md) | No |
+| **Community package tests** | [✅](packages/index.md) | ❌ |
 
 ---
 
 ## dbt Core compatibility
 
-| Aspect | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
-|---|---|---|
-| **dbt-adapters** | >=1.22.6, <2.0 | >=1.7, <2.0 |
-| **dbt-common** | >=1.37.3, <2.0 | >=1.10, <2.0 |
-| **dbt-core** (dev) | >=1.9.6, <1.13.0 | >=1.8.0 |
-| **dbt-spark** | >=1.10.1 (optional) | Not used |
-| **Python** | >=3.11, <3.14 | >=3.10, <3.14 |
-| **azure-identity** | >=1.12.0 | >=1.21.0 |
+For supported dbt-core and Python versions, see the [compatibility page](compatibility.md).
 
 ---
 
@@ -141,9 +131,9 @@ Notable differences:
 
 | Practice | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Inherits official base** | Yes (SparkAdapter + BaseFabricAdapter) | Partially (SQLAdapter only) |
-| **Capability declarations** | Yes | No |
-| **`@available` methods** | Yes (inherited) | Yes (MLV, schema detection) |
+| **Inherits official base** | ✅ (SparkAdapter + BaseFabricAdapter) | Partially (SQLAdapter only) |
+| **Capability declarations** | ✅ | ❌ |
+| **`@available` methods** | ✅ (inherited) | ✅ (MLV, schema detection) |
 | **Plugin dependencies** | `dependencies=["spark"]` | None |
 | **Dispatch fallback** | dbt-spark macros available | Must reimplement everything |
 
@@ -153,13 +143,10 @@ Notable differences:
 
 | | dbt-fabric-samdebruyn | microsoft/dbt-fabricspark |
 |---|---|---|
-| **Total commits** | 500+ since Jan 2025 | 329 total, ~278 since Jan 2025 |
-| **Release tags** | 67+ (v1.4.0rc1 to v1.11.3b0) | 8 (v1.7.0rc1 to v1.11.0) |
 | **Python** | 3.11-3.13 | 3.10-3.13 |
-| **Documentation** | [Docs website](https://dbt-fabric.debruyn.dev) + development guide | README + CONTRIBUTING.md |
-| **Code style** | ruff, PEP 604, line-length 99 | ruff, older typing style |
-
-Both repositories use the MIT License and the hatchling build system.
+| **Documentation** | [Dedicated docs site](https://dbt-fabric.debruyn.dev) | README + CONTRIBUTING.md |
+| **Code style** | ruff, PEP 604 | ruff, older typing style |
+| **License** | MIT | MIT |
 
 ---
 
