@@ -113,7 +113,16 @@ class ProjectSync:
             RuntimeError: If uv export fails.
         """
         result = subprocess.run(
-            ["uv", "export", "--format", "requirements.txt", "--all-extras", "--group", "dev"],
+            [
+                "uv",
+                "export",
+                "--format",
+                "requirements.txt",
+                "--all-extras",
+                "--group",
+                "dev",
+                "--no-emit-project",
+            ],
             capture_output=True,
             text=True,
             cwd=self._project_root,

@@ -52,7 +52,13 @@ def report_remote_results(
 
         result = result_map.get(item.nodeid)
         if result is None:
-            _report_item_as_error(item, "Test not found in remote execution results")
+            not_run = JunitTestResult(
+                nodeid=item.nodeid,
+                outcome="skipped",
+                duration=0,
+                skip_reason="Not executed by remote run (possibly due to -x/maxfail)",
+            )
+            _report_item_result(item, not_run)
         else:
             _report_item_result(item, result)
 

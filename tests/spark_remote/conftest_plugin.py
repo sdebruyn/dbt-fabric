@@ -51,8 +51,9 @@ def remote_runtestloop(session: pytest.Session) -> bool:
 def _build_remote_args(session: pytest.Session) -> list[str]:
     """Extract relevant pytest options from the local session for remote forwarding.
 
-    Forwards -k, -v, --de, -x, and positional test paths. The --junitxml path
-    is set by the remote entry point based on the run ID.
+    Forwards -k, -v, --de, -x, --with-python, --with-grants, and positional
+    test paths. The --junitxml path is set by the remote entry point based on
+    the run ID.
 
     Args:
         session: The local pytest Session to extract options from.
@@ -74,6 +75,12 @@ def _build_remote_args(session: pytest.Session) -> list[str]:
 
     if config.getoption("-x", default=False):
         args.append("-x")
+
+    if config.getoption("--with-python", default=False):
+        args.append("--with-python")
+
+    if config.getoption("--with-grants", default=False):
+        args.append("--with-grants")
 
     positional = config.args
     if positional:

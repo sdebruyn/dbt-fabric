@@ -138,7 +138,8 @@ class RemoteTestOrchestrator:
 
         job_client = SparkJobClient(self._api_client)
 
-        job_definition_name = f"{self._job_name}-{self._worktree_key}"
+        lakehouse_short = lakehouse_id[:8]
+        job_definition_name = f"{self._job_name}-{self._worktree_key}-{lakehouse_short}"
         existing = job_client.find_by_name(job_definition_name)
         if existing:
             item_id = existing["id"]
