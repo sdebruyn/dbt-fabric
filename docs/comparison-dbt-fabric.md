@@ -10,7 +10,6 @@ This document provides a detailed technical comparison between this adapter ([sd
 |---|---|---|
 | **Fabric Data Warehouse (T-SQL)** | ✅ (`fabric` adapter type) | ✅ (`fabric` adapter type) |
 | **Fabric Lakehouse / Spark SQL** | ✅ (`fabricspark` adapter type) | ❌ |
-| **Number of adapter types** | 2 | 1 |
 
 This adapter provides a full second adapter (`fabricspark`) for Fabric Lakehouse via Spark SQL over Livy sessions. This includes a complete PEP 249 cursor/connection implementation, Livy session management, and 20 FabricSpark-specific macro files. The upstream supports only the Data Warehouse (T-SQL) adapter.
 
