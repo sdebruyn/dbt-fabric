@@ -80,7 +80,6 @@ When adding override macros for a community package:
 1. Place the override macros in `src/dbt/include/fabric/macros/dbt_package_support/<package_name>/` (or `fabricspark/` equivalent)
 2. Only override leaf macros that the package dispatches to — don't override orchestration macros that already use dispatched calls
 3. Document the required `dispatch` config in the docs page for that feature
-4. Add inline Jinja comments (`{#- ... -#}`) documenting: which upstream macro is overridden, what specifically differs, and why. Annotate individual lines/blocks that diverge from upstream so a reader can compare without opening the original
 
 ### `@available` decorator
 
@@ -312,6 +311,7 @@ CI authenticates to Azure via OIDC (federated credentials, no secrets stored). T
 - **Quote style**: double quotes
 - **Lint rules**: isort (`I`) + no commented-out code (`ERA`)
 - **No comments in code** unless the _why_ is non-obvious
+- **Macro overrides require inline Jinja comments**: every macro that overrides an upstream or community package macro must have a `{#- ... -#}` header comment stating which macro it overrides (package + name), what specifically differs, and why. Annotate individual lines/blocks that diverge from upstream so a reader can compare without opening the original. Use `{#- ... #}` (no trailing dash) when the comment precedes SQL keywords to avoid whitespace-stripping issues
 - **Always run ruff before committing**: `uv run ruff format .` and `uv run ruff check --fix .` must pass before every commit
 - **PEP 604 union syntax**: use `X | Y` instead of `typing.Union[X, Y]` — the project targets Python 3.13 and has no `from typing import Union` imports
 - **Class constants at the top**: group all class-level constants together at the top of the class body, before any methods
