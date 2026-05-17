@@ -186,7 +186,7 @@ For supported dbt-core and Python versions, see the [compatibility page](compati
 | **Multi-version Python testing** | ✅ (3.11, 3.12, 3.13) | Only 3.11 |
 | **FabricSpark (Lakehouse) testing** | ✅ (weekly + on-demand) | N/A |
 | **Latest dbt Core support** | Up to 1.12 | Up to 1.10 |
-| **Commits since Jan 2024** | 577 | 113 |
+| **Commits since Jan 2024** | 550+ | ~100 |
 | **Active development** | ✅ | Sporadic |
 | **Build system** | Hatchling + uv | setuptools + pip |
 | **Documentation** | [Dedicated docs site](https://dbt-fabric.debruyn.dev) | 1 page (OPENROWSET) |
