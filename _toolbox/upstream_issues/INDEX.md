@@ -19,7 +19,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 
 - [x] 01 — `varchar(8000)` silent string-truncation
 - [x] 02 — Case-sensitive Fabric DWHs broken
-- [ ] 03 — `apply_grants` misses Entra-principal grants
+- [x] 03 — `apply_grants` misses Entra-principal grants
 - [ ] 04 — Pre/post hooks fail (`commit;` emitted)
 - [ ] 05 — CTAS via `EXEC('...')` breaks on apostrophes
 - [ ] 06 — `get_response` drops warnings + statement ID
