@@ -61,6 +61,8 @@ The `dbt` entry in the search order tells dbt to check the adapter's built-in ma
 | [dbt-audit-helper](dbt-audit-helper.md) | 0.13.0 | :white_check_mark: Tested | :white_check_mark: Tested |
 | [dbt-external-tables](dbt-external-tables.md) | 0.11.0 | :white_check_mark: Tested | :x: Not applicable |
 | [dbt-profiler](dbt-profiler.md) | 1.0.0 | :white_check_mark: Tested | :white_check_mark: Tested |
+| [dbt-project-evaluator](dbt-project-evaluator.md) | 1.2.4 | :x: Not compatible ([upstream PR](https://github.com/dbt-labs/dbt-project-evaluator/pull/576)) | :white_check_mark: Tested |
+| [dbt_artifacts](dbt-artifacts.md) | 2.10.1 | :x: Not compatible ([upstream PR](https://github.com/brooklyn-data/dbt_artifacts/pull/529)) | :white_check_mark: Tested |
 
 "Tested" means the adapter runs automated integration tests for that package on the given compute engine. "Via dbt-spark" means the package works through inherited dbt-spark macros without adapter-specific overrides.
 

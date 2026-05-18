@@ -351,6 +351,16 @@ class TestClose:
         assert session._state.hc_id is None
 
 
+class TestPollIntervalForAttempt:
+    def test_ramps_up_then_floors_at_polling_interval(self):
+        cls = HighConcurrencyLivySession
+        assert cls._poll_interval_for_attempt(0) == 0.5
+        assert cls._poll_interval_for_attempt(1) == 1.0
+        assert cls._poll_interval_for_attempt(2) == 2.0
+        assert cls._poll_interval_for_attempt(3) == cls._POLLING_INTERVAL
+        assert cls._poll_interval_for_attempt(50) == cls._POLLING_INTERVAL
+
+
 class TestCancelStatement:
     def test_delegates_to_api_client(self, session, api_client):
         _ready_session(session)
