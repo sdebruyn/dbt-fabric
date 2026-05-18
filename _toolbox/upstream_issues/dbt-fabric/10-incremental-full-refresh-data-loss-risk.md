@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `data-loss`, `priority/high`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — adopt the intermediate/backup/rename swap pattern in `incremental.sql`. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 

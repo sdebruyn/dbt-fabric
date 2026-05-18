@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — small dispatch change in `microbatch.sql` to use `get_incremental_merge_sql` when `unique_key` is set. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 

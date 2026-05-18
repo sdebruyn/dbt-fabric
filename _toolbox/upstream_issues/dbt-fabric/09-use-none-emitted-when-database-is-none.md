@@ -3,11 +3,13 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — three-line None-guard in `metadata.sql`. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 
-`fabric__get_use_database_sql` has no None-guard, so callers that pass `database=None` (legitimately, in some code paths) cause the macro to render `USE [None];` — syntactically invalid T-SQL.
+`fabric__get_use_database_sql` has no None-guard, so callers that pass `database=None` (a legitimate dbt-core code path, see below) cause the macro to render `USE [None];` — syntactically invalid T-SQL.
 
 ## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
@@ -21,9 +23,27 @@
 
 If `database` is the Python value `None`, Jinja renders it as the string `"None"`.
 
+## How `database=None` happens in practice
+
+This is not a hypothetical. dbt-core's [`default__drop_schema_named`](https://github.com/dbt-labs/dbt-adapters/blob/main/dbt-adapters/src/dbt/include/global_project/macros/relations/schema.sql) macro builds a relation with **no database** and hands it to `drop_schema`:
+
+```jinja
+{% macro default__drop_schema_named(schema_name) %}
+  {% set schema_relation = api.Relation.create(schema=schema_name) %}
+  {{ adapter.drop_schema(schema_relation) }}
+{% endmacro %}
+```
+
+`api.Relation.create(schema=schema_name)` creates a relation with `relation.database = None` because the caller did not specify one. `drop_schema` then dispatches into `fabric__drop_schema`, which calls `fabric__get_use_database_sql(relation.database)` — i.e. `fabric__get_use_database_sql(None)` — and the macro renders `USE [None];`.
+
+User-facing triggers for this code path:
+- `dbt run-operation drop_schema_named --args '{schema_name: foo}'` — the documented way to drop a schema by name without specifying a database.
+- The `BaseDropSchemaNamed` test class in `dbt-tests-adapter` exercises this exact path, which is how the bug was caught in the fork (see commit message of the linked fix).
+- Any user-authored macro that calls `api.Relation.create(schema=...)` without a database arg and then hands the relation to a metadata helper.
+
 ## User impact
 
-Operations that pass `database=None` (notably `drop_schema` and related metadata helpers in certain dbt-core configurations) fail with a `Invalid object name 'None'` style error. The error appears as a generic T-SQL parsing failure with no obvious connection to dbt's database handling.
+A `dbt run-operation drop_schema_named` call fails with `Invalid object name 'None'`. The error appears as a generic T-SQL parsing failure with no obvious connection to dbt's database handling — users typically waste time looking at their schema name or permissions before tracing it back to the macro.
 
 ## Suggested fix
 
