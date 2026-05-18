@@ -5,6 +5,8 @@
 
 > [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
+> **Internal note (strip before filing):** Submittable as a PR — change `return True` to `return False` (or remove the return) in all 6 `__exit__` methods. Cleanup logic stays in the method body. Consider opening with the issue *and* a draft PR linked from it.
+
 ## Summary
 
 Six `__exit__` methods across `singleton_livy.py` and `concurrent_livy.py` end with `return True`. In Python, returning a truthy value from `__exit__` suppresses any exception raised inside the `with` block. Every database error, timeout, `KeyboardInterrupt`, and programming bug raised inside a `with`-using one of these context managers is silently dropped on the floor.
