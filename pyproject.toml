@@ -42,7 +42,7 @@ dev = [
     "ruff>=0.15.1"
 ]
 docs = [
-    "zensical>=0.0.41",
+    "zensical>=0.0.42",
 ]
 
 [project.urls]
