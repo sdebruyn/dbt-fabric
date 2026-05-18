@@ -47,7 +47,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [ ] 07 — Thrift dead code from dbt-spark ancestry
 - [x] 08 — Proposal: inherit from `dbt-spark`
 - [ ] 09 — `botocore`/`boto3` DEBUG logging at import time
-- [ ] 10 — `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()`
+- [x] 10 — `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()`
 
 ## Priority guidance
 
