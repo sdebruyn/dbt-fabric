@@ -4,7 +4,7 @@
 **Labels (suggested):** `enhancement`, `priority/medium`
 **Refs:** Issue [#362](https://github.com/microsoft/dbt-fabric/issues/362)
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
 ## Summary
 

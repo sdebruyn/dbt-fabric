@@ -34,8 +34,8 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [ ] 15 — `check_for_nested_cte` false positives
 - [x] 16 — PR #315 `login_timeout` is a no-op
 - [x] 17 — Warehouse snapshots via `atexit` + connection lifecycle
-- [ ] 18 — Adapter-private `delete_condition` on `incremental`
-- [ ] 19 — `list_relations` retry at wrong layer
+- [x] 18 — Adapter-private `delete_condition` on `incremental`
+- [x] 19 — `list_relations` retry at wrong layer
 - [ ] 20 — Module-level `_TOKEN` global
 
 ### dbt-fabricspark
