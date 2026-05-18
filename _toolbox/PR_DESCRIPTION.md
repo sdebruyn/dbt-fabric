@@ -10,8 +10,6 @@ I'm not happy with the state of either Microsoft adapter today. I'm writing this
 
 ## What does the current situation look like?
 
-Everything below is verifiable on PyPI and GitHub at the time of writing.
-
 `microsoft/dbt-fabric` (Data Warehouse adapter) is on v1.10.0, released 18 May 2026 alongside v1.9.10 the same day. The PyPI classifier list says Python 3.8–3.12, with 3.13 still missing even though it's been GA for over a year. The dependency is `dbt-core>=1.10.0` with no upper bound. Integration tests now do run on PRs (good). The Python test matrix is narrow (integration on 3.11, unit on 3.10 and 3.11) and could be broadened, though that's a minor point — Python version regressions in a dbt adapter are rare.
 
 `microsoft/dbt-fabricspark` (Lakehouse adapter) shipped six releases in eight days (10–17 May 2026):
