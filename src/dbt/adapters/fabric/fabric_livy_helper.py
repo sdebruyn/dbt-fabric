@@ -16,29 +16,39 @@ logger = AdapterLogger("fabric")
 
 _thread_local = threading.local()
 
-# Registry of every HC session this process has opened, across all worker
+# Registry of HC Livy sessions opened by FabricLivyHelper across all worker
 # threads. dbt spawns one thread per concurrent model; each gets its own
 # _thread_local.livy_session, so the conftest cleanup hook needs a central
 # handle to reach them all. Module-private — not part of the adapter API.
-_active_sessions_lock = threading.Lock()
-_active_sessions: set[HighConcurrencyLivySession] = set()
+#
+# Scope: ONLY the python-model HC sessions opened by FabricLivyHelper. The
+# FabricSpark adapter also opens HC sessions, but those are wrapped in a
+# FabricSparkConnection that lives in dbt's thread_connections and is
+# closed by BaseConnectionManager.cleanup_all — no separate registry
+# needed. Only FabricLivyHelper's _thread_local.livy_session escapes dbt's
+# connection management, which is why it gets its own registry.
+_python_model_livy_sessions_lock = threading.Lock()
+_python_model_livy_sessions: set[HighConcurrencyLivySession] = set()
 
 
-def close_all_open_livy_sessions() -> None:
-    """Close every open HC Livy session this process has registered.
+def close_all_python_model_livy_sessions() -> None:
+    """Close every HC Livy session opened by FabricLivyHelper this process.
 
     Used by the test conftest to release Fabric Spark applications (and the
     synapsesql warm-up JDBC sessions they hold) before the test fixture's
     schema-drop runs. Closing the Spark application also tears down the
     Sch-S holders on the DW that would otherwise block a DROP SCHEMA.
     Sessions are closed in parallel since each DELETE round-trip is ~1s.
+
+    Does not touch FabricSpark adapter sessions — those are dbt-managed
+    via FabricSparkConnection.close() and closed by cleanup_all.
     """
-    with _active_sessions_lock:
-        sessions = list(_active_sessions)
-        _active_sessions.clear()
+    with _python_model_livy_sessions_lock:
+        sessions = list(_python_model_livy_sessions)
+        _python_model_livy_sessions.clear()
     if not sessions:
         return
-    logger.debug(f"Closing {len(sessions)} open HC Livy session(s)")
+    logger.debug(f"Closing {len(sessions)} open python-model HC Livy session(s)")
     with ThreadPoolExecutor(max_workers=min(len(sessions), 8)) as pool:
         pool.map(lambda s: s.close(), sessions)
 
@@ -53,8 +63,8 @@ class FabricLivyHelper(PythonJobHelper):
 
         if not getattr(_thread_local, "livy_session", None):
             _thread_local.livy_session = HighConcurrencyLivySession(fabric_api_client)
-            with _active_sessions_lock:
-                _active_sessions.add(_thread_local.livy_session)
+            with _python_model_livy_sessions_lock:
+                _python_model_livy_sessions.add(_thread_local.livy_session)
 
         if not self._sql_endpoint:
             self._sql_endpoint = fabric_api_client.get_warehouse_connection_string()

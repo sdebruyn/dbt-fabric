@@ -8,7 +8,7 @@ import yaml
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
-from dbt.adapters.fabric.fabric_livy_helper import close_all_open_livy_sessions
+from dbt.adapters.fabric.fabric_livy_helper import close_all_python_model_livy_sessions
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import write_file
@@ -264,14 +264,17 @@ def project(
         test_config=project_setup.test_config,
     )
 
-    # Close any HC Livy sessions opened during this test class before the
-    # outer project_setup fixture tries to drop the test schema. The
-    # synapsesql connector keeps JDBC sessions to the DW alive on its
-    # warm-up pool, which hold Sch-S on the schema metadata and block
-    # DROP SCHEMA on Sch-M for the full Spark idle-reap window (25+ min,
-    # observed in run 26030423528). Closing the HC session tears down
-    # the Spark application and releases every JDBC session it owns.
-    close_all_open_livy_sessions()
+    # Close any python-model HC Livy sessions opened during this test
+    # class before the outer project_setup fixture tries to drop the test
+    # schema. The synapsesql connector keeps JDBC sessions to the DW alive
+    # on its warm-up pool, which hold Sch-S on the schema metadata and
+    # block DROP SCHEMA on Sch-M for the full Spark idle-reap window
+    # (25+ min, observed in run 26030423528). Closing the HC session
+    # tears down the Spark application and releases every JDBC session
+    # it owns. FabricSpark adapter HC sessions are not affected — those
+    # are dbt-managed via FabricSparkConnection.close() and cleaned up
+    # by cleanup_all.
+    close_all_python_model_livy_sessions()
 
 
 @pytest.fixture(scope="class")
