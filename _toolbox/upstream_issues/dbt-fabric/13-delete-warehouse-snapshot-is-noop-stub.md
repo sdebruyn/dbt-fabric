@@ -32,19 +32,7 @@ def delete_warehouse_snapshot(self, snapshot_id):
 
 ## Suggested fix
 
-Implement the actual `DELETE` against the Fabric REST API:
-
-```python
-def delete_warehouse_snapshot(self, snapshot_id: str) -> bool:
-    url = f"{self.api_base}/workspaces/{self.workspace_id}/warehouseSnapshots/{snapshot_id}"
-    resp = self._api_request("DELETE", url)
-    resp.raise_for_status()
-    return True
-```
-
-(With 429 / rate-limit handling, the same way the other API methods on this client are written.)
-
-Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`412b4732`](https://github.com/sdebruyn/dbt-fabric/commit/412b4732).
+Implement the actual `DELETE` against the Fabric REST API. This should be addressed together with the broader warehouse-snapshots rework described in issue #17 (moving the snapshot lifecycle off `atexit` and onto Jinja macros / `on-run-end`), since both touch the same surface. Reference implementation in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`412b4732`](https://github.com/sdebruyn/dbt-fabric/commit/412b4732).
 
 ## Notes
 
