@@ -324,16 +324,3 @@ Profile type remains `fabricspark`. A config-mapping table will accompany the mi
 ### Coordination
 
 Microsoft to coordinate deprecation notices on the existing PyPI packages and READMEs of `microsoft/dbt-fabric` and `microsoft/dbt-fabricspark`, pointing users to the toolbox.
-
----
-
-## Open coordination points
-
-For the toolbox team and the wider Microsoft organization:
-
-- **PyPI package ownership transfer for `dbt-fabric`.** Microsoft already controls this name; this contribution should be published as the next major or minor version.
-- **Communication to existing `microsoft/dbt-fabric` and `microsoft/dbt-fabricspark` users.** Deprecation notice plus pointer to the new location.
-- **Migration of open issues** on both repositories — triaged jointly.
-- **Azure OIDC federated credentials** on `microsoft/fabric-toolbox` for CI workflows. Subject claims and audience details documented in `_toolbox/HANDOFF.md` of this contribution.
-- **GitHub Pages activation** for the docs site, with a concept workflow provided at `_toolbox/workflows/docs-publish.yml`.
-- **Inclusion of Sam in relevant Microsoft/dbt-community communication channels** around Fabric: product team standups for relevant features, CAT team customer-engagement information, dbt Labs partnership conversations.
