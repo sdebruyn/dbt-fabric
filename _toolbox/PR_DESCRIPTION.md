@@ -23,7 +23,7 @@ I'm not happy with the state of either Microsoft adapter today. I'm writing this
 | v1.12.1 | 17 May 2026 |
 | v1.12.2 | 17 May 2026 |
 
-The version numbers suggest dbt-core 1.10, 1.11, and 1.12 are all supported, but the PyPI manifest of v1.12.2 still says `dbt-core>=1.8.0` with no upper bound. In the dbt adapter ecosystem the convention is that `<adapter>==1.X.Y` means "compatible with `dbt-core==1.X.*`" — Snowflake, Postgres, Spark, and BigQuery encode that as a tight per-release dependency range (e.g. `dbt-core>=1.10.0,<1.11.0`) and ship a matching adapter for each new dbt-core minor. A floor that's two minors behind the adapter version doesn't give that signal: if you install `dbt-fabricspark==1.12.2` and you're on dbt-core 1.8, pip will let you, with no warning.
+The version numbers suggest dbt-core 1.10, 1.11, and 1.12 are all supported, but the PyPI manifest of v1.12.2 still says `dbt-core>=1.8.0` with no upper bound. The floor sits two minors behind the adapter version, and any future dbt-core release will be considered compatible by pip. This contribution pins to `dbt-core>=1.9.6,<1.13.0` — the floor is close to the supported range and there's an explicit upper bound.
 
 Functions (the dbt-core 1.11 scalar-function feature) are also not supported in either official adapter, even though 1.11 has been out for about six months. If you use SQL UDFs in dbt on Snowflake or BigQuery and you want to do the same on Fabric, you can't.
 
@@ -59,7 +59,7 @@ The v1.9.10 release ([issue #362](https://github.com/microsoft/dbt-fabric/issues
 
 The `incremental` materialization is part of dbt's user-facing API contract. Its config keys are how thousands of models in production projects describe themselves. Adding adapter-private knobs has three consequences. A model written for Fabric stops being portable — a user moving to Snowflake (or back) has to rewrite the config block, even though the same merge-with-delete semantics could be done with a `post-hook` or with `merge_update_columns` / `merge_exclude_columns`. Validation has to be reimplemented in Jinja: three compile-time exception branches in the materialization enforce that the new keys only apply to `merge` and that they're mutually exclusive. And it sets the precedent that Fabric needs its own knobs — the first adapter-private config on a stable materialization is the hardest one to push back on, and after that every next one is easier. Extensions go in macros and hooks. They don't go on the materializations dbt-core ships. A maintainer who feels the pull to add `delete_condition` to `incremental` is signalling that they're thinking of the adapter as a standalone product, not as a citizen of the dbt ecosystem.
 
-**Six releases in eight days.** v1.10.0 → v1.10.1 → v1.11.0 → v1.12.0 → v1.12.1 → v1.12.2 on `microsoft/dbt-fabricspark` between 10 and 17 May 2026, with the PyPI manifest of v1.12.2 still saying just `dbt-core>=1.8.0`. The version number says 1.12, the dependency floor says 1.8, and there's no upper bound. That's not how the reference adapters version: a release advertised as supporting dbt-core 1.X is typically pinned to `dbt-core>=1.X,<1.(X+1)`.
+**Six releases in eight days.** v1.10.0 → v1.10.1 → v1.11.0 → v1.12.0 → v1.12.1 → v1.12.2 on `microsoft/dbt-fabricspark` between 10 and 17 May 2026, with the PyPI manifest of v1.12.2 still saying just `dbt-core>=1.8.0`. The version number says 1.12, the dependency floor says 1.8, and there's no upper bound.
 
 ---
 
