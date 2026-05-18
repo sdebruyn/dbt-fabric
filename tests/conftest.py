@@ -46,7 +46,7 @@ def dbt_profile_target(dbt_profile_target_update, adapter_type: str, prefix: str
         "workspace_name": os.getenv("FABRIC_TEST_WORKSPACE_NAME"),
         "workspace_id": os.getenv("FABRIC_TEST_WORKSPACE_ID"),
         "retries": 3,
-        "threads": int(os.getenv("FABRIC_TEST_THREADS", 10)),
+        "threads": int(os.getenv("FABRIC_TEST_THREADS", 4)),
         **_auth_kwargs_from_env(),
     }
 

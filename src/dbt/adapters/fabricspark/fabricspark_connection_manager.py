@@ -52,8 +52,7 @@ class FabricSparkConnectionManager(BaseFabricConnectionManager):
 
         def connect() -> FabricSparkConnection:
             api_client = cls.get_fabric_api_client(credentials)
-            livy_session = HighConcurrencyLivySession(api_client)
-            livy_session.wait_for_session_ready()
+            livy_session = HighConcurrencyLivySession.acquire(api_client)
             return FabricSparkConnection(livy_session)
 
         return cls.retry_connection(
