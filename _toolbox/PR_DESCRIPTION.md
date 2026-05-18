@@ -296,21 +296,6 @@ With the dbt-native harmony theme as throughline:
 
 ---
 
-## Proposed maintenance model post-acceptance
-
-Not "we contribute and disappear":
-
-- **Sam Debruyn remains primary maintainer** with commit rights on `tools/dbt-fabric/`.
-- **Microsoft Fabric product team and CAT team as co-maintainers** with review authority on all PRs.
-- **Community contributions** via the standard PR flow with CLA.
-- **Release cadence tied to dbt-core releases.** Within four weeks of each dbt-core minor, including being fully tested against that minor — not version-bump-only.
-- **Versioning convention strict:** `dbt-fabric==1.X.Y` means tested and guaranteed compatible with `dbt-core==1.X.*`.
-- **Monthly issue triage.**
-- **Clear escalation path** for production-blocking issues (24h response target).
-- **Co-maintenance of the docs site** (GitHub Pages under fabric-toolbox).
-
----
-
 ## Migration path for existing users
 
 ### `microsoft/dbt-fabric` (Data Warehouse) users
