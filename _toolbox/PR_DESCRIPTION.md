@@ -320,7 +320,3 @@ Drop-in replacement. `pip uninstall dbt-fabric && pip install dbt-fabric` with t
 ### `microsoft/dbt-fabricspark` (Lakehouse) users
 
 Profile type remains `fabricspark`. A config-mapping table will accompany the migration guide, documenting the small number of options that differ.
-
-### Coordination
-
-Microsoft to coordinate deprecation notices on the existing PyPI packages and READMEs of `microsoft/dbt-fabric` and `microsoft/dbt-fabricspark`, pointing users to the toolbox.
