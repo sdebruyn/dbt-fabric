@@ -94,3 +94,17 @@ class TestFabricCredentialsAliases:
         assert FabricCredentials._ALIASES["app_id"] == "client_id"
         assert FabricCredentials._ALIASES["app_secret"] == "client_secret"
         assert FabricCredentials._ALIASES["workspace"] == "workspace_name"
+
+
+class TestFabricCredentialsLockTimeout:
+    def test_default_is_30_seconds(self):
+        creds = FabricCredentials(database="db", schema="s")
+        assert creds.lock_timeout == 30000
+
+    def test_can_be_overridden(self):
+        creds = FabricCredentials(database="db", schema="s", lock_timeout=60000)
+        assert creds.lock_timeout == 60000
+
+    def test_appears_in_connection_keys(self):
+        creds = FabricCredentials(database="db", schema="s")
+        assert "lock_timeout" in creds._connection_keys()

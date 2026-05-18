@@ -89,11 +89,6 @@ class FabricConnectionManager(BaseFabricConnectionManager):
     TYPE = "fabric"
     _host: str | None = None
 
-    # Bound a statement's wait on a schema lock to 5s before SQL Server
-    # raises error 1222 ("Lock request time out period exceeded"). See
-    # the SET LOCK_TIMEOUT call in connect() for the full context.
-    LOCK_TIMEOUT_MS = 5000
-
     @contextmanager
     def exception_handler(self, sql):
         import mssql_python
@@ -236,13 +231,16 @@ class FabricConnectionManager(BaseFabricConnectionManager):
             # exceeded"). The Fabric Spark→DW connector leaves idle JDBC
             # sessions holding Sch-S on the target table after a Python
             # model write (#238 / #271). Without this cap, a follow-up
-            # DDL stalls until query_timeout (default 300s). With it the
-            # DDL fails fast — visible to the user but quickly, so they
+            # DDL stalls until query_timeout (default 300s). With the cap
+            # the DDL fails fast enough to be visible to the user, who
             # can `dbt build --retry` (or wait for the Spark idle-reap
-            # window to elapse) without a 5-minute hang each time.
+            # window to elapse) instead of hanging. The default of 30s
+            # leaves room for the DW to detect closed TCP connections
+            # after a python-model Spark application terminates; profiles
+            # can override via the `lock_timeout` credential.
             cursor = handle.cursor()
             try:
-                cursor.execute(f"SET LOCK_TIMEOUT {cls.LOCK_TIMEOUT_MS}")
+                cursor.execute(f"SET LOCK_TIMEOUT {credentials.lock_timeout}")
             finally:
                 cursor.close()
 
