@@ -8,14 +8,29 @@ import yaml
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
-from dbt.adapters.fabric.fabric_livy_helper import _close_all_python_model_livy_sessions
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import write_file
+from tests import _python_model_livy_capture
 
 pytest_plugins = ["dbt.tests.fixtures.project"]
 
 requires_purview = pytest.mark.requires_purview
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _capture_python_model_livy_sessions():
+    """Patch FabricLivyHelper at session start so every python-model HC Livy
+    session it constructs is recorded in the test-only registry, then restore
+    the original __init__ at session end. The per-class `project` fixture
+    teardown calls `close_all()` to release those sessions before
+    drop_test_schema runs.
+    """
+    restore = _python_model_livy_capture.install_capture()
+    try:
+        yield
+    finally:
+        restore()
 
 
 def _auth_kwargs_from_env() -> dict:
@@ -274,7 +289,7 @@ def project(
     # it owns. FabricSpark adapter HC sessions are not affected — those
     # are dbt-managed via FabricSparkConnection.close() and cleaned up
     # by cleanup_all.
-    _close_all_python_model_livy_sessions()
+    _python_model_livy_capture.close_all()
 
 
 @pytest.fixture(scope="class")

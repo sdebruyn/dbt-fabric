@@ -1,68 +1,16 @@
 import threading
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from dbt_common.exceptions import DbtRuntimeError
 
 from dbt.adapters.base.impl import PythonJobHelper
-from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_hc_livy_session import HighConcurrencyLivySession
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 from dbt.adapters.fabric.livy_result import LivySessionResult
 
-logger = AdapterLogger("fabric")
-
 _thread_local = threading.local()
-
-# Registry of HC Livy sessions opened by FabricLivyHelper across all worker
-# threads. dbt spawns one thread per concurrent model; each gets its own
-# _thread_local.livy_session, so the conftest cleanup hook needs a central
-# handle to reach them all. Module-private — the leading underscore on the
-# helper below is the API marker; the conftest imports it as test-harness
-# code, which is allowed to reach into module-private internals.
-#
-# Scope: ONLY the python-model HC sessions opened by FabricLivyHelper. The
-# FabricSpark adapter also opens HC sessions, but those are wrapped in a
-# FabricSparkConnection that lives in dbt's thread_connections and is
-# closed by BaseConnectionManager.cleanup_all — no separate registry
-# needed. Only FabricLivyHelper's _thread_local.livy_session escapes dbt's
-# connection management, which is why it gets its own registry.
-#
-# In production runs, the set grows by one entry per worker thread that
-# opens a python-model session, and the entries live until process exit
-# (sessions are not re-closed mid-run). That is intentional: dbt's python
-# models stay connected for the entire invocation; the references are a
-# few bytes per worker and are released when the process ends.
-_python_model_livy_sessions_lock = threading.Lock()
-_python_model_livy_sessions: set[HighConcurrencyLivySession] = set()
-
-
-def _close_all_python_model_livy_sessions() -> None:
-    """Close every HC Livy session opened by FabricLivyHelper this process.
-
-    Used by the test conftest to release Fabric Spark applications (and the
-    synapsesql warm-up JDBC sessions they hold) before the test fixture's
-    schema-drop runs. Closing the Spark application also tears down the
-    Sch-S holders on the DW that would otherwise block a DROP SCHEMA.
-    Sessions are closed in parallel since each DELETE round-trip is ~1s.
-
-    Does not touch FabricSpark adapter sessions — those are dbt-managed
-    via FabricSparkConnection.close() and closed by cleanup_all.
-
-    Module-private: only the conftest is expected to call this.
-    """
-    with _python_model_livy_sessions_lock:
-        sessions = list(_python_model_livy_sessions)
-        _python_model_livy_sessions.clear()
-    if not sessions:
-        return
-    logger.debug(f"Closing {len(sessions)} open python-model HC Livy session(s)")
-    with ThreadPoolExecutor(max_workers=min(len(sessions), 8)) as pool:
-        # Materialise the iterator so any close() exceptions surface here
-        # (and end up in pytest output) instead of being silently dropped.
-        list(pool.map(lambda s: s.close(), sessions))
 
 
 class FabricLivyHelper(PythonJobHelper):
@@ -75,15 +23,6 @@ class FabricLivyHelper(PythonJobHelper):
 
         if not getattr(_thread_local, "livy_session", None):
             _thread_local.livy_session = HighConcurrencyLivySession(fabric_api_client)
-        # Always (re-)register, even if the thread-local session already
-        # exists. If a previous test class closed it via
-        # _close_all_python_model_livy_sessions, the registry was cleared
-        # but _thread_local.livy_session still points at the (now stateless)
-        # instance, which will internally lazy-create a fresh HC session
-        # on next run_statement. add() is idempotent, so re-registering a
-        # still-live session is also free.
-        with _python_model_livy_sessions_lock:
-            _python_model_livy_sessions.add(_thread_local.livy_session)
 
         if not self._sql_endpoint:
             self._sql_endpoint = fabric_api_client.get_warehouse_connection_string()
