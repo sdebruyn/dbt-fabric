@@ -59,7 +59,7 @@ jobs:
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
           export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
-          uv run pytest -ra -v --de --with-python
+          uv run pytest -ra -v --de
 
       - name: Upload test logs
         if: always()
