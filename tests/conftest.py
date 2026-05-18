@@ -11,10 +11,26 @@ from dbt.adapters.fabric.fabric_credentials import FabricCredentials
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import write_file
+from tests import _python_model_livy_capture
 
 pytest_plugins = ["dbt.tests.fixtures.project"]
 
 requires_purview = pytest.mark.requires_purview
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _capture_python_model_livy_sessions():
+    """Patch FabricLivyHelper at session start so every python-model HC Livy
+    session it constructs is recorded in the test-only registry, then restore
+    the original __init__ at session end. The per-class `project` fixture
+    teardown calls `close_all()` to release those sessions before
+    drop_test_schema runs.
+    """
+    restore = _python_model_livy_capture.install_capture()
+    try:
+        yield
+    finally:
+        restore()
 
 
 def _auth_kwargs_from_env() -> dict:
@@ -251,7 +267,7 @@ def project(
             result = self.run_sql(sql, fetch="all")
             return dict(result)
 
-    return TestProjInfoFabric(
+    yield TestProjInfoFabric(
         project_root=project_setup.project_root,
         profiles_dir=project_setup.profiles_dir,
         adapter_type=project_setup.adapter_type,
@@ -262,6 +278,18 @@ def project(
         database=project_setup.database,
         test_config=project_setup.test_config,
     )
+
+    # Close any python-model HC Livy sessions opened during this test
+    # class before the outer project_setup fixture tries to drop the test
+    # schema. The synapsesql connector keeps JDBC sessions to the DW alive
+    # on its warm-up pool, which hold Sch-S on the schema metadata and
+    # block DROP SCHEMA on Sch-M for the full Spark idle-reap window
+    # (25+ min, observed in run 26030423528). Closing the HC session
+    # tears down the Spark application and releases every JDBC session
+    # it owns. FabricSpark adapter HC sessions are not affected — those
+    # are dbt-managed via FabricSparkConnection.close() and cleaned up
+    # by cleanup_all.
+    _python_model_livy_capture.close_all()
 
 
 @pytest.fixture(scope="class")
