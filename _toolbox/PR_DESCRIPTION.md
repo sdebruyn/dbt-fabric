@@ -78,8 +78,6 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first; m
 - [#09 — `botocore`/`boto3` DEBUG logging at module import time](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/09-aws-logging-debug-at-import.md)
 - [#10 — `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()`](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/10-parse-retry-after-duplicated.md)
 
-### The pattern behind them
-
 Several of these issues are recent PRs that reinvent a dbt-native primitive that already does the job, with PR descriptions that read as AI-generated. AI raises the floor on output volume; it doesn't raise the floor on judgement, and judgement is what review is for. I use AI heavily in [the fork](https://github.com/sdebruyn/dbt-fabric) — the problem here is the missing review step, not the tool.
 
 The structural cause is that Microsoft has staffed this adapter as a sideline of a product role, not as an engineering project: no second pair of eyes on PRs, no dbt-domain technical lead. PyPI ownership reflects this — both packages are published under a personal account rather than a Microsoft organisational identity (compare `azure-core`, `azure-identity`, owned by `Microsoft Corporation <azpysdkhelp@microsoft.com>`). The fix is to put the adapter somewhere it can get sustained engineering attention and community review, with package ownership at the organisational level.
