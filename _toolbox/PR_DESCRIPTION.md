@@ -38,7 +38,7 @@ Every PR runs against real Fabric, and every release ships after the full integr
 
 ---
 
-## What's broken in the official adapters
+## Issues filed upstream
 
 I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, but the review-to-merge turnaround on PRs was long enough that I couldn't keep momentum that way. The fork picked up what the upstream couldn't absorb at that pace, and the gap has compounded since.
 
@@ -108,7 +108,7 @@ Shared: FabricTokenProvider, FabricApiClient, PurviewClient + PurviewSync
 
 **Capability declarations** (`SchemaMetadataByRelations`, `TableLastModifiedMetadata`) let dbt-core pick the optimised code paths on its own. Declaring a new capability when dbt-core adds one is a one-line change.
 
-**Whole classes of silent-failure bugs eliminated by construction.** No module-level mutable state, so race conditions can't happen the way they do in the "What's broken" section. No `atexit` handlers, so cleanup follows dbt's documented connection-manager `close()` path. No exception swallowing, so errors propagate normally.
+**Whole classes of silent-failure bugs eliminated by construction.** No module-level mutable state, so race conditions can't happen the way they do in the issues filed upstream. No `atexit` handlers, so cleanup follows dbt's documented connection-manager `close()` path. No exception swallowing, so errors propagate normally.
 
 **Versioning and dependency hygiene.** Tight `dbt-core>=1.9.6,<1.13.0` range with an explicit upper bound. dbt-core upgrades follow a documented checklist in `CONTRIBUTING.md` (inventory new dispatchable macros, new adapter methods, new `Base*` test classes; only tag when the suite passes). Modern build stack (`hatchling` + `uv`) and Python typing (PEP 604 unions, no `typing.Union`/`Optional`).
 
