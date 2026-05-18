@@ -27,6 +27,16 @@ class FabricLivyHelper(PythonJobHelper):
         if not self._sql_endpoint:
             self._sql_endpoint = fabric_api_client.get_warehouse_connection_string()
 
+    # The synapsesql connector holds JDBC sessions to the DW alive past the
+    # write call (per #238). Those sessions keep Sch-S on the target table's
+    # metadata and block any subsequent Sch-M-acquiring DDL (sp_rename, DROP,
+    # CREATE VIEW), causing minutes-long LCK_M_SCH_M waits.
+    #
+    # Forcing a JVM GC reliably tears the connections down within ~3-4s
+    # (empirically verified — see #271). The earlier fire-and-forget variant
+    # (#239) submitted the GC but didn't wait, so the next dbt op could
+    # start before the GC actually ran. Await the GC so the connections are
+    # closed before submit() returns.
     _GC_CODE = "spark._jvm.java.lang.System.gc()"
 
     def submit(self, compiled_code: str) -> Any:
@@ -41,5 +51,5 @@ class FabricLivyHelper(PythonJobHelper):
                 f"Logs URL: {livy_session.get_logs_url()}. "
                 f"Error: {result.error_message}"
             )
-        livy_session.run_statement(self._GC_CODE, "python", wait_for_result=False)
+        livy_session.run_statement(self._GC_CODE, "python")
         return result.to_submission_result(compiled_code)
