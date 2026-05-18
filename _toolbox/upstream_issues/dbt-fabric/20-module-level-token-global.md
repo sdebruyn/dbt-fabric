@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `concurrency`, `priority/medium`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Do **not** submit as a PR. The refactor that resolves this also touches the multi-scope auth path and the api/sql token split — too broad to land as one drive-by PR upstream. File the issue to document the anti-pattern; defer the rewrite.
 
 ## Summary
 
@@ -34,31 +36,6 @@ def get_pyodbc_attrs_before_credentials(credentials):
 - Cannot use two different credential profiles in a single Python process (e.g. dbt + Purview integration).
 - Token expiry is fixed per process; long-running processes can hold expired tokens that the global never refreshes correctly.
 
-## Suggested fix
-
-Encapsulate token acquisition in a class with per-credential instance caching:
-
-```python
-class FabricTokenProvider:
-    def __init__(self, credentials: FabricCredentials):
-        self.credentials = credentials
-        self._cache: dict[str, AccessToken] = {}  # by scope
-        self._lock = threading.Lock()
-
-    def get_token(self, scope: str) -> AccessToken:
-        with self._lock:
-            token = self._cache.get(scope)
-            if token is None or token.expires_on < time.time() + 60:
-                token = self._acquire(scope)
-                self._cache[scope] = token
-            return token
-```
-
-One instance per adapter (or per credentials hash), held on the adapter object. No module-level globals.
-
-Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`c8be16a1`](https://github.com/sdebruyn/dbt-fabric/commit/c8be16a1) (extracted `_TOKEN` global into `FabricTokenProvider` class), plus follow-ups for multi-scope ([`47b4510f`](https://github.com/sdebruyn/dbt-fabric/commit/47b4510f)) and explicit `get_api_token` / `get_sql_token` split ([`0e779bdc`](https://github.com/sdebruyn/dbt-fabric/commit/0e779bdc)).
-
 ## Notes
 
-- This is the same general anti-pattern as the `atexit` warehouse-snapshot issue: module-level state with implicit lifecycle that becomes hard to reason about and impossible to test in isolation.
 - [The fork](https://github.com/sdebruyn/dbt-fabric) now has zero module-level mutable state in the adapter — every cache and every connection lives on a class instance.

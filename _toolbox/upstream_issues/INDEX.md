@@ -36,7 +36,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 17 — Warehouse snapshots via `atexit` + connection lifecycle
 - [x] 18 — Adapter-private `delete_condition` on `incremental`
 - [x] 19 — `list_relations` retry at wrong layer
-- [ ] 20 — Module-level `_TOKEN` global
+- [x] 20 — Module-level `_TOKEN` global
 
 ### dbt-fabricspark
 
