@@ -21,7 +21,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 02 — Case-sensitive Fabric DWHs broken
 - [x] 03 — `apply_grants` misses Entra-principal grants
 - [x] 04 — Pre/post hooks fail (`commit;` emitted)
-- [ ] 05 — CTAS via `EXEC('...')` breaks on apostrophes
+- [x] 05 — CTAS via `EXEC('...')` breaks on apostrophes
 - [ ] 06 — `get_response` drops warnings + statement ID
 - [ ] 07 — `quote()` does not escape `]` (injection vector)
 - [ ] 08 — pyodbc pooling silently disabled
