@@ -12,7 +12,7 @@ I'm bringing it to the toolbox because the toolbox's multi-contributor model —
 
 **One `pip install dbt-fabric` and both Fabric engines work.** No separate `dbt-fabricspark` package to manage, no system ODBC driver to install: the bundled [`mssql-python`](https://github.com/microsoft/mssql-python) driver handles the Data Warehouse side and ships with ODBC Driver 18 + unixODBC inside the wheel. That alone removes the most common installation hurdle on macOS and in containers, where pulling the right ODBC driver is the step new users get stuck on most often.
 
-On top of that, a long list of features the official adapters don't ship. The headline ones first:
+On top of that, a long list of features the official adapters don't ship:
 
 **[Microsoft Purview](https://learn.microsoft.com/en-us/purview/) integration via API.** A `{{ purview_sync() }}` macro that pushes model and column documentation, plus dbt's [`ref()`](https://docs.getdbt.com/reference/dbt-jinja-functions/ref) and [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) lineage, directly into Purview through the REST API. [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs)-aware: models marked `persist_docs: false` are skipped, granular `relation: true, columns: false` only syncs what you asked for. No Purview scan configuration needed on the user side.
 
@@ -20,7 +20,7 @@ On top of that, a long list of features the official adapters don't ship. The he
 
 **Community packages made compatible with Fabric, and continuously tested to keep them that way.** Nine popular dbt community packages — [dbt-utils](https://github.com/dbt-labs/dbt-utils), [dbt-date](https://github.com/godatadriven/dbt-date), [dbt-codegen](https://github.com/dbt-labs/dbt-codegen), [dbt-expectations](https://github.com/metaplane/dbt-expectations), [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper), [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables), [dbt-profiler](https://github.com/data-mie/dbt-profiler), [dbt-artifacts](https://github.com/brooklyn-data/dbt_artifacts), and [dbt-project-evaluator](https://github.com/dbt-labs/dbt-project-evaluator) — don't fully work on Fabric out of the box. They ship Postgres- or Snowflake-flavoured macros that fail on Fabric's T-SQL or Spark dialects. This contribution writes the adapter-specific overrides through dbt's [dispatch](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch) system, with per-package compatibility documentation listing which macros work, which don't, and the exact version that was validated. Integration tests then run against each package on real Fabric infrastructure on every PR — that's what keeps the compatibility honest as both Fabric and the packages release new versions. Neither official adapter ships compatibility overrides or tests against any of these packages.
 
-And the rest of the list — things the official adapters also don't have, in no particular order:
+And the rest:
 
 - Warehouse snapshots as a callable Jinja macro (`{{ create_or_update_fabric_warehouse_snapshot(...) }}`) usable from [`on-run-start`/`on-run-end`](https://docs.getdbt.com/reference/project-configs/on-run-start-on-run-end), any [`post-hook`](https://docs.getdbt.com/reference/resource-configs/pre-hook-post-hook), or [`dbt run-operation`](https://docs.getdbt.com/reference/commands/run-operation).
 - [`dbt-external-tables`](https://github.com/dbt-labs/dbt-external-tables) compatibility via dispatch, so `OPENROWSET`-backed files are regular [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) references that show up in the lineage graph and work with `dbt run-operation stage_external_sources`.
@@ -28,20 +28,13 @@ And the rest of the list — things the official adapters also don't have, in no
 - [Manual statistics as model config](https://dbt-fabric.debruyn.dev/statistics/) — declarative, no post-hook tricks.
 - Catalog statistics in [`dbt docs generate`](https://docs.getdbt.com/reference/commands/cmd-docs) output, automatically.
 - [Functions](https://docs.getdbt.com/docs/build/functions) (dbt-core 1.11 scalar functions) on both engines.
-- Materialized lake views on the Lakehouse, with `PARTITIONED BY`, `TBLPROPERTIES`, `CHECK` constraints with `ON MISMATCH`, and `CREATE OR REPLACE` semantics.
-- Cross-workspace 4-part naming on the Lakehouse (`workspace.lakehouse.schema.table`).
-- View materialization on the Lakehouse (not just materialized lake views).
 - [Workload identity](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation) (federated OIDC for CI/CD pipelines).
 - 11 authentication methods through standard dbt [profile keys](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml), plus custom [`TokenCredential`](https://learn.microsoft.com/en-us/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python) classes.
 - One shared `FabricTokenProvider` covering both adapter types, so the same profile structure works for DW and Lakehouse.
 - [Auto host-resolution from the workspace name](https://dbt-fabric.debruyn.dev/configuration/#host) — no hardcoded SQL endpoint per environment.
-- Auto lakehouse-resolution from a lakehouse name (no GUIDs in profiles).
-- Livy session reuse across runs (warm-session logic that benefits both engines).
-- Distributed-statement-ID propagation into dbt's `AdapterResponse.query_id`, so anyone looking at a Fabric portal query can correlate it back to the dbt model that issued it.
 - A PEP 249–compliant cursor for Spark JSON results, so dbt talks to the Lakehouse exactly like any other database.
-- Transparent limitations documentation, per platform, so customers can decide in advance what will and won't work for their use case.
 
-And — the upstream-equivalent baseline most users will actually feel day-to-day: every PR runs against real Fabric, every release ships after the full integration suite has gone green, and all the bugs documented in the next section are already fixed.
+Every PR runs against real Fabric, every release ships after the full integration suite has gone green, and all the bugs documented in the next section are already fixed.
 
 ---
 
@@ -49,7 +42,7 @@ And — the upstream-equivalent baseline most users will actually feel day-to-da
 
 I tried contributing some of these fixes back to `microsoft/dbt-fabric` first; most didn't land. The fork carried what the upstream couldn't absorb fast enough, and the gap has compounded since.
 
-I've filed [20 issues against `microsoft/dbt-fabric`](#) and [8 against `microsoft/dbt-fabricspark`](#) covering the bugs and design problems summarised below. Each ticket has its own reproduction, evidence, and suggested fix; the lists here link straight to them rather than re-explaining each in line.
+I've filed [20 issues against `microsoft/dbt-fabric`](#) and [8 against `microsoft/dbt-fabricspark`](#). Each ticket has its own reproduction, evidence, and suggested fix.
 
 > **Note (will be replaced on filing):** the links currently point at issue drafts on the `to-toolbox` branch of [the fork](https://github.com/sdebruyn/dbt-fabric). They will be re-pointed at the actual upstream tickets once filed against `microsoft/dbt-fabric` and `microsoft/dbt-fabricspark`.
 
@@ -101,9 +94,9 @@ The structural cause is that Microsoft has staffed this adapter as a sideline of
 
 ## Why this stays maintainable long-term
 
-The maintenance cost of a dbt adapter scales with two things: how much you reimplement that dbt's ecosystem already gives you, and how many private mechanisms you have to keep in sync with dbt-core across releases. The architecture here is designed to keep both as close to zero as possible — which is exactly what lets a multi-contributor codebase keep up with how fast the dbt ecosystem moves.
+The maintenance cost of a dbt adapter scales with two things: how much you reimplement that dbt's ecosystem already gives you, and how many private mechanisms you have to keep in sync with dbt-core across releases. The architecture here is designed to keep both as close to zero as possible.
 
-**Stand on the shoulders of giants: the Lakehouse adapter inherits from [`dbt-spark`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-spark).** This is the single biggest difference in the entire architecture, and the cleanest example of the design principle that drives everything else here: the less code we write, the less code there is to maintain, and the less surface there is for things to go wrong.
+**Stand on the shoulders of giants: the Lakehouse adapter inherits from [`dbt-spark`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-spark).**
 
 `dbt-spark` is years of refinement and battle-testing. The package ships the [Spark materializations](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-spark/src/dbt/include/spark/macros/materializations) (table, view, incremental, snapshot, materialized view), all the Spark-flavoured [incremental strategies](https://docs.getdbt.com/docs/build/incremental-strategy) (`merge`, `append`, `insert_overwrite`, `microbatch`), Spark-aware column type handling, constraint handling, the Spark [Python model](https://docs.getdbt.com/docs/build/python-models) API, and an opinionated `SparkAdapter` base class that codifies how a Spark engine plugs into dbt. The whole point of the package is to be inherited from. Spark-based adapters are supposed to write the parts that are specific to their engine — connection layer, auth, engine quirks — and get the rest for free.
 
@@ -111,9 +104,9 @@ This isn't a theoretical pattern. [`dbt-databricks`](https://github.com/databric
 
 `microsoft/dbt-fabricspark` doesn't have a `dbt-spark` dependency. It's a standalone `SQLAdapter`. So every single one of those hundreds of macros, every materialization, every type-handling rule, every incremental strategy, every Python-model path has to be implemented and maintained by hand. Every dbt-spark release that ships a fix or a new feature silently widens the gap. Every new dbt-core minor that adds a `Base*` test class for Spark needs a manual port of whatever dbt-spark did to satisfy it. The maintenance treadmill compounds: a year of dbt-spark improvements that this contribution inherits for free is a year of work upstream has to do manually (and largely doesn't), which is exactly why a comparable feature set isn't there.
 
-The reference Spark adapter inherits from `dbt-spark`. Databricks inherits from `dbt-spark`. There is no engineering case for the standalone approach — it *guarantees* ongoing maintenance pain on `microsoft/dbt-fabricspark` regardless of who maintains it, what their skill level is, or how much AI tooling they use. And dbt-spark inheritance is only half the story: Python's [multiple inheritance](https://docs.python.org/3/tutorial/classes.html#multiple-inheritance) lets the FabricSpark adapter extend `SparkAdapter` *and* a shared `BaseFabricAdapter` at the same time, getting the dbt-spark machinery and the cross-adapter Fabric code in one class. That cross-adapter sharing is the next paragraph.
+The reference Spark adapter inherits from `dbt-spark`. Databricks inherits from `dbt-spark`. There is no engineering case for the standalone approach — it *guarantees* ongoing maintenance pain on `microsoft/dbt-fabricspark` regardless of who maintains it. Python's [multiple inheritance](https://docs.python.org/3/tutorial/classes.html#multiple-inheritance) lets the FabricSpark adapter extend `SparkAdapter` *and* a shared `BaseFabricAdapter` at the same time, getting the dbt-spark machinery and the cross-adapter Fabric code in one class.
 
-**One auth stack, one Fabric API client, and one Livy session layer across both adapters, instead of two parallel codebases.** Same argument as dbt-spark inheritance, one level down. Auth, Fabric REST API access, workspace resolution, profile validation, and Livy session handling are the same problem on both Data Warehouse and Lakehouse — the Lakehouse runs everything through Livy, and the Data Warehouse needs the same Livy machinery for [Python models](https://docs.getdbt.com/docs/build/python-models). There's no reason to solve any of this twice.
+**One auth stack, one Fabric API client, and one Livy session layer across both adapters, instead of two parallel codebases.** Auth, Fabric REST API access, workspace resolution, profile validation, and Livy session handling are the same problem on both Data Warehouse and Lakehouse — the Lakehouse runs everything through Livy, and the Data Warehouse needs the same Livy machinery for [Python models](https://docs.getdbt.com/docs/build/python-models).
 
 `microsoft/dbt-fabric` and `microsoft/dbt-fabricspark` each maintain their own token acquisition logic, their own Fabric API client, their own workspace resolution, their own profile validation, and they're already out of sync. The DW adapter uses `workspace_id` / `workspace_name` / `access_token` (snake_case, dbt-conventional). The Lakehouse adapter uses `workspaceid` / `lakehouseid` / `accessToken` (camelCase, different defaults). The default auth method differs (`ActiveDirectoryDefault` vs `CLI`). A user running both can't share a profile structure. A bug fixed in one repo's token-acquisition path doesn't carry over to the other. Every new auth method has to be implemented twice. Every Fabric API endpoint that gets added or changed has to be wrapped twice. This is the same compounding cost as the dbt-spark situation — two maintenance treadmills running in parallel instead of one shared codebase.
 
