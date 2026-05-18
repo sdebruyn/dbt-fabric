@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `FabricAdapter.delete_warehouse_snapshot(snapshot_id)` is a stub that returns `True` without making any REST call. Users who think they are cleaning up old warehouse snapshots are accumulating them indefinitely on their Fabric capacity.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/adapters/fabric/warehouse_snapshots.py:307-309`:
+[`dbt/adapters/fabric/warehouse_snapshots.py#L307-L309`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/warehouse_snapshots.py#L307-L309):
 
 ```python
 def delete_warehouse_snapshot(self, snapshot_id):

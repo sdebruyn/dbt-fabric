@@ -3,14 +3,16 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-Both `singleton_livy.py` and `concurrent_livy.py` register `atexit` handlers at module-import time for session cleanup. The high-concurrency variant additionally registers a second `atexit` handler with a global `_active_sessions` set. `atexit` handlers do not fire when the process is killed via SIGKILL, OOMed, exits with `os._exit`, or hits an exception during shutdown. When the handler doesn't fire, the Livy session stays alive on Fabric and keeps consuming capacity until its server-side timeout (typically 1–2 hours).
+Both [`src/dbt/adapters/fabricspark/singleton_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py) and [`src/dbt/adapters/fabricspark/concurrent_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py) register `atexit` handlers at module-import time for session cleanup. The high-concurrency variant additionally registers a second `atexit` handler with a global `_active_sessions` set. `atexit` handlers do not fire when the process is killed via SIGKILL, OOMed, exits with `os._exit`, or hits an exception during shutdown. When the handler doesn't fire, the Livy session stays alive on Fabric and keeps consuming capacity until its server-side timeout (typically 1–2 hours).
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
-- `singleton_livy.py` registers `atexit.register(...)` at module scope.
-- `concurrent_livy.py` registers `atexit.register(...)` at module scope for both per-session cleanup and the `_active_sessions` global.
+- [`src/dbt/adapters/fabricspark/singleton_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py) registers `atexit.register(...)` at module scope.
+- [`src/dbt/adapters/fabricspark/concurrent_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py) registers `atexit.register(...)` at module scope for both per-session cleanup and the `_active_sessions` global.
 
 ## User impact
 

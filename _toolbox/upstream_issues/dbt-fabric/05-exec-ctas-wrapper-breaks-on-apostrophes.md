@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `fabric__create_table_as` wraps every `CREATE TABLE AS SELECT` statement inside `EXEC('...')` with manual single-quote escaping. Fabric Warehouse supports CTAS as a first-class statement, so the wrapper is unnecessary. It also breaks any model whose SQL body contains an apostrophe inside a string literal, because the manual escape is not robust.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/materializations/models/table/create_table_as.sql:31,33`:
+[`dbt/include/fabric/macros/materializations/models/table/create_table_as.sql#L31-L33`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/table/create_table_as.sql#L31-L33):
 
 ```sql
 EXEC('

@@ -3,6 +3,8 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `design`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 The warehouse-snapshot feature is implemented as:
@@ -13,11 +15,11 @@ The warehouse-snapshot feature is implemented as:
 
 This couples a user-facing feature to Python runtime internals and to connection-manager lifecycle methods that are not part of dbt's stable adapter interface. It also introduces two silent-failure modes documented below.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-- `dbt/adapters/fabric/fabric_connection_manager.py:1` — `import atexit`
-- `dbt/adapters/fabric/fabric_connection_manager.py:45-47` — module-level globals
-- `dbt/adapters/fabric/fabric_connection_manager.py:602` — `atexit.register(lambda: _run_end_action(result))` inside `open()`
+- [`dbt/adapters/fabric/fabric_connection_manager.py#L1`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py#L1) — `import atexit`
+- [`dbt/adapters/fabric/fabric_connection_manager.py#L45-L47`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py#L45-L47) — module-level globals (`_init_done`, `_snapshot_manager`, `_init_lock`)
+- [`dbt/adapters/fabric/fabric_connection_manager.py#L602`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py#L602) — `atexit.register(lambda: _run_end_action(result))` inside `open()`
 - The `sys.argv` check in the same file gates registration based on dbt subcommand.
 
 ## User impact

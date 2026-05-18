@@ -3,15 +3,17 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 The `check_for_nested_cte` macro at `dbt/include/fabric/macros/materializations/models/unit_test/unit_test_create_table_as.sql` attempts to detect nested CTEs by lowercasing the user's SQL, replacing newlines with spaces, and counting occurrences of the substring `"with "`. Two or more occurrences → "nested CTE detected". The detector raises a compile error (with contract enforcement) or a warning otherwise.
 
 This is a category error: dbt does not parse SQL because dbt cannot reliably parse SQL; the database does. Substring-counting SQL keywords in Jinja produces false positives on any input that legitimately contains the substring `with ` in a non-CTE context.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/materializations/models/unit_test/unit_test_create_table_as.sql` defines `check_for_nested_cte` and is invoked from the unit-test materialization.
+[`dbt/include/fabric/macros/materializations/models/unit_test/unit_test_create_table_as.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/unit_test/unit_test_create_table_as.sql) defines `check_for_nested_cte` and is invoked from the unit-test materialization.
 
 The warning text shipped with the macro reads (verbatim): *"Nested CTE's do not support CTAS. However, 2-level nested CTEs are supported due to a code bug. Please expect this fix in the future."* This is an explicit, in-code acknowledgement that the materialization knowingly ships behavior that depends on a bug.
 

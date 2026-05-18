@@ -4,6 +4,8 @@
 **Labels (suggested):** `bug`, `priority/low`
 **Refs:** PR [#315](https://github.com/microsoft/dbt-fabric/pull/315)
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 [PR #315](https://github.com/microsoft/dbt-fabric/pull/315) adds `timeout=getattr(credentials, "login_timeout", None)` to every `get_token()` call. The whole change is functionally a no-op:
@@ -13,7 +15,7 @@
 
 ## Evidence
 
-The PR diff shows the parameter being threaded through every `get_token()` invocation, but `FabricCredentials` (defined in `dbt/adapters/fabric/fabric_credentials.py`) does not declare a `login_timeout` field, and the `azure-identity` SDK's `TokenCredential.get_token` signature does not accept a `timeout` keyword.
+The [PR #315 diff](https://github.com/microsoft/dbt-fabric/pull/315/files) shows the parameter being threaded through every `get_token()` invocation, but [`dbt/adapters/fabric/fabric_credentials.py`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_credentials.py) does not declare a `login_timeout` field, and the [`azure-identity` SDK's `TokenCredential.get_token` signature](https://learn.microsoft.com/en-us/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python&WT.mc_id=MVP_310840) does not accept a `timeout` keyword.
 
 ## User impact
 

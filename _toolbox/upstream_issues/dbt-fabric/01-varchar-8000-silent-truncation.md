@@ -3,18 +3,19 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `data-loss`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `FabricColumn.TYPE_LABELS` maps the generic `STRING` type to `VARCHAR(8000)`, and `FabricColumn.string_type()` / `string_size()` both default to `8000` when `char_size` is `None`. Fabric Warehouse supports `varchar(MAX)`, so the 8000-character cap is an unnecessary hard limit that silently truncates any string column produced through these code paths.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-- `dbt/adapters/fabric/fabric_column.py` — `TYPE_LABELS` maps `STRING → VARCHAR(8000)`.
-- `dbt/adapters/fabric/fabric_column.py` — `string_type(size)` / `string_size()` fall back to `8000` when `size` is `None`.
+- [`dbt/adapters/fabric/fabric_column.py`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_column.py) — `TYPE_LABELS` maps `STRING → VARCHAR(8000)`; `string_type(size)` / `string_size()` fall back to `8000` when `size` is `None`.
 
 These defaults flow into:
-- `fabric__snapshot_hash_arguments` — snapshot `dbt_scd_id` hash inputs.
-- `fabric__hash` — surrogate-key materializations (dbt-utils `generate_surrogate_key`, etc.).
+- `fabric__snapshot_hash_arguments` in [`dbt/include/fabric/macros/materializations/snapshots/`](https://github.com/microsoft/dbt-fabric/tree/0de2190/dbt/include/fabric/macros/materializations/snapshots) — snapshot `dbt_scd_id` hash inputs.
+- `fabric__hash` in [`dbt/include/fabric/macros/utils/hash.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/utils/hash.sql) — surrogate-key materializations (dbt-utils `generate_surrogate_key`, etc.).
 - Any model where a string column type is inferred (no explicit size).
 
 ## User impact

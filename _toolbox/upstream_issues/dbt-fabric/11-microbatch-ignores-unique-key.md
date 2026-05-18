@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `fabric__get_incremental_microbatch_sql` always performs a delete-then-insert sequence, even when `unique_key` is configured on the model. Fabric DW supports native `MERGE`, which is atomic and avoids the intermediate "empty rows" window that delete-then-insert exposes to concurrent readers.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/materializations/models/incremental/microbatch.sql` (in current upstream): the macro emits a delete-by-microbatch-key followed by an insert, with no branch on `unique_key`.
+[`dbt/include/fabric/macros/materializations/models/incremental/microbatch.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/incremental/microbatch.sql): the macro emits a delete-by-microbatch-key followed by an insert, with no branch on `unique_key`.
 
 ## User impact
 

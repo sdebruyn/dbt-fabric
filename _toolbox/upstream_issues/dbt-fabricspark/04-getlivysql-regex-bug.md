@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `_getLivySQL` passes `re.DOTALL` as the positional `count` argument to `re.sub` instead of as `flags=re.DOTALL`. `re.DOTALL` is an integer enum value (16). `re.sub`'s positional signature is `re.sub(pattern, repl, string, count=0, flags=0)`. Passing `re.DOTALL` positionally sets `count=16`, capping comment-stripping to at most 16 replacements per file.
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
-`_getLivySQL` is duplicated verbatim between `singleton_livy.py:488` and `concurrent_livy.py:555`. Both copies call `re.sub(pattern, '', sql, re.DOTALL)` (positional) when they meant `re.sub(pattern, '', sql, flags=re.DOTALL)`.
+`_getLivySQL` is duplicated verbatim between [`src/dbt/adapters/fabricspark/singleton_livy.py#L488`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L488) and [`src/dbt/adapters/fabricspark/concurrent_livy.py#L555`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L555). Both copies call `re.sub(pattern, '', sql, re.DOTALL)` (positional) when they meant `re.sub(pattern, '', sql, flags=re.DOTALL)`.
 
 ## User impact
 
@@ -37,7 +39,7 @@ Use keyword args:
 sql = re.sub(pattern, "", sql, flags=re.DOTALL)
 ```
 
-Fix both copies (`singleton_livy.py:488` and `concurrent_livy.py:555`). Better: extract a single `_strip_sql_comments(sql)` helper and call it from both files so the bug can't reoccur in only one place.
+Fix both copies ([`singleton_livy.py#L488`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L488) and [`concurrent_livy.py#L555`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L555)). Better: extract a single `_strip_sql_comments(sql)` helper and call it from both files so the bug can't reoccur in only one place.
 
 ## Notes
 

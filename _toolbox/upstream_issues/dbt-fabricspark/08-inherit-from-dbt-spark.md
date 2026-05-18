@@ -3,9 +3,11 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `proposal`, `architecture`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-`FabricSparkAdapter` is currently a standalone `SQLAdapter`. It reimplements — or omits — the Spark-flavoured materializations, incremental strategies, column type handling, constraint handling, and Python-model API that `dbt-spark` already ships and that any Spark-backed dbt adapter is expected to inherit.
+[`FabricSparkAdapter`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/impl.py) is currently a standalone `SQLAdapter`. It reimplements — or omits — the Spark-flavoured materializations, incremental strategies, column type handling, constraint handling, and Python-model API that `dbt-spark` already ships and that any Spark-backed dbt adapter is expected to inherit.
 
 The Spark engine the Fabric Lakehouse runs is, for dbt's purposes, the same engine `dbt-spark` already targets. The work of mapping dbt operations onto Spark SQL has been done once, in `dbt-spark`. There is no engineering case for redoing it independently here.
 
@@ -32,7 +34,7 @@ Databricks does not reimplement Spark adapter behaviour because that is not wher
 
 ## What the current standalone-`SQLAdapter` design costs
 
-`microsoft/dbt-fabricspark` has no `dbt-spark` dependency. It is a standalone `SQLAdapter`. Every macro, materialization, type rule, incremental strategy, and Python-model path therefore has to be implemented and maintained by hand.
+`microsoft/dbt-fabricspark` has no `dbt-spark` dependency (see [`pyproject.toml`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/pyproject.toml)). It is a standalone `SQLAdapter`. Every macro, materialization, type rule, incremental strategy, and Python-model path therefore has to be implemented and maintained by hand.
 
 The compounding cost is structural:
 
@@ -47,10 +49,10 @@ This is the maintenance treadmill the inheritance pattern exists to eliminate. A
 
 Two things change in the package:
 
-1. Add `dbt-spark` as a dependency in `pyproject.toml`.
-2. Change `class FabricSparkAdapter(SQLAdapter):` to `class FabricSparkAdapter(SparkAdapter):` (importing from `dbt.adapters.spark`).
+1. Add `dbt-spark` as a dependency in [`pyproject.toml`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/pyproject.toml).
+2. Change `class FabricSparkAdapter(SQLAdapter):` in [`src/dbt/adapters/fabricspark/impl.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/impl.py) to `class FabricSparkAdapter(SparkAdapter):` (importing from `dbt.adapters.spark`).
 
-The macros under `dbt/include/fabricspark/macros/` then act as overrides on top of `dbt-spark`'s macros. Most of them can be deleted because the inherited versions are correct for the Fabric Lakehouse engine. The ones that need to stay are the genuinely Fabric-specific cases — the cross-workspace `workspace.database.schema` naming, the Fabric-only Materialized Lake View handling, etc.
+The macros under `src/dbt/include/fabricspark/macros/` then act as overrides on top of `dbt-spark`'s macros. Most of them can be deleted because the inherited versions are correct for the Fabric Lakehouse engine. The ones that need to stay are the genuinely Fabric-specific cases — the cross-workspace `workspace.database.schema` naming, the Fabric-only Materialized Lake View handling, etc.
 
 Python's multiple inheritance also makes this composable with a shared `BaseFabricAdapter` (if such a base exists, or is extracted) so the FabricSpark adapter can extend `SparkAdapter` *and* the cross-adapter Fabric base at the same time:
 

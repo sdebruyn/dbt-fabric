@@ -3,18 +3,20 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `data-loss`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 Six `__exit__` methods across `singleton_livy.py` and `concurrent_livy.py` end with `return True`. In Python, returning a truthy value from `__exit__` suppresses any exception raised inside the `with` block. Every database error, timeout, `KeyboardInterrupt`, and programming bug raised inside a `with`-using one of these context managers is silently dropped on the floor.
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
-- `singleton_livy.py:49`
-- `singleton_livy.py:378`
-- `singleton_livy.py:706`
-- `concurrent_livy.py:119`
-- `concurrent_livy.py:340`
-- `concurrent_livy.py:627`
+- [`src/dbt/adapters/fabricspark/singleton_livy.py#L49`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L49)
+- [`src/dbt/adapters/fabricspark/singleton_livy.py#L378`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L378)
+- [`src/dbt/adapters/fabricspark/singleton_livy.py#L706`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L706)
+- [`src/dbt/adapters/fabricspark/concurrent_livy.py#L119`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L119)
+- [`src/dbt/adapters/fabricspark/concurrent_livy.py#L340`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L340)
+- [`src/dbt/adapters/fabricspark/concurrent_livy.py#L627`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L627)
 
 All six methods end with `return True` (sometimes preceded by best-effort cleanup logic).
 

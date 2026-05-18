@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `security`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-`livysession.py:184` constructs an `AccessToken` with `expires_on = 1845972874` — a Unix timestamp pointing at 2028-06-09. The `int_tests` authentication path uses this token directly, bypassing all token-refresh logic. The pattern looks like a developer stub that landed in production code.
+[`src/dbt/adapters/fabricspark/livysession.py#L184`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/livysession.py#L184) constructs an `AccessToken` with `expires_on = 1845972874` — a Unix timestamp pointing at 2028-06-09. The `int_tests` authentication path uses this token directly, bypassing all token-refresh logic. The pattern looks like a developer stub that landed in production code.
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
-`livysession.py:184` constructs `AccessToken(..., expires_on=1845972874)` in the `int_tests` auth branch.
+[`src/dbt/adapters/fabricspark/livysession.py#L184`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/livysession.py#L184) constructs `AccessToken(..., expires_on=1845972874)` in the `int_tests` auth branch.
 
 ## User impact
 

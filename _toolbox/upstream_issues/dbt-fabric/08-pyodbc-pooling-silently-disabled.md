@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `performance`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `pyodbc.pooling = True` only takes effect when `pyodbc.odbcversion = "3.8"` is set first. The adapter sets `pyodbc.pooling` but never sets `pyodbc.odbcversion`. The code reads as if pooling is on, but in practice every dbt operation opens a fresh ODBC connection.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/adapters/fabric/fabric_connection_manager.py:571`:
+[`dbt/adapters/fabric/fabric_connection_manager.py#L571`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py#L571):
 
 ```python
 pyodbc.pooling = credentials.pooling if credentials.pooling is not None else True
@@ -18,7 +20,7 @@ pyodbc.pooling = credentials.pooling if credentials.pooling is not None else Tru
 A search for `odbcversion` across the package returns nothing:
 
 ```shell
-grep -rn "odbcversion" dbt/
+git grep -n "odbcversion" 0de2190 -- 'dbt/**'
 # (no matches)
 ```
 

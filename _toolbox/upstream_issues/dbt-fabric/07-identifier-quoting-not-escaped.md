@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `security`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `FabricAdapter.quote()` is `"[{}]".format(identifier)` with no escape. T-SQL bracket quoting requires `]` to be doubled (`]` → `]]`) to escape it inside a bracketed identifier. The current implementation breaks for any identifier that contains `]`, and lets a malicious or careless identifier terminate the bracket prematurely.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/adapters/fabric/fabric_adapter.py:37-38`:
+[`dbt/adapters/fabric/fabric_adapter.py#L37-L38`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_adapter.py#L37-L38):
 
 ```python
 @classmethod
@@ -17,7 +19,7 @@ def quote(cls, identifier):
     return "[{}]".format(identifier)
 ```
 
-Same pattern in `FabricColumn.quoted`, `FabricRelation.quoted`, and 5 macros that compose identifiers (`columns.sql`, `alter_relation_add_remove_columns`, `get_use_database_sql`, `create_table_as`, `seeds/helpers.sql`).
+Same pattern in [`FabricColumn`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_column.py), [`FabricRelation`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_relation.py), and 5 macros that compose identifiers — [`columns.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/columns.sql), [`alter_relation_add_remove_columns`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/columns.sql), [`get_use_database_sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/metadata.sql), [`create_table_as`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/table/create_table_as.sql), [`seeds/helpers.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/seeds/helpers.sql).
 
 ## Reproduction
 

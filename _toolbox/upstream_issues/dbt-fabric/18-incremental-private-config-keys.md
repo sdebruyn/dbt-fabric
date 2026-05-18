@@ -4,9 +4,11 @@
 **Labels (suggested):** `design`, `priority/medium`
 **Refs:** v1.9.10 release
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-The v1.9.10 release adds two new model-level configs invented by the maintainers: `delete_condition` and `delete_not_matched_by_source`. They are wired into `dbt/include/fabric/macros/materializations/models/incremental/incremental.sql` and dispatched through a new `fabric__get_incremental_merge_sql` macro. Neither config exists in dbt-core or in dbt-adapters. No other reference adapter (Snowflake, BigQuery, Postgres, Redshift, Spark) exposes anything equivalent on the `incremental` materialization.
+The v1.9.10 release adds two new model-level configs invented by the maintainers: `delete_condition` and `delete_not_matched_by_source`. They are wired into [`dbt/include/fabric/macros/materializations/models/incremental/incremental.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/incremental/incremental.sql) and dispatched through a new `fabric__get_incremental_merge_sql` macro in [`dbt/include/fabric/macros/materializations/models/incremental/merge.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/incremental/merge.sql). Neither config exists in dbt-core or in dbt-adapters. No other reference adapter (Snowflake, BigQuery, Postgres, Redshift, Spark) exposes anything equivalent on the `incremental` materialization.
 
 ## Why this is a problem
 

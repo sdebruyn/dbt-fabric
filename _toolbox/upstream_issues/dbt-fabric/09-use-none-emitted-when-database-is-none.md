@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `fabric__get_use_database_sql` has no None-guard, so callers that pass `database=None` (legitimately, in some code paths) cause the macro to render `USE [None];` — syntactically invalid T-SQL.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/adapters/metadata.sql`:
+[`dbt/include/fabric/macros/adapters/metadata.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/metadata.sql):
 
 ```jinja
 {%- macro fabric__get_use_database_sql(database) -%}

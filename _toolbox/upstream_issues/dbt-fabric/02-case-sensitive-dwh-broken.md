@@ -3,18 +3,20 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `FabricAdapter` does not override `_make_match_kwargs`, so dbt-adapters' default implementation runs unchanged. That default lowercases identifiers whenever `quoting.case_sensitive` is `False` (the dbt-core default). On a Fabric Warehouse provisioned with a case-sensitive collation (e.g. `SQL_Latin1_General_CP1_CS_AS`), dbt then asks Fabric for a relation by its lowercased name and Fabric correctly answers "no such object".
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
 ```shell
-git show upstream/main:dbt/adapters/fabric/fabric_adapter.py | grep _make_match_kwargs
+git show 0de2190:dbt/adapters/fabric/fabric_adapter.py | grep _make_match_kwargs
 # (returns nothing)
 ```
 
-No `_make_match_kwargs` override exists on `FabricAdapter`.
+No `_make_match_kwargs` override exists on `FabricAdapter` — see [`dbt/adapters/fabric/fabric_adapter.py`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_adapter.py).
 
 ## Reproduction
 

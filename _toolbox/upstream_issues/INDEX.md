@@ -7,9 +7,47 @@ Issue drafts for `microsoft/dbt-fabric` and `microsoft/dbt-fabricspark`, derived
 ## How to use
 
 - Each file is a standalone issue body. Title at the top, evidence in the body, suggested fix at the bottom.
-- File:line references point at upstream HEAD as of 2026-05-18 (`microsoft/dbt-fabric` `0de2190`, `microsoft/dbt-fabricspark` `d315a56`). Re-verify before filing if more time has passed.
+- File:line references point at upstream HEAD as of 2026-05-18 (`microsoft/dbt-fabric` [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), `microsoft/dbt-fabricspark` [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56)) and are linked as GitHub permalinks. Re-verify before filing if more time has passed.
 - Reference fork commits are provided for the maintainer to compare against — useful when the maintainer wants to cherry-pick the fix.
 - All issue bodies are in English (upstream convention).
+
+## Validation tracker
+
+Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. Sam confirms an issue after reading the file, opening the linked code, and confirming the claim. Update the tracker below as issues are validated.
+
+### dbt-fabric
+
+- [ ] 01 — `varchar(8000)` silent string-truncation
+- [ ] 02 — Case-sensitive Fabric DWHs broken
+- [ ] 03 — `apply_grants` misses Entra-principal grants
+- [ ] 04 — Pre/post hooks fail (`commit;` emitted)
+- [ ] 05 — CTAS via `EXEC('...')` breaks on apostrophes
+- [ ] 06 — `get_response` drops warnings + statement ID
+- [ ] 07 — `quote()` does not escape `]` (injection vector)
+- [ ] 08 — pyodbc pooling silently disabled
+- [ ] 09 — `USE [None];` emitted when `database=None`
+- [ ] 10 — Incremental `--full-refresh` data-loss risk
+- [ ] 11 — `microbatch` ignores `unique_key`
+- [ ] 12 — `snapshot_merge_sql` UPDATE+INSERT instead of MERGE
+- [ ] 13 — `delete_warehouse_snapshot` is a stub
+- [ ] 14 — `apply_label` emits `log()` on every call
+- [ ] 15 — `check_for_nested_cte` false positives
+- [ ] 16 — PR #315 `login_timeout` is a no-op
+- [ ] 17 — Warehouse snapshots via `atexit` + connection lifecycle
+- [ ] 18 — Adapter-private `delete_condition` on `incremental`
+- [ ] 19 — `list_relations` retry at wrong layer
+- [ ] 20 — Module-level `_TOKEN` global
+
+### dbt-fabricspark
+
+- [ ] 01 — Six `__exit__` methods return `True`
+- [ ] 02 — Hardcoded 2028 token expiry
+- [ ] 03 — `tokenPrint=True` can leak bearer tokens
+- [ ] 04 — `_getLivySQL` regex bug
+- [ ] 05 — Global mutable state in Livy modules
+- [ ] 06 — `atexit` handlers leak Livy sessions
+- [ ] 07 — Dead code from Databricks ancestry
+- [ ] 08 — Proposal: inherit from `dbt-spark`
 
 ## Priority guidance
 

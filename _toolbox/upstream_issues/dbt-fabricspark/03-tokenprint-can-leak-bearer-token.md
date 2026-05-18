@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `security`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-`get_headers()` at `livysession.py:328` accepts a `tokenPrint` parameter. When `tokenPrint=True`, the function logs the full Authorization header — including the bearer token — to whichever logger is active. The default is `False`, and current callers do not pass `True`. But the parameter is one debug-flag flip, environment-variable toggle, or maintenance-mode edit away from leaking auth tokens into log files, log aggregators (Splunk, Datadog, ELK), CI artifacts, and crash dumps.
+`get_headers()` at [`src/dbt/adapters/fabricspark/livysession.py#L328`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/livysession.py#L328) accepts a `tokenPrint` parameter. When `tokenPrint=True`, the function logs the full Authorization header — including the bearer token — to whichever logger is active. The default is `False`, and current callers do not pass `True`. But the parameter is one debug-flag flip, environment-variable toggle, or maintenance-mode edit away from leaking auth tokens into log files, log aggregators (Splunk, Datadog, ELK), CI artifacts, and crash dumps.
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
-`livysession.py:328`:
+[`src/dbt/adapters/fabricspark/livysession.py#L328`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/livysession.py#L328):
 
 ```python
 def get_headers(..., tokenPrint=False):

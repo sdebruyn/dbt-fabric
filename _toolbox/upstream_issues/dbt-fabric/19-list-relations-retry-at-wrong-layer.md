@@ -4,6 +4,8 @@
 **Labels (suggested):** `enhancement`, `priority/medium`
 **Refs:** Issue [#362](https://github.com/microsoft/dbt-fabric/issues/362)
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 [Issue #362](https://github.com/microsoft/dbt-fabric/issues/362) (May 2026) is a real, well-documented user report: `list_<schema>` taking 8–20 minutes when another dbt run is active on the same warehouse. The v1.9.10 fix wraps `FabricAdapter.list_relations_without_caching` in a custom retry with exponential back-off.
@@ -13,7 +15,7 @@ The fix lands at the wrong layer. dbt-adapters already gives every query a `retr
 ## Evidence
 
 - The reporter's symptom (`list_<schema>` slow under contention) generalizes to any metadata query — `get_columns_in_relation`, `get_catalog`, `check_schema_exists`, etc. — and to model queries that hit the same `sys.tables`/`sys.columns` views internally.
-- `dbt/adapters/fabric/fabric_connection_manager.py` already defines `retryable_exceptions: List[Type[Exception]] = [pyodbc.OperationalError]` for the connection-open path. Extending the same list to `add_query` would cover everything.
+- [`dbt/adapters/fabric/fabric_connection_manager.py`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py) already defines `retryable_exceptions: List[Type[Exception]] = [pyodbc.OperationalError]` for the connection-open path. Extending the same list to `add_query` would cover everything.
 - The reporter explicitly flagged their root-cause guess as hypothesis: *"though we have not been able to confirm the exact mechanism."* The fix that landed addresses the surfaced symptom rather than the underlying contention.
 
 ## User impact

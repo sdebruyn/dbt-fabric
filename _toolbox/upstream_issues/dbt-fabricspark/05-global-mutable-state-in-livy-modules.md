@@ -3,16 +3,18 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `concurrency`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-`singleton_livy.py` and `concurrent_livy.py` use module-level and class-level globals to hold authentication tokens, Livy session handles, connection managers, and relation configuration. dbt runs with parallelism by default (the `threads:` profile setting drives a thread pool). Module-level mutable state under threading produces classic race-condition symptoms: one thread's data leaks into another thread's operation, or two threads stomp on the same global.
+[`src/dbt/adapters/fabricspark/singleton_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py) and [`src/dbt/adapters/fabricspark/concurrent_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py) use module-level and class-level globals to hold authentication tokens, Livy session handles, connection managers, and relation configuration. dbt runs with parallelism by default (the `threads:` profile setting drives a thread pool). Module-level mutable state under threading produces classic race-condition symptoms: one thread's data leaks into another thread's operation, or two threads stomp on the same global.
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
 Both files declare module-level state that is mutated from instance methods without per-instance scoping:
 
-- `singleton_livy.py` — global session handle and global active-session set.
-- `concurrent_livy.py` — global `_active_sessions` set, plus module-level `atexit.register(...)` calls (separate issue) that capture the global state by reference.
+- [`src/dbt/adapters/fabricspark/singleton_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py) — global session handle and global active-session set.
+- [`src/dbt/adapters/fabricspark/concurrent_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py) — global `_active_sessions` set, plus module-level `atexit.register(...)` calls (separate issue) that capture the global state by reference.
 
 (Exact line references vary by release; the pattern is pervasive throughout both files.)
 

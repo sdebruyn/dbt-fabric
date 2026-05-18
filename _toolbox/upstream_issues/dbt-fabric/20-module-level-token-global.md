@@ -3,21 +3,25 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `concurrency`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-`dbt/adapters/fabric/fabric_connection_manager.py:57` declares `_TOKEN: Optional[AccessToken] = None` at module scope, and `get_pyodbc_attrs_before_credentials()` mutates it via `global _TOKEN`. Module-level mutable auth state has three problems:
+[`dbt/adapters/fabric/fabric_connection_manager.py#L57`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py#L57) declares `_TOKEN: Optional[AccessToken] = None` at module scope, and `get_pyodbc_attrs_before_credentials()` mutates it via `global _TOKEN`. Module-level mutable auth state has three problems:
 
 1. **Thread safety** — dbt runs with parallelism by default. Multiple worker threads call into the auth path concurrently and race on `_TOKEN` reads/writes.
 2. **Scope confusion** — a single global means a single token. As soon as the adapter supports multiple scopes or multiple credentials in one process (e.g. T-SQL endpoint + REST API + Purview), the global serves the wrong token to the wrong consumer.
 3. **Lifecycle** — the token cannot be invalidated on a per-credential or per-adapter-instance basis. The only way to clear it is to restart the Python process.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
+
+From [`dbt/adapters/fabric/fabric_connection_manager.py`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py):
 
 ```python
-# dbt/adapters/fabric/fabric_connection_manager.py:57
+# Line 57:
 _TOKEN: Optional[AccessToken] = None
 
-# AZURE_AUTH_FUNCTIONS mapping — module-scope mutable dict
+# AZURE_AUTH_FUNCTIONS mapping — module-scope mutable dict (same file)
 
 def get_pyodbc_attrs_before_credentials(credentials):
     global _TOKEN

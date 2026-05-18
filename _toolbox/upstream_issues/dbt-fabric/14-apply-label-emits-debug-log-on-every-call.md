@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `observability`, `priority/low`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-The `apply_label` macro in `dbt/include/fabric/macros/adapters/metadata.sql` opens with `{{ log(config.get('query_tag','dbt-fabric')) }}` — a debug leftover that fires on every macro invocation. `apply_label()` is called from `catalog.sql`, `columns.sql`, `metadata.sql`, `relation.sql`, `merge.sql`, `create_table_as.sql`, and `seeds/helpers.sql`. Effectively every SQL statement dbt emits dumps the label string to the dbt log.
+The `apply_label` macro in `dbt/include/fabric/macros/adapters/metadata.sql` opens with `{{ log(config.get('query_tag','dbt-fabric')) }}` — a debug leftover that fires on every macro invocation. `apply_label()` is called from [`catalog.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/catalog.sql), [`columns.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/columns.sql), [`metadata.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/metadata.sql), [`relation.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/relation.sql), [`merge.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/incremental/merge.sql), [`create_table_as.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/table/create_table_as.sql), and [`seeds/helpers.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/seeds/helpers.sql). Effectively every SQL statement dbt emits dumps the label string to the dbt log.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/adapters/metadata.sql`:
+[`dbt/include/fabric/macros/adapters/metadata.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/metadata.sql):
 
 ```jinja
 {% macro apply_label() %}

@@ -3,6 +3,8 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `observability`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `FabricConnectionManager.get_response` returns `message = "OK"` regardless of what `cursor.messages` contained. Two things go missing on every query:
@@ -10,9 +12,9 @@
 1. **SQL warnings, notices, and non-fatal errors** — Fabric surfaces `RAISERROR` with severity < 11, `PRINT` output, deprecation notices, and informational warnings through cursor messages.
 2. **The distributed statement ID** — every Fabric DW query gets a server-side GUID emitted in `cursor.messages` as `statement id: {...}`, used by the Fabric portal, query history, and the Capacity Metrics app to identify queries.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/adapters/fabric/fabric_connection_manager.py:746-748`:
+[`dbt/adapters/fabric/fabric_connection_manager.py#L746-L748`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_connection_manager.py#L746-L748):
 
 ```python
 def get_response(cls, cursor: Any) -> AdapterResponse:

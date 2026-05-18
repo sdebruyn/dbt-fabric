@@ -3,15 +3,17 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `tech-debt`, `priority/low`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
-`connections.py` contains code paths that never run in this adapter, carried over from a Spark/Databricks ancestor (likely `dbt-spark`). The dead code has user-visible side effects (boto3 debug noise in logs) and represents code that nobody removed because nobody worked out what it was for.
+[`src/dbt/adapters/fabricspark/connections.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/connections.py) contains code paths that never run in this adapter, carried over from a Spark/Databricks ancestor (likely `dbt-spark`). The dead code has user-visible side effects (boto3 debug noise in logs) and represents code that nobody removed because nobody worked out what it was for.
 
-## Evidence (HEAD `d315a56`)
+## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
-**Thrift exception handler** — `connections.py:102-114` references `thrift_resp.status.errorMessage`. Apache Thrift is the protocol `dbt-spark` uses to talk to Spark Thrift Server. This adapter talks Livy over HTTP. The Thrift branch is unreachable in this adapter.
+**Thrift exception handler** — [`src/dbt/adapters/fabricspark/connections.py#L102-L114`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/connections.py#L102-L114) references `thrift_resp.status.errorMessage`. Apache Thrift is the protocol `dbt-spark` uses to talk to Spark Thrift Server. This adapter talks Livy over HTTP. The Thrift branch is unreachable in this adapter.
 
-**AWS logging config** — `connections.py:42-50` sets `botocore` and `boto3` loggers to DEBUG at import time:
+**AWS logging config** — [`src/dbt/adapters/fabricspark/connections.py#L42-L50`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/connections.py#L42-L50) sets `botocore` and `boto3` loggers to DEBUG at import time:
 
 ```python
 logging.getLogger("botocore").setLevel(logging.DEBUG)
@@ -21,10 +23,10 @@ logging.getLogger("boto3").setLevel(logging.DEBUG)
 This adapter has no AWS dependencies (no `boto3`, no `botocore` in `pyproject.toml`). The lines are no-ops in terms of behavior but they're not harmless: if the user's project transitively imports boto3 (common in dbt projects with S3-backed assets or in Databricks-adjacent environments), this code injects boto3 debug noise into every user's dbt log output.
 
 **Duplicated `_parse_retry_after`** — the function appears verbatim across four files:
-- `livysession.py:370`
-- `mlv_api.py:141`
-- `concurrent_livy.py:60`
-- `singleton_livy.py:34`
+- [`src/dbt/adapters/fabricspark/livysession.py#L370`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/livysession.py#L370)
+- [`src/dbt/adapters/fabricspark/mlv_api.py#L141`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/mlv_api.py#L141)
+- [`src/dbt/adapters/fabricspark/concurrent_livy.py#L60`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L60)
+- [`src/dbt/adapters/fabricspark/singleton_livy.py#L34`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L34)
 
 All four copies use deprecated `datetime.utcnow()` (deprecated since Python 3.12 in favor of `datetime.now(timezone.utc)`). When `utcnow` is removed in a future Python release, the bug will surface in four places at once.
 

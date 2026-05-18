@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `data-loss`, `priority/high`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `fabric__incremental` (via `dbt/include/fabric/macros/materializations/models/incremental/incremental.sql`) calls `adapter.drop_relation(target_relation)` before re-creating the table. If the subsequent `CREATE TABLE AS SELECT` then fails for any reason — transient Fabric error, query timeout, broken model SQL, capacity issue, OOM, network hiccup — the user is left with no table at all. This is the documented data-loss anti-pattern that every other reference adapter (dbt-postgres, dbt-snowflake, dbt-spark, dbt-bigquery) avoids by using an intermediate-relation + backup-rename swap.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/materializations/models/incremental/incremental.sql:30-34`:
+[`dbt/include/fabric/macros/materializations/models/incremental/incremental.sql#L30-L34`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/materializations/models/incremental/incremental.sql#L30-L34):
 
 ```jinja
 {% if full_refresh_mode %}

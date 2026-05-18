@@ -3,13 +3,15 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
 
+> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
 ## Summary
 
 `fabric__get_show_grant_sql` queries `INFORMATION_SCHEMA.TABLE_PRIVILEGES`. On Fabric Warehouse, that view does not surface Entra-principal grants — only SQL-principal grants. dbt's diff-based `apply_grants` machinery therefore sees every Entra-principal grant as "missing" on every run, re-issues the same `GRANT` statement on every run, and fills the warehouse with no-op DDL.
 
-## Evidence (HEAD `0de2190`, v1.10.0)
+## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
-`dbt/include/fabric/macros/adapters/apply_grants.sql`:
+[`dbt/include/fabric/macros/adapters/apply_grants.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/adapters/apply_grants.sql):
 
 ```sql
 {% macro fabric__get_show_grant_sql(relation) %}
