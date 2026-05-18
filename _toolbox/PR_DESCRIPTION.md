@@ -154,6 +154,7 @@ The one principle running through this whole adapter: every feature uses dbt's e
 
 ## What end users get out of this
 
+- A more reliably maintained adapter with stable, regularly tested releases. Every PR runs against real Fabric, every release ships after the full integration suite has gone green, and the bugs documented in the "What's broken" section above are already fixed.
 - One `pip install dbt-fabric` for both engines, instead of two separate packages with overlapping dependencies and version-conflict risk.
 - No external ODBC driver installation. [`mssql-python`](https://github.com/microsoft/mssql-python) bundles ODBC Driver 18 and unixODBC, removing a common installation hurdle on macOS and in containers.
 - [Functions](https://docs.getdbt.com/docs/build/functions) (dbt 1.11 scalar functions) supported on both adapter types where the platform allows.
