@@ -1,11 +1,22 @@
-{% macro get_fiscal_periods(dates, year_end_month, week_start_day, shift_year=1) %}
+{#-
+Overrides: dbt_date.default__get_fiscal_periods (godatadriven/dbt-date >= 0.18.0)
+What differs:
+  1. Upstream calls dbt_date.get_fiscal_year_dates(...) which produces a nested
+     CTE. Fabric doesn't allow nested CTEs in CREATE VIEW, so we inline it.
+  2. Upstream uses positional GROUP BY (1, 2) and ORDER BY (1, 2). T-SQL does
+     not support either, so we use explicit column references and drop the
+     trailing ORDER BY (Fabric views/subqueries can't ORDER BY anyway).
+  3. Upstream uses mod(x, 13). T-SQL uses the % operator.
+Why: works around T-SQL dialect limitations vs the default implementation.
+Once these limitations are lifted, this whole override can be removed.
+-#}
+{% macro fabric__get_fiscal_periods(dates, year_end_month, week_start_day, shift_year=1) %}
 {#
 This macro requires you to pass in a ref to a date dimension, created via
 dbt_date.get_date_dimension()s
 #}
 
-{#- Upstream calls {{ dbt_date.get_fiscal_year_dates(...) }} which produces a nested CTE.
-    Fabric doesn't allow nested CTEs in CREATE VIEW, so we inline it. #}
+{#- Inlined dbt_date.get_fiscal_year_dates below to avoid nested CTEs in CREATE VIEW. #}
 -- this gets all the dates within a fiscal year
 -- determined by the given year-end-month
 -- ending on the saturday closest to that month's end date

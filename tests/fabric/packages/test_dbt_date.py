@@ -1,30 +1,8 @@
-from pathlib import Path
-
 import pytest
 
 from tests.packages.base_package_test import BaseDbtPackageTests
 
-_FISCAL_PERIODS_PATH = (
-    Path(__file__).resolve().parents[3]
-    / "src/dbt/include/fabric/macros/dbt_package_support/dbt_date/fiscal_date"
-    / "get_fiscal_periods.sql"
-)
-
 _TEST_DATES_SQL = "{{ get_test_dates() }}"
-
-_DIM_DATE_FISCAL_SQL = "{{ get_fiscal_periods(ref('dates'), year_end_month=1, week_start_day=1) }}"
-
-_DIM_DATE_SQL = """
-select
-    d.*,
-    f.fiscal_week_of_year,
-    f.fiscal_week_of_period,
-    f.fiscal_period_number,
-    f.fiscal_quarter_number,
-    f.fiscal_period_of_quarter
-from {{ ref("dates") }} d
-left join {{ ref("dim_date_fiscal") }} f on d.date_day = f.date_day
-""".strip()
 
 
 class TestDbtDate(BaseDbtPackageTests):
@@ -44,8 +22,6 @@ class TestDbtDate(BaseDbtPackageTests):
     def models(self):
         return {
             "test_dates.sql": _TEST_DATES_SQL,
-            "dim_date.sql": _DIM_DATE_SQL,
-            "dim_date_fiscal.sql": _DIM_DATE_FISCAL_SQL,
         }
 
     @pytest.fixture(scope="class")
@@ -53,15 +29,12 @@ class TestDbtDate(BaseDbtPackageTests):
         return {
             "dbt_date_integration_tests": {
                 "test_dates": {"+enabled": False},
-                "dim_date": {"+enabled": False},
-                "dim_date_fiscal": {"+enabled": False},
             }
         }
 
     @pytest.fixture(scope="class")
     def macros(self):
         return {
-            "get_fiscal_periods.sql": _FISCAL_PERIODS_PATH.read_text(),
             "fabric_test_helpers.sql": """
 {% macro get_test_week_of_year() -%}
     {{ return([49, 49]) }}

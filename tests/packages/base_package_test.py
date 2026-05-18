@@ -26,7 +26,7 @@ class BaseDbtPackageTests:
 
     @pytest.fixture(scope="class")
     def dbt_date_revision(self) -> str:
-        return "0.17.2"
+        return "0.18.0"
 
     @pytest.fixture(scope="class")
     def packages(
