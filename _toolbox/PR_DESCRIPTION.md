@@ -4,9 +4,7 @@ This PR adds `tools/dbt-fabric/`: one dbt adapter for both Microsoft Fabric comp
 
 I wrote most of the code that's now in [`microsoft/dbt-fabric`](https://github.com/microsoft/dbt-fabric). When Microsoft adopted the repository I kept maintaining a fork because customers were asking for things the official repo wasn't shipping. That fork ([`dbt-fabric-samdebruyn`](https://pypi.org/project/dbt-fabric-samdebruyn/) on PyPI) is what multiple organizations are running in production today.
 
-I'm not happy with the state of either Microsoft adapter today, and I'm writing this as an invitation rather than an attack. The way forward I see is the toolbox's multi-contributor model: the Fabric product team, the CAT team, and the community all sharing maintenance. More co-owners, more reviewers, more eyes on PRs — that is how a serious dbt adapter stays healthy. The dbt ecosystem also moves quickly — new dbt-core minors, new community-package releases, new [`dbt-tests-adapter`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-tests-adapter) `Base*` classes every cycle — and a shared codebase under the toolbox is better positioned to keep up with that cadence than a single-maintainer adapter is.
-
-**Why I'm proposing this instead of contributing upstream.** Early on, I did try. PRs to `microsoft/dbt-fabric` got little response, and there was no appetite for setting up the kind of automated testing that I think modern software needs. For me that's a non-starter — in 2026, CI that runs the test suite against the actual target platform on every change is the cornerstone of any serious software project, not a nice-to-have. Shipping releases that aren't tested end-to-end on real Fabric is a risk I'm not comfortable taking on the user's behalf, and I don't want to spend my time in a codebase that ships that way. The other half of it is that I quickly moved faster than upstream could absorb: modernising the codebase to current Python defaults, porting the macro inheritance to ride on [`dbt-spark`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-spark), and adding the test coverage that wasn't there.
+I'm bringing it to the toolbox because the toolbox's multi-contributor model — the Fabric product team, the CAT team, and the community sharing maintenance — fits a dbt adapter better than a single-maintainer setup does. More co-owners, more reviewers, more eyes on PRs. The dbt ecosystem also moves quickly — new dbt-core minors, new community-package releases, new [`dbt-tests-adapter`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-tests-adapter) `Base*` classes every cycle — and a shared codebase under the toolbox is better positioned to keep up with that cadence than any individual maintainer can be.
 
 ---
 
@@ -38,6 +36,8 @@ And — the upstream-equivalent baseline most users will actually feel day-to-da
 ---
 
 ## What's broken in the official adapters
+
+I tried contributing some of these fixes back to `microsoft/dbt-fabric` first. A few landed, most didn't get engagement, and there wasn't appetite for the end-to-end CI against real Fabric that I think a production-grade adapter needs. The fork ended up carrying the changes the upstream couldn't absorb fast enough — and that gap has compounded since. This section is what the official adapters are still shipping today.
 
 I've filed [20 issues against `microsoft/dbt-fabric`](#) and [8 against `microsoft/dbt-fabricspark`](#) covering the bugs and design problems summarised below. Each ticket has its own reproduction, evidence, and suggested fix; the lists here link straight to them rather than re-explaining each in line.
 
