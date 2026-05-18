@@ -1,9 +1,7 @@
 import contextlib
 import hashlib
 import json
-import threading
 import time
-from collections import deque
 from dataclasses import dataclass
 from typing import Any
 
@@ -53,30 +51,15 @@ class HighConcurrencyLivySession:
     the underlying Livy session is idle and a REPL is allocated, then submits
     statements through the REPL endpoint.
 
-    Sessions are pooled at the process level (keyed by session tag) to avoid
-    re-acquiring an HC REPL on every dbt invocation (seed/run/test/snapshot).
-    ``close()`` returns a healthy session to the pool; dead sessions are
-    deleted in Fabric immediately.
-
-    The pool lives for the lifetime of the process — no ``atexit`` handler,
-    no out-of-band cleanup. Sessions still in the pool at interpreter exit
-    are reaped server-side by Fabric on the standard HC REPL idle timeout.
-    This keeps the implementation aligned with dbt's open/close lifecycle
-    and avoids the fragility of ``atexit`` handlers that the upstream
-    adapter relies on (see ``docs/comparison-dbt-fabricspark.md``).
-
-    The underlying Spark session is managed by Fabric and stays alive for
-    other REPLs and processes — closing or deleting an HC slot here only
-    releases this instance's REPL, not the shared Spark session.
+    ``close()`` DELETEs this instance's HC session (REPL slot) only — the
+    underlying Spark session is managed by Fabric and stays alive for other
+    REPLs and processes.
     """
 
     _POLLING_INTERVAL = 3
     _POLL_BACKOFF_SCHEDULE: tuple[float, ...] = (0.5, 1.0, 2.0)
     _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
     _TERMINAL_STATEMENT_STATES = frozenset({"available", "error", "cancelled", "cancelling"})
-
-    _pool: dict[str, deque["HighConcurrencyLivySession"]] = {}
-    _pool_lock = threading.Lock()
 
     def __init__(self, fabric_api_client: FabricApiClient) -> None:
         self._fabric_api_client = fabric_api_client
@@ -310,75 +293,15 @@ class HighConcurrencyLivySession:
                 statement_id=statement_id, success=False, error_message=str(e)
             )
 
-    # ---- pool + cleanup ----------------------------------------------------
-
-    @classmethod
-    def acquire(cls, fabric_api_client: FabricApiClient) -> "HighConcurrencyLivySession":
-        """Get a verified-ready HC session from the pool, or create one fresh.
-
-        Pool key is the session tag (workspace + lakehouse). Each pooled
-        candidate is checked against Fabric before being handed out — Fabric
-        may have reaped an idle session between releases, and a stale
-        ``hc_id`` would surface as a 404 on the next statement and fail the
-        dbt op. Reaped sessions are discarded and the next candidate is
-        tried; the pool empties out to a fresh acquire.
-        """
-        workspace_id = fabric_api_client.get_workspace_id()
-        lakehouse_id = fabric_api_client.get_lakehouse_id()
-        tag = derive_session_tag(workspace_id, lakehouse_id)
-        while True:
-            with cls._pool_lock:
-                pool = cls._pool.get(tag)
-                session = pool.popleft() if pool else None
-            if session is None:
-                session = cls(fabric_api_client)
-                session.wait_for_session_ready()
-                return session
-            # Pool key locks workspace + lakehouse, so swapping in the
-            # caller's client is safe — credentials still target the same
-            # Fabric endpoint.
-            session._fabric_api_client = fabric_api_client
-            if session._verify_alive():
-                logger.debug(f"Reusing pooled HC session {session._state.hc_id}")
-                return session
-            session._delete()
-
-    def _verify_alive(self) -> bool:
-        """Return False if Fabric has reaped this HC session or it is not Idle."""
-        if self._state.hc_id is None:
-            return False
-        try:
-            body = self._fabric_api_client.get_hc_session(self._state.hc_id)
-        except FabricApiError as e:
-            if e.status_code == 404:
-                return False
-            raise
-        return body.get("state", "") == "Idle"
+    # ---- cleanup -----------------------------------------------------------
 
     def close(self) -> None:
-        """Return this session to the pool, or delete it in Fabric if unhealthy.
-
-        The HC REPL slot stays warm in the pool for the next ``open()``; the
-        pool is drained at interpreter exit via :meth:`drain_pool`.
-        """
-        if self._state.hc_id is None:
-            return
-        if self._state.is_dead:
-            self._delete()
-            return
-        tag = self._get_session_tag()
-        with self._pool_lock:
-            self._pool.setdefault(tag, deque()).append(self)
-        logger.debug(f"Returned HC session {self._state.hc_id} to pool")
-
-    def _delete(self) -> None:
-        """Actually DELETE this HC session in Fabric, releasing the REPL slot."""
-        if self._state.hc_id is None:
-            return
-        try:
-            self._fabric_api_client.delete_hc_session(self._state.hc_id)
-            logger.debug(f"Deleted HC session {self._state.hc_id}")
-        except Exception as ex:
-            logger.warning(f"Failed to delete HC session {self._state.hc_id}: {ex}")
-        finally:
-            self._state = HCSessionState()
+        """Release the HC session, freeing the REPL slot."""
+        if self._state.hc_id is not None:
+            try:
+                self._fabric_api_client.delete_hc_session(self._state.hc_id)
+                logger.debug(f"Released HC session {self._state.hc_id}")
+            except Exception as ex:
+                logger.warning(f"Failed to delete HC session {self._state.hc_id}: {ex}")
+            finally:
+                self._state = HCSessionState()

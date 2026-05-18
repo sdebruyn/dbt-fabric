@@ -32,13 +32,6 @@ def session(api_client):
     return HighConcurrencyLivySession(api_client)
 
 
-@pytest.fixture(autouse=True)
-def _reset_pool():
-    HighConcurrencyLivySession._pool.clear()
-    yield
-    HighConcurrencyLivySession._pool.clear()
-
-
 def _ready_session(session):
     session._state.hc_id = "hc-1"
     session._state.session_id = "sess-1"
@@ -338,79 +331,24 @@ class TestWaitAndGetStatementResult:
 
 
 class TestClose:
-    def test_returns_healthy_session_to_pool(self, session, api_client):
+    def test_deletes_session(self, session, api_client):
         _ready_session(session)
-        session.close()
-
-        api_client.delete_hc_session.assert_not_called()
-        tag = session._get_session_tag()
-        assert HighConcurrencyLivySession._pool[tag][0] is session
-        assert session._state.hc_id == "hc-1"
-
-    def test_deletes_dead_session_instead_of_pooling(self, session, api_client):
-        _ready_session(session)
-        session._state.is_dead = True
         session.close()
 
         api_client.delete_hc_session.assert_called_once_with("hc-1")
         assert session._state.hc_id is None
-        tag = session._get_session_tag()
-        assert tag not in HighConcurrencyLivySession._pool
 
     def test_noop_when_no_session(self, session, api_client):
         session.close()
         api_client.delete_hc_session.assert_not_called()
 
-    def test_resets_state_when_dead_delete_fails(self, session, api_client):
+    def test_resets_state_even_on_delete_failure(self, session, api_client):
         _ready_session(session)
-        session._state.is_dead = True
         api_client.delete_hc_session.side_effect = Exception("network error")
 
         session.close()
 
         assert session._state.hc_id is None
-
-
-class TestPool:
-    def test_acquire_reuses_verified_pooled_session(self, session, api_client):
-        _ready_session(session)
-        session.close()
-        api_client.get_hc_session.return_value = {"state": "Idle"}
-
-        reused = HighConcurrencyLivySession.acquire(api_client)
-
-        assert reused is session
-        api_client.acquire_hc_session.assert_not_called()
-        api_client.get_hc_session.assert_called_once_with("hc-1")
-
-    def test_acquire_drops_reaped_pooled_session_and_creates_fresh(self, session, api_client):
-        _ready_session(session)
-        session.close()
-        api_client.get_hc_session.side_effect = [
-            FabricApiError("GET", "url", 404, "Not Found"),
-            {"state": "Idle", "sessionId": "sess-fresh", "replId": "repl-fresh"},
-        ]
-        api_client.acquire_hc_session.return_value = {"id": "hc-fresh"}
-
-        new_session = HighConcurrencyLivySession.acquire(api_client)
-
-        assert new_session is not session
-        assert new_session._state.hc_id == "hc-fresh"
-        api_client.delete_hc_session.assert_called_once_with("hc-1")
-
-    @patch("dbt.adapters.fabric.fabric_hc_livy_session.time.sleep")
-    def test_acquire_creates_session_when_pool_empty(self, mock_sleep, api_client):
-        api_client.acquire_hc_session.return_value = {"id": "hc-fresh"}
-        api_client.get_hc_session.return_value = {
-            "state": "Idle",
-            "sessionId": "sess-fresh",
-            "replId": "repl-fresh",
-        }
-
-        new_session = HighConcurrencyLivySession.acquire(api_client)
-
-        assert new_session._state.hc_id == "hc-fresh"
-        api_client.acquire_hc_session.assert_called_once()
 
 
 class TestPollIntervalForAttempt:
