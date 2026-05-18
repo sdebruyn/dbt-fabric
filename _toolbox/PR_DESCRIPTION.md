@@ -8,6 +8,22 @@ I'm not happy with the state of either Microsoft adapter today. I'm writing this
 
 ---
 
+## Headline features the official adapters don't ship
+
+Two big ones that aren't on `microsoft/dbt-fabric` or `microsoft/dbt-fabricspark` today at all:
+
+**[Microsoft Purview](https://learn.microsoft.com/en-us/purview/?WT.mc_id=MVP_310840) integration via API.** A `{{ purview_sync() }}` macro that pushes model and column documentation, plus dbt's [`ref()`](https://docs.getdbt.com/reference/dbt-jinja-functions/ref) and [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) lineage, directly into Purview through the REST API. [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs)-aware: models marked `persist_docs: false` are skipped, granular `relation: true, columns: false` only syncs what you asked for. No Purview scan configuration, no scan-capacity costs.
+
+**[Python models](https://docs.getdbt.com/docs/build/python-models) on both engines.** Standard `model(dbt, spark)` API with PySpark on both the Data Warehouse and the Lakehouse sides, using the same signature and semantics every dbt-spark user already knows. `microsoft/dbt-fabric` doesn't support Python models at all.
+
+**Community package compatibility, tested in CI.** Seven popular dbt community packages — [dbt-utils](https://github.com/dbt-labs/dbt-utils), [dbt-date](https://github.com/calogica/dbt-date), [dbt-codegen](https://github.com/dbt-labs/dbt-codegen), [dbt-expectations](https://github.com/calogica/dbt-expectations), [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper), [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables), and [dbt-profiler](https://github.com/data-mie/dbt-profiler) — tested against real Fabric infrastructure on every run, with per-package compatibility documentation listing which macros work, which don't, and the exact version that was validated. Neither official adapter tests against any of these.
+
+Plus a handful of smaller things the official adapters also don't have: [Functions](https://docs.getdbt.com/docs/build/functions) (dbt-core 1.11 scalar functions) on both engines, [workload identity](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation?WT.mc_id=MVP_310840) (federated OIDC for CI/CD pipelines), 11 authentication methods through standard dbt [profile keys](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml), auto host-resolution from the workspace name, manual statistics as model config, and high-concurrency Livy session reuse on the Lakehouse (subsequent runs reattach to the warm session, eliminating Spark cold-start).
+
+Each is detailed further down.
+
+---
+
 ## What does the current situation look like?
 
 `microsoft/dbt-fabric` (Data Warehouse adapter) is on v1.10.0, released 18 May 2026. The PyPI classifier list says Python 3.8–3.12, with 3.13 still missing even though it's been GA for over a year.
