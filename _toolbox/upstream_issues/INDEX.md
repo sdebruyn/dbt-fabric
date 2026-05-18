@@ -18,7 +18,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 ### dbt-fabric
 
 - [x] 01 — `varchar(8000)` silent string-truncation
-- [ ] 02 — Case-sensitive Fabric DWHs broken
+- [x] 02 — Case-sensitive Fabric DWHs broken
 - [ ] 03 — `apply_grants` misses Entra-principal grants
 - [ ] 04 — Pre/post hooks fail (`commit;` emitted)
 - [ ] 05 — CTAS via `EXEC('...')` breaks on apostrophes

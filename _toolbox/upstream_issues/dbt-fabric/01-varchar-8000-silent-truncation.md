@@ -5,6 +5,8 @@
 
 > [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
+> **Internal note (strip before filing):** Submittable as a PR — fix is a few lines in `fabric_column.py`. Consider opening with the issue *and* a draft PR linked from it.
+
 ## Summary
 
 `FabricColumn.TYPE_LABELS` maps the generic `STRING` type to `VARCHAR(8000)`, and `FabricColumn.string_type()` / `string_size()` both default to `8000` when `char_size` is `None`. Fabric Warehouse supports `varchar(MAX)`, so the 8000-character cap is an unnecessary hard limit that silently truncates any string column produced through these code paths.
