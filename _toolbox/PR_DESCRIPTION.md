@@ -10,9 +10,11 @@ I'm not happy with the state of either Microsoft adapter today. I'm writing this
 
 ## What does the current situation look like?
 
-`microsoft/dbt-fabric` (Data Warehouse adapter) is on v1.10.0, released 18 May 2026. The PyPI classifier list says Python 3.8–3.12, with 3.13 still missing even though it's been GA for over a year. Integration tests now do run on PRs (good). The Python test matrix is narrow (integration on 3.11, unit on 3.10 and 3.11) and could be broadened, though that's a minor point — Python version regressions in a dbt adapter are rare.
+`microsoft/dbt-fabric` (Data Warehouse adapter) is on v1.10.0, released 18 May 2026. The PyPI classifier list says Python 3.8–3.12, with 3.13 still missing even though it's been GA for over a year.
 
 `microsoft/dbt-fabricspark` (Lakehouse adapter) is on v1.12.2 (released 17 May 2026), the latest of six releases shipped between 10 and 17 May 2026 — a welcome stretch of activity.
+
+CI in both repos runs on PRs, which is good. The test matrices are narrow though: `microsoft/dbt-fabric` runs unit tests on Python 3.10 and 3.11 and integration tests only on 3.11; `microsoft/dbt-fabricspark` runs everything in a single Docker container without a Python matrix. Python version regressions in a dbt adapter are rare, so this isn't catastrophic, but more coverage would help.
 
 Functions (the dbt-core 1.11 scalar-function feature) are also not supported in either official adapter, even though 1.11 has been out for about six months. If you use SQL UDFs in dbt on Snowflake or BigQuery and you want to do the same on Fabric, you can't.
 
