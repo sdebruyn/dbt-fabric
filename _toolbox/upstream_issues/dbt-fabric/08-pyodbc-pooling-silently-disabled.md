@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `performance`, `priority/medium`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Do **not** submit the pyodbc-pooling fix as a PR. The right move is to land [PR #350](https://github.com/microsoft/dbt-fabric/pull/350) (`mssql-python` driver support) instead, which makes this whole bug class disappear. File this issue mainly as supporting evidence for why #350 should be prioritized over patching pyodbc.
 
 ## Summary
 
@@ -32,16 +34,20 @@ git grep -n "odbcversion" 0de2190 -- 'dbt/**'
 
 ## Suggested fix
 
-Add `pyodbc.odbcversion = "3.8"` immediately before the `pyodbc.pooling` assignment:
+The recommended fix is **not** to patch pyodbc but to land [PR #350](https://github.com/microsoft/dbt-fabric/pull/350) — adding `mssql-python` driver support. `mssql-python` is Microsoft's own native Python driver for SQL Server and Fabric. It does not require an ODBC environment, does not need `pyodbc.odbcversion`, and resolves the pooling-configuration question by construction. It also removes the system-level ODBC Driver 18 install that pyodbc requires on every user machine.
+
+[The fork](https://github.com/sdebruyn/dbt-fabric) has migrated entirely from pyodbc to `mssql-python` and has been running it in production across multiple organizations. The pooling-configuration bug documented here is one of several reasons the fork made that move.
+
+If pyodbc must be kept as the driver for backward compatibility, the minimal patch is to add `pyodbc.odbcversion = "3.8"` immediately before the `pyodbc.pooling` assignment:
 
 ```python
 pyodbc.odbcversion = "3.8"
 pyodbc.pooling = credentials.pooling if credentials.pooling is not None else True
 ```
 
-Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`fe3d3281`](https://github.com/sdebruyn/dbt-fabric/commit/fe3d3281) (before [the fork](https://github.com/sdebruyn/dbt-fabric) migrated entirely from pyodbc to `mssql-python`, which doesn't have this issue).
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric) (before the `mssql-python` migration): commit [`fe3d3281`](https://github.com/sdebruyn/dbt-fabric/commit/fe3d3281).
 
 ## Notes
 
 - The `odbcversion` requirement is documented in the pyodbc source code as part of the `SQLSetEnvAttr` call sequence that ODBC requires before pool registration.
-- An alternative path is to migrate from pyodbc + ODBC Driver 18 to Microsoft's native `mssql-python` driver (which [the fork](https://github.com/sdebruyn/dbt-fabric) has done). That eliminates the pooling configuration question entirely and removes the system-level ODBC dependency.
+- This issue exists to document the latent bug and to make the case for prioritising [PR #350](https://github.com/microsoft/dbt-fabric/pull/350) over a pyodbc-only patch. Adding the missing `odbcversion` line as a band-aid keeps users on a driver stack that has other tradeoffs (system ODBC dependency, slower TLS, less Microsoft-native support); landing `mssql-python` eliminates the whole class of problem.
