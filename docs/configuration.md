@@ -434,7 +434,7 @@ How long a statement waits on a schema lock before failing with `Lock request ti
 
 The Fabric Spark&rarr;DW connector used by [Python models](python-models.md) leaves idle JDBC sessions holding a Sch-S lock on the target table for up to the Spark idle-reap window (~25 minutes). Without this cap, a follow-up DDL would stall on the same lock until [`query_timeout`](#query_timeout) (default 24 hours). With the cap the DDL fails fast enough to be visible to the user, who can `dbt build --retry` (or wait for the lock holder to release) instead of hanging.
 
-Set to `0` to disable the cap (let SQL Server wait indefinitely).
+Set to `0` to skip the `SET LOCK_TIMEOUT` entirely. SQL Server's default of `-1` (wait indefinitely) then applies.
 
 !!! info "Data Warehouse only"
 

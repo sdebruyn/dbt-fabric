@@ -237,12 +237,15 @@ class FabricConnectionManager(BaseFabricConnectionManager):
             # window to elapse) instead of hanging. The default of 30s
             # leaves room for the DW to detect closed TCP connections
             # after a python-model Spark application terminates; profiles
-            # can override via the `lock_timeout` credential.
-            cursor = handle.cursor()
-            try:
-                cursor.execute(f"SET LOCK_TIMEOUT {credentials.lock_timeout}")
-            finally:
-                cursor.close()
+            # can override via the `lock_timeout` credential. Setting
+            # lock_timeout to 0 skips the SET entirely, leaving SQL
+            # Server's default of -1 (wait indefinitely) in place.
+            if credentials.lock_timeout > 0:
+                cursor = handle.cursor()
+                try:
+                    cursor.execute(f"SET LOCK_TIMEOUT {credentials.lock_timeout}")
+                finally:
+                    cursor.close()
 
             return handle
 
