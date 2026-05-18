@@ -144,6 +144,5 @@ The one principle running through this whole adapter: every feature uses dbt's e
 - Manual statistics declaratively manageable through a [model config](https://docs.getdbt.com/reference/model-configs). No post-hook tricks.
 - Catalog statistics in [`dbt docs generate`](https://docs.getdbt.com/reference/commands/cmd-docs) without configuration.
 - [`cluster_by`](https://docs.getdbt.com/reference/resource-configs/snowflake-configs#using-cluster_by) as a standard model config option, identical to Snowflake and BigQuery.
-- High-concurrency Livy session reuse, with measurable cost savings on Spark capacity.
 - Compatible with [seven community packages](https://hub.getdbt.com/), each with its own compatibility matrix.
 - Transparent limitations documentation, so customers can decide in advance what will and won't work for their use case.
