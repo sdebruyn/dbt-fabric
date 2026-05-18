@@ -3,7 +3,7 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `proposal`, `architecture`, `priority/high`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
 ## Summary
 
@@ -71,7 +71,7 @@ That gives you the dbt-spark machinery and the cross-adapter Fabric code (auth, 
 
 ## Suggested path
 
-1. Add `dbt-spark` to `pyproject.toml` as a dependency (or as an `[spark]` optional extra, depending on whether the package wants to keep the spark machinery opt-in).
+1. Add `dbt-spark` to `pyproject.toml` as a dependency.
 2. Switch the adapter class to inherit from `SparkAdapter`.
 3. Delete every macro under `dbt/include/fabricspark/macros/` whose behaviour matches the `dbt-spark` equivalent. Keep only Fabric-specific overrides.
 4. Run `dbt-tests-adapter` against the inherited adapter to surface the behavioral differences and triage them one by one.

@@ -47,7 +47,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [ ] 05 — Global mutable state in Livy modules
 - [ ] 06 — `atexit` handlers leak Livy sessions
 - [ ] 07 — Dead code from Databricks ancestry
-- [ ] 08 — Proposal: inherit from `dbt-spark`
+- [x] 08 — Proposal: inherit from `dbt-spark`
 
 ## Priority guidance
 
