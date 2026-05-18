@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/high`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — adds a single `hooks.sql` override file. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 
