@@ -40,7 +40,7 @@ Every PR runs against real Fabric, and every release ships after the full integr
 
 ## What's broken in the official adapters
 
-I tried contributing some of these fixes back to `microsoft/dbt-fabric` first; most didn't land. The fork carried what the upstream couldn't absorb fast enough, and the gap has compounded since.
+I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, but the review-to-merge turnaround on PRs was long enough that I couldn't keep momentum that way. The fork picked up what the upstream couldn't absorb at that pace, and the gap has compounded since.
 
 > **Note (will be replaced on filing):** the links currently point at issue drafts on the `to-toolbox` branch of [the fork](https://github.com/sdebruyn/dbt-fabric). They will be re-pointed at the actual upstream tickets once filed.
 
