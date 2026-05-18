@@ -301,7 +301,3 @@ With the dbt-native harmony theme as throughline:
 ### `microsoft/dbt-fabric` (Data Warehouse) users
 
 Drop-in replacement. `pip uninstall dbt-fabric && pip install dbt-fabric` with this version. Profile configuration is 100% compatible. Migration guide to be added at `docs/migration.md`.
-
-### `microsoft/dbt-fabricspark` (Lakehouse) users
-
-Profile type remains `fabricspark`. A config-mapping table will accompany the migration guide, documenting the small number of options that differ.
