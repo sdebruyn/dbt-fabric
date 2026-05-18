@@ -1,0 +1,46 @@
+213f705cba2524a1e435896aca2232fda21be910|2026-05-16|Fix docs: auth method is notebookutils, not FabricSpark/SynapseSpark (#217)
+c9b6537eb67ffedafd668f786f1b8161a6bc7e4b|2026-05-16|Add integration tests for dbt-date package (#202)
+e7f23bb913990b630e2498bf3e04ef41f3f40c9d|2026-05-17|Allow configuring Fabric API base URLs for non-production tenants (#226)
+8af2c1d0351766c539ba9eac24c07a36fd2e2f6b|2026-05-17|Remove unused livy_session_lifecycle fixture from conftest (#230)
+3185d5ee4e911e46f2025ec7f354030ee46d48ad|2026-05-17|Update dbt_utils to 1.3.3 and switch base test to dbt build (#218)
+84c7b1a220013f4701e8e03fc2b17db7d108e328|2026-05-17|Update package docs: add get_fiscal_year_dates, clarify override notes (#236)
+f095413c59d2a8317b7d0d6e3a28a98a432ca686|2026-05-17|Centralize package versions in base test fixtures, document split_part (#237)
+e25ee59907ac32321576b3b71dc87f08b685ac39|2026-05-17|Add high-concurrency Livy support for parallel statement execution (#232)
+3bb7b17423dfe3e26b1b4a0d4c00b14cb2f87f8e|2026-05-17|Add integration tests for dbt-expectations package (#223)
+5df6de747cebd3dff7b67610bbe83b9f3a105bd7|2026-05-17|Force JVM GC after synapsesql write to release JDBC schema locks (#239)
+d2593b3a56d35aeaf3f7002b28745b217744ddae|2026-05-17|Add integration tests for dbt-codegen package (#222)
+5257226634b4b5d4b939818abb79e456b4410d40|2026-05-17|Add dbt-audit-helper 0.13.0 integration tests and macro overrides (#219)
+b2ac1d61a857ed244d65f617edd65bdb5eb517b6|2026-05-17|Add integration tests for dbt-profiler package (#220)
+53ee818cf37a73b44c7c2aebf12e3a3742ba7c24|2026-05-17|Add Spark SQL view support for FabricSpark adapter (#234)
+fa561a3059e96f05e52747286fafd2a182ce2690|2026-05-17|Add FabricSpark dbt-date integration tests and move BaseDbtPackageTests to shared module (#228)
+71a7019e6862ca18eb51e65d25732fa9a7c8bf88|2026-05-17|Add FabricSpark integration tests for dbt-expectations package (#229)
+6106cf0af62544810d9bb0b1e89418d31ca76b9e|2026-05-17|Add cross-workspace 4-part naming for FabricSpark (#235)
+db47d5ac1827bff5536dec66b1f4ac76bdc42426|2026-05-17|Add FabricSpark integration tests for dbt-codegen package (#249)
+e34fcd0d48bd76dee4f6d2f8b6160cf4e718c918|2026-05-17|Add FabricSpark integration tests for dbt-project-evaluator package (#250)
+19ca2c2560f3f2db43bce683f9e90c3c2f733b16|2026-05-17|Add FabricSpark integration tests for dbt_artifacts package (#251)
+486f6ff8e57de7c0dd23ac8b159536d09d274b70|2026-05-17|Add FabricSpark dbt-profiler integration tests and macro overrides (#248)
+a32ce3efa5d413515801debd2353dbbc031fa230|2026-05-17|Fix case mismatch in dbt-date round_timestamp test fixture (#253)
+473d16e517f08020b8517d35747be4881969b12d|2026-05-17|Fix snapshot_meta_column_names assertion for dbt-core dataclass change (#254)
+48d3bfbe306897040374b27eec0fba64427d00eb|2026-05-17|Add FabricSpark dbt-audit-helper integration tests and macro overrides (#244)
+f6a30e98c989613951893ee4212673718a48fc1c|2026-05-17|Change FabricSpark default materialization to view (#256)
+87666fe1b9be67ee6a57a173bfdef032d26e0a42|2026-05-17|Improve documentation completeness (#255)
+096cc45361d92c3694d99a4cb90f8a3508c0b60d|2026-05-17|Remove DE job timeout and threads override (#257)
+9b54534858c67d60fa86ae109527075b273dab45|2026-05-17|Update project description for clarity and accuracy
+fa771d3928aa8d2184c96eb6fc14ab86ce37dd1b|2026-05-17|Add FabricSpark integration tests for dbt-utils package (#246)
+4159e44e9322fae562594feb4bb60e2a50f7e2a1|2026-05-17|Rename package to dbt-fabric and rebrand metadata for Fabric Toolbox
+f189767d2aa1632142172429da2c55d038b74bc9|2026-05-17|Neutralize docs tone and remove personal branding from documentation
+ce74bda071e19073b7ae29dbf087d0dac3205395|2026-05-17|Add _toolbox/ handoff artifacts for fabric-toolbox contribution
+f37190a8888cf349fce4408c617c9f3ef62c0f85|2026-05-18|Set DE integration test job timeout to 8 hours (#259)
+155633e21a918e42f17bc78f047b7280cdded7f3|2026-05-18|Fix FabricSpark escape_single_quotes test (#260) (#262)
+3773fc31f686b8182311973ef889c2fb36ff2b5b|2026-05-18|Merge branch 'main' into to-toolbox
+bf45c646080800c217d458e19a96d127988f2f92|2026-05-18|Revert "Set DE integration test job timeout to 8 hours (#259)" (#266)
+7b1a9c3c764acd150df2147dae2e26709281906f|2026-05-18|Merge remote-tracking branch 'origin/main' into to-toolbox
+b7b75076129fdcf29ba5db5716e625e5b9aa97bc|2026-05-18|Add dbt-project-evaluator package docs page (#269)
+cbb3c903dd0c28e9f464e49dc45429cf3e7c1e40|2026-05-18|Add dbt_artifacts package docs page (#270)
+95bd9a1e3d1f3cd892af0054b7c68bd38a4ba490|2026-05-18|Speed up FabricSpark integration tests via HC session pooling (#268)
+2aa3383524556b7391437b14c1ffac8772dbf2ea|2026-05-18|Investigate synapsesql schema-lock workarounds (paths A-D) (#272)
+b84c3e3caf46aa574f34c992cfc3aa261f7bf81f|2026-05-18|Add Fabric-only incremental config keys to quality-issues section
+941558a88c410417e33e0df8a436750dce52563b|2026-05-18|Tone down close() override critique in upstream review section
+65a82aa94bce144e749935b38f5305bbfe916a16|2026-05-18|Merge upstream microsoft/dbt-fabric (v1.9.10 + v1.10.0) using ours strategy
+8ff3e5a539e8c684be5caf86e35114a6adddca42|2026-05-18|Merge branch 'main' into to-toolbox
+e17dabafe939f5cbeea9f25970d04040b0938a9d|2026-05-18|Drop Appendices section from toolbox PR description

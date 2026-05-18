@@ -1,0 +1,46 @@
+99b9986e4c0ae0d422979341fc08b3c1cf78563d|2025-03-26|part 1 of project modernization
+ce0554feddaf2baa71316edc1a34d0ef203ff1ea|2025-03-26|clean up configs
+fbb08c443f9eb375c0a4bc195422ae8e34d4ba4d|2025-03-26|ruff fmt
+17259ce072f585de60a122cb5046cc18fb8dce1f|2025-03-26|add less checks
+e134bdbf5d51ef0025033c3562ba3175e5c5f3f0|2025-03-26|simplify testing
+4daecf5a44192d368fba9652ea415dcae7d72b62|2025-03-26|test warnings
+ac162d968e39e51392032fae79c22318b883f763|2025-03-26|update docker imgs
+36261378aa0b67fd657da3492015295f3359ec17|2025-03-26|simpler publishing
+4fbece1404106dc1b8d4f5b4dcfa162e52858c35|2025-03-26|fix unit test flow
+abe0bfb56137bc83282fc2de4cc785151c7c9f7d|2025-03-26|fix current tests
+68630a73b675f2b6336049cc2294d3d86af4f7cf|2025-03-26|debian img
+c702e421771940a7ecad494343e6e66cd5972b00|2025-03-26|cleanup docs
+deeed95473051924fd22b7daa0b5c4d8c05cc761|2025-03-26|clean up more things
+ba675aac6606aa1bbea4dd3067b4bee6398742bc|2025-03-26|Merge pull request #1 from sdebruyn/project-modernization-2025
+51d5c80f86de1bf2fd8ae42615cdc626c2d35f75|2025-03-26|forked project name
+8bd8bbece698e8765a06827203086fdbc7215e6e|2025-03-26|Update GitHub Actions workflows to target 'forked-version' branch and expand Python version matrix
+886382a48283d8a056d371452f3b2dba43deb86f|2025-03-26|casing
+b8bf180dfe041b5d2e5e15272761a26f9147a10d|2025-03-26|simplify docker img
+d6c2153ce84f4d50bcf43e74bc60e6e95887665e|2025-03-26|Merge branch 'project-modernization-2025' into forked-version
+19c4ad707ed33c546b4aaa5a466053b3975052ca|2025-03-26|fix platforms for docker
+c6c47aff125027057faaf1623d95baf83b1642ce|2025-03-26|Merge branch 'project-modernization-2025' into forked-version
+27d1701160d099b0e6f42587cbab92bcbf4b1f31|2025-03-26|fix unit test ci
+c05c7193891f65548a627544fe3dd0db985afe73|2025-03-26|Merge branch 'project-modernization-2025' into forked-version
+0148b809c8c2be9508ebebed1bd9de0edc418adf|2025-03-29|bump version to alpha
+82ab328b2f7a599dbc51e8762a9db946112b80cb|2025-03-29|version from tag
+a3467b4a9be49f660302d2026e35ea65f683e101|2025-03-29|use trusted publishing
+0b116542ec480917b1d0d98ad0ddd26695e4728c|2025-03-29|add permissions for token
+4d9ede1cb424a7cbc17ae9d741a8e9ce5d957189|2025-03-29|use correct container
+6ae56767ca4846b743e230d000c2eb587a575eca|2025-03-29|login to azure cli using OIDC
+31eadd6fc8d611caaf2d322f646ed42d5d7ea100|2025-03-29|add environment azure for oidc
+21a7e2bf8e37bb0d99f3e38c9296a20fd7d1fe0d|2025-03-29|disable subscriptions
+0f30d0f33d2177bb99385f01bcfe17f5585b5ffa|2025-03-29|uv run in integration tests
+bb228891cd92b5bfa2e63a29f848110d5a1a25b1|2025-03-29|set correct odbc driver
+9a1c177ca916fca5fab633dd4838e94a587d1064|2025-03-29|fix: correct ODBC driver version reference in integration tests
+20c169c2834121e554e2d2d182b714bc0ab185eb|2025-03-29|secret refs
+c333c26ba9fa9e8f6b2d3b05d30a26addd4baab4|2025-03-29|limit concurrency
+1b8b002cfdc72668264e1b9b03e4eb9a333d2434|2025-03-29|fix: update package references and badges in README.md [skip ci]
+bbfe064c2353b36a433ab76e949a5f312f189c13|2025-03-29|add default dbo user in schema creation tests
+9d861bc08f35459871f4a4032708c2bb3723c0b0|2025-03-29|add dbt test user to CI
+0bc7374c8301dc2857a38eee1e291aea974f3948|2025-03-29|fix python version usage in ci
+077a2b7cec237476afc782df92c6403fd374e9b9|2025-03-29|try without concurrency limitation
+ae91dbdf5e42f8bb8897298c6a76f1c4b2719f6d|2025-03-29|concurrent tests
+fa51a13a609718668b2d904f564b5728b4dd7729|2025-03-29|add a secondary dwh with case insensitive collation
+4c96067eca83c77842a8bdf0a2367bfd7c34e679|2025-03-29|enable ephemeral tests
+8359b9cf6e49d3cd951d6908e6807f5d70d153d1|2025-03-29|set secondary dwh in ci
+477d451a996c70696e6539c72e97ef6b82e95a3d|2025-03-29|remove skip from ci tests

@@ -1,0 +1,46 @@
+c8483dbf81247c54b42610b6de4ca12d28bde236|2025-04-07|fix python 3.9 compat
+40ac03c6374b3122836d8b95ace1fa671b025604|2025-04-07|version should be 1.9.4
+d0e551c5729b2ef689c2cdd554223a56c8bab807|2025-04-07|add a base class for package tests
+ad8d2c3e8dfd3c8eef7e02e045115600e09d75c2|2025-04-07|add timezone var
+55e34683fb4f008d0edb65fe643e477871dfae6f|2025-04-07|add dbt utils dispatching to every package
+b1e8f997701697944bc273a68675d441dfdd749e|2025-04-07|fix tests module not found
+47b4510f78555487899ec199b0a268c33b3ef104|2025-04-07|cache tokens by scope
+799d09a3abfb6422c1ec7a4c4fdb6a8379a270e5|2025-04-17|add requests dependency and update Fabric classes for improved connection handling
+bc113f82f4847260b7bd082a63f98c717d277cc0|2025-04-17|support host in CI
+633f046dfca0c9dfc774a99631f9e8df6c9ebff9|2025-05-21|fix token syntax
+41e0e3fdb4c2014dc8ca22052d04130d64f73906|2025-05-21|update base version
+673f69b98a4c9459b3b4a68108241599509a12ed|2025-05-21|set me as author
+bb376b06cf4686866a3db33cac2daa26d58914fe|2025-05-21|fix scope selection for fabric auth
+8c3dbabbb7dd947aaaf0242bf9322d2ccd25bb53|2025-05-21|use provided scope if provided
+772d21008b0b338394af838e94fc85a486f4eeb8|2025-05-21|fix attr call
+160463ac72f91f9706b95e3480cb3be556224f77|2025-05-21|fix authentication attr call
+5ad65126418461653ee3996d29e65328716be826|2025-08-06|require alias for limits and subs
+a1f32a80f71e0b45acafeaaedde930711a3337c4|2025-08-07|Add workspace_name to FabricCredentials and implement workspace ID retrieval
+f88b30c1ff84cc2f3f0051f2837c42358627933c|2025-08-07|fmt
+7da9694ab32721d869f15eab242a0f00ba17fb59|2025-08-07|Add support for workspace_name in FabricConnectionManager host resolution
+1d276c7647d8019114da3a848fee5d79d1a24714|2025-08-07|add support for workspace_name in token provider
+69231eb0a249b34fccd487c29f9805b2d8f7edf1|2025-09-11|add support for getting tokens using SPs
+9d65b372a718cda1f116ebb5ce8c244191a13b3f|2025-09-11|do not use our token in pyodbc if it's not an Azure token
+9fed7d65d1ba9ca00546f566b11c1635ca93873b|2025-09-11|Revert "do not use our token in pyodbc if it's not an Azure token"
+0e779bdc2693917b4184f32f73f0ea33c3515795|2025-09-11|resilient token fetching for API or SQL
+9c3ac01015c0bfabc86d42d0abcc4dafe9e039f7|2025-09-25|add support for varchar(max)
+df1b5b6cec9e9febe5f795f1617d7a14f2c972dc|2025-09-30|support SQL MERGE
+955ab2e3bc70540684d5f774b9d13b1f84a4c89e|2025-09-30|fix microbatch merge
+ac4bc56072b86249e87cc205f0fc97a95d981bd7|2025-10-04|less strict dev deps
+fe3d32819f605afa47d2d2fa428efb14a19c9c70|2025-10-04|for pooling to work, we'd need odbcversion set to 3.8
+0b4b1bf28f4a0f8b956b9db5e181f08a38f9f9b3|2025-10-04|integrate upstream typing changes
+32a4155a5eec8cd03849cee7125982646e4039fd|2025-10-04|integrate upstream "--empty" flag changes
+7b1427f14772c7bd5546e221a71b424748a4b3d7|2025-10-04|integrate upstream changes on incremental constraints
+a5a90ec52a4509d2ac3c7371f840c0d8300681ad|2025-10-04|update to test with dbt-core 1.10
+47f3ac74f91a28f02e250d9f497130feb9f68d8e|2025-10-04|fix empty test
+812e2d6b2fa27dfae86dce665407c459c39a65c4|2025-10-04|fix empty inline SQL test
+73a8c9af1de88b9abdc879e3aea341dc1e920ef0|2025-10-04|fix incremental merge default strategy
+7af4d5e349718eda1f5caad0c7ba188d969dd432|2025-10-04|fix microbatch test
+2e7e1f2f6e165f03bdb4c270a59523fb21a56702|2025-10-04|simplify test setup
+62f047ccc67b1b7bd0236d850f07ecbb0c1ce2b1|2025-10-04|skip grants tests by default due to broken Fabric SP support
+df29b7c0468a5156f94c20ae612a01f11be49fa4|2025-10-04|fmt
+e5a3c370dc79eaedbd73f4e8d4c043933991ea28|2025-10-04|remove redundant test
+4825c916427b6c40a28ee1c091a7a12070a0dad7|2025-10-04|remove support for Python 3.9
+21facd52db422dd64ed6cb6091f8e78777c4ddd2|2025-10-04|also support WS ID in tests
+4e6b0f7e02d0e3867f8e114c309886100cbfdf2e|2025-10-04|add test host support back to CI
+f63cebfe6abb8966130733c1829cd4e3f805fe72|2025-10-05|introduce api client to isolate API calls

@@ -1,0 +1,46 @@
+83d5b7b968a868b81aa19dedc39e44ce1aaa3858|2026-02-24|Add value conversion methods to FabricSparkCursor for Spark SQL types
+2a15ff7006dc765dc192a50bf8794867dce8cbd1|2026-02-24|Increase query timeout to 5 minutes for tests
+c9dc049fa98666fd051b0ac9345d45f6e88bde01|2026-02-24|Add FabricSparkRelationType and update dbt_project.yml; enhance tests for materialized views
+1678fdc791437ef986ab19b27c997553fc0911ce|2026-02-25|Enhance Fabric connection managers and macros for materialized views
+f394aefd9f7483c774aa3c3aa23f41b7c6838b7f|2026-02-25|add dbt test harness for fabricspark
+193f0f11d049b5ac89576b9f6f7908bcde1e0ba1|2026-02-27|Back to regular CI testing now that with-spark is stabler
+0a018f82b92865faa6798df06eacc71d8070c765|2026-02-08|mssql-python version
+4a4b6d99b77ebaa9d9ee6c4d11e6a74de8f73b81|2026-02-08|prepare for mssql-python sqltype fix
+1a7207bae7442fe19086facc46bc90406272b07d|2026-02-17|Revert "prepare for mssql-python sqltype fix"
+954faac69d56367a6b7c2f50721b9a40d55e5cdf|2026-02-27|bump mssql-python dependency to version 1.4.0
+b645e7a7e0ca306a3c5c45f6923d1cae537c59b1|2026-02-27|Update authentication method and clean up imports in Fabric adapter
+044e4d770ca59b5285d6b2a9e936d669ccd3018c|2026-02-27|tests with Python 3.14
+5a94f78d1bad0f30c10a9f0c01418616c3ffd16f|2026-02-28|allow Python 3.14
+581a7344916aa1bd324cf6c238bcb8358418adc7|2026-02-28|Add tests for current timestamp functionality in FabricSpark adapter
+8646ee90e9bfae8cc8818634bd1f5da465d5d2a4|2026-02-28|Add comprehensive tests for listagg functionality in FabricSpark adapter
+7f29dbfbb2bbc39c3ae4322b7c7cc078aa45da7b|2026-02-28|Add pytest fixtures for float and int type tests in FabricSpark adapter
+4a5752b9402cb222d5fbb265a046b9750395cde2|2026-02-28|Remove unused BaseCurrentTimestamp class from current timestamp tests in FabricSpark adapter
+cccd66d60f8b34d88c2d008448d99a912023674d|2026-02-28|Add seeds fixture for LastDay tests in FabricSpark adapter
+d2cc7cb817e34c516c43ff045cafe2ea9ad0942d|2026-02-28|Add seeds fixture for split_part tests in TestSplitPartFabricSpark
+546fdadf4ea5f3a95c66558635571c276b91eedd|2026-02-28|Revert "allow Python 3.14"
+fb31c035c4974a7e37b5b83b9ef5283440ecf164|2026-02-28|Revert "tests with Python 3.14"
+df44b2d1498ba1bf5f09caec2238f34c409e5461|2026-02-28|Refactor materialized view logic and add refresh macro for lake views
+e17d0a4031d19b94b78fafe94ea63449c8352f25|2026-02-28|implement relation type fetching
+b32853b3894eb9bf399ce8e2953c44f8583a34d3|2026-02-28|use get_catalog from Base instead of Spark
+41f2bf0d17ebe2847b96a5e66c07682368cc3df7|2026-02-28|refactor adapter to allow databases
+a6bbb863af9fa572348dcbcdaa8959ece5f735ed|2026-02-28|Refactor FabricSparkAdapter and FabricSparkRelation to enhance relation type handling and streamline catalog fetching
+5f53a2a2adf4527ff89cc9866716de0455472c87|2026-02-28|Skip TestGetCatalogForSingleRelationSpark due to unimplemented capability in FabricSpark
+811f2d171a1859ac5aacc94222d948756b95ac44|2026-03-01|Enhance FabricSpark relation handling and add materialized view macros
+614e7cc6681d2dcdcd738f26d5f2c9bfbaa65e10|2026-03-01|Skip processing for temporary views in FabricSparkAdapter
+a024a6547a3edb17d078b9f6d800f9941be0ecd2|2026-03-01|Clarify comment for skipping temporary views in FabricSparkAdapter
+5fec7f0e6a791cea9e16f91c7bf462d7a998753a|2026-05-13|Add initial documentation for dbt-fabric adapter
+e427b5886b76867c2a50985276d9c2be57af3869|2026-05-14|Enhance documentation for dbt-fabric adapter with website details and Spark SQL limitations
+8b0dcc2fb89ac01423aa156e1b2a1a70fdf25c2a|2026-05-14|Add extra tests for catalog columns in dbt-fabric adapter
+7ecc158e126594c1cbf3e993e488b35e1d2915b1|2026-05-14|Add regression test for split_part scalar subexpression (microsoft/dbt-fabric#358)
+7e32009077776bf6e4100e33c76089a76498a891|2026-05-14|Add regression test for model.timing in on-run-end context (microsoft/dbt-fabric#366)
+136ad4fc1564607ce096db37d6942a5ed9d4f903|2026-05-14|Update .gitignore to exclude docs_build/site and add .claude; Revise CLAUDE.md for clearer testing instructions and regression check guidelines
+24f369f854dadbadf23526e4bfb7c08a0c9eba6a|2026-05-14|Migrate documentation from mkdocs-material to Zensical (#61)
+a3f0dc7df5a3dfc46f3e912070f5991e06835675|2026-05-14|Add approximate row count statistics to catalog generation (#58)
+1f0185824296a65cd36d6d00bea2226e01600073|2026-05-14|Fix rows_affected reporting -1 for table materializations (#57)
+b24bdb31e5b5f2b019e03ea36ca5416aaff34d33|2026-05-14|Add CLUSTER BY support for Fabric DW tables (#59)
+f0f700317c07a5938d248f7bb519929be83949d8|2026-05-14|Test infrastructure improvements (#55)
+91a47281ad4c40afc39b8f90c050305e3ba22b1e|2026-05-14|Fix formatting and lint issues
+cd88794386ac7163620b8e02929e33f39cd113e0|2026-05-14|Bump dependencies to fix security vulnerabilities (#68)
+1dae9ae7bf2325056469b30e503e9a119500e256|2026-05-14|Fix Cloudflare Pages build by removing unsupported -d flag (#69)
+414835b3e4a7ac5fbea477401513bbe50e1e413d|2026-05-14|Fix T-SQL identifier quoting to use brackets (#56)
+68d82279c2edcc9c1c982351d1622c0afc149383|2026-05-14|Add roadmap documentation page (#67)
