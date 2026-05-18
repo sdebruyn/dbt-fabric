@@ -42,8 +42,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 
 - [x] 01 — Six `__exit__` methods return `True`
 - [x] 02 — Hardcoded 2028 token expiry
-- [ ] 03 — `tokenPrint=True` can leak bearer tokens
-- [ ] 04 — `_getLivySQL` regex bug
+- [x] 04 — `_getLivySQL` regex bug
 - [ ] 05 — Global mutable state in Livy modules
 - [ ] 06 — `atexit` handlers leak Livy sessions
 - [ ] 07 — Dead code from Databricks ancestry
@@ -63,7 +62,6 @@ Filing all 27 at once would be noise. Suggested staging:
   - `13-delete-warehouse-snapshot-is-noop-stub.md` — silent failure
 - dbt-fabricspark:
   - `01-exit-methods-return-true-swallow-exceptions.md` — silent failure throughout
-  - `03-tokenprint-can-leak-bearer-token.md` — security risk
 
 **File second — concrete bugs (10):**
 - dbt-fabric: `03`, `05`, `06`, `08`, `09`, `11`, `14`, `15`, `16`
@@ -110,7 +108,6 @@ These are debatable and may invite long discussion. File only if the second batc
 |---|---|---|---|
 | 01 | Six `__exit__` methods return `True` — silent exception swallowing | high | bug |
 | 02 | Hardcoded 2028 token expiry bypasses refresh logic | high | bug, security |
-| 03 | `tokenPrint=True` can leak bearer tokens into logs | high | security |
 | 04 | `_getLivySQL` regex bug: `re.DOTALL` passed as positional `count` | medium | bug |
 | 05 | Global mutable state in `singleton_livy` / `concurrent_livy` causes race conditions | high | bug, concurrency |
 | 06 | `atexit` handlers leak Livy sessions on hard kill / OOM | medium | bug |
