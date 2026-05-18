@@ -8,7 +8,7 @@ import yaml
 
 from dbt.adapters.fabric.fabric_api_client import FabricApiClient
 from dbt.adapters.fabric.fabric_credentials import FabricCredentials
-from dbt.adapters.fabric.fabric_livy_helper import close_all_python_model_livy_sessions
+from dbt.adapters.fabric.fabric_livy_helper import _close_all_python_model_livy_sessions
 from dbt.adapters.fabric.fabric_token_provider import FabricTokenProvider
 from dbt.adapters.fabric.purview_client import PurviewClient
 from dbt.tests.util import write_file
@@ -274,7 +274,7 @@ def project(
     # it owns. FabricSpark adapter HC sessions are not affected — those
     # are dbt-managed via FabricSparkConnection.close() and cleaned up
     # by cleanup_all.
-    close_all_python_model_livy_sessions()
+    _close_all_python_model_livy_sessions()
 
 
 @pytest.fixture(scope="class")
