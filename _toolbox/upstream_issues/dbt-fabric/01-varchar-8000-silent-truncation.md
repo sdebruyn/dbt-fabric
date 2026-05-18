@@ -45,4 +45,4 @@ Reference fix in the fork: commit `9c3ac010` ("string→varchar(MAX) sweep acros
 ## Notes
 
 - Fabric Warehouse documentation confirms `varchar(MAX)` is supported.
-- The 8000 cap appears to be a leftover from a SQL Server Synapse ancestry where `varchar(MAX)` had restrictions; those restrictions don't apply on Fabric Warehouse.
+- Earlier versions of Fabric DW did cap string columns at `varchar(8000)`, which is presumably where the adapter default originated. Fabric DW now supports `varchar(MAX)`; the adapter default has not been updated to match.
