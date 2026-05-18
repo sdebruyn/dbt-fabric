@@ -5,6 +5,8 @@
 
 > [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
+> **Internal note (strip before filing):** Submittable as a PR — swap `re.DOTALL` from positional to `flags=re.DOTALL` in both copies; extracting a shared `_strip_sql_comments(sql)` helper is a small bonus to keep the bug from reoccurring. Consider opening with the issue *and* a draft PR linked from it.
+
 ## Summary
 
 `_getLivySQL` passes `re.DOTALL` as the positional `count` argument to `re.sub` instead of as `flags=re.DOTALL`. `re.DOTALL` is an integer enum value (16). `re.sub`'s positional signature is `re.sub(pattern, repl, string, count=0, flags=0)`. Passing `re.DOTALL` positionally sets `count=16`, capping comment-stripping to at most 16 replacements per file.
