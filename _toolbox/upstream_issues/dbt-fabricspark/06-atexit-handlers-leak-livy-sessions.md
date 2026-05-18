@@ -11,7 +11,7 @@ dbt-adapters has a documented connection lifecycle. The connection manager owns 
 
 This adapter doesn't. Both [`src/dbt/adapters/fabricspark/singleton_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py) and [`src/dbt/adapters/fabricspark/concurrent_livy.py`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py) register `atexit` handlers at module-import time for Livy session cleanup. The high-concurrency variant adds a second `atexit` handler with a global `_active_sessions` set. This puts session lifecycle on a Python runtime primitive that is (a) not part of dbt's stable adapter interface, and (b) less reliable than the `close()` path that already exists for this purpose.
 
-Both consequences matter. Going around dbt-core's lifecycle means session cleanup happens at a point dbt does not control or observe — dbt cannot retry it, log it, or surface failures from it. And `atexit` itself does not fire when the process is killed via SIGKILL, OOMed, exits via `os._exit`, or hits an exception during shutdown. When the handler doesn't run, the Livy session stays alive on Fabric until the server-side session timeout, consuming capacity that the user's next dbt run cannot use.
+Going around dbt-core's lifecycle means session cleanup happens at a point dbt does not control or observe — dbt cannot retry it, log it, or surface failures from it.
 
 ## Evidence (HEAD [`d315a56`](https://github.com/microsoft/dbt-fabricspark/tree/d315a56))
 
@@ -20,9 +20,7 @@ Both consequences matter. Going around dbt-core's lifecycle means session cleanu
 
 ## User impact
 
-- Session cleanup is invisible to dbt. Failures inside `atexit` aren't surfaced as part of any dbt step, can't be retried by dbt's normal error handling, and don't make it to the dbt log.
-- Stale Livy sessions accumulate on the user's Fabric capacity after any termination that skips `atexit` — container OOM, CI job timeout, deploy-time SIGTERM/SIGKILL, segfault, `os._exit`, exceptions during shutdown.
-- Fabric capacity has a session cap. Stale sessions consume slots that the next dbt run cannot use, leading to "session quota exceeded" errors with no breadcrumb back to which run leaked them.
+Session cleanup is invisible to dbt. Failures inside `atexit` aren't surfaced as part of any dbt step, can't be retried by dbt's normal error handling, and don't make it to the dbt log.
 
 ## Suggested fix
 
@@ -32,5 +30,5 @@ Move Livy session lifecycle onto dbt-adapters' documented `close()` path:
 2. Close it from `FabricSparkConnectionManager.close()` — dbt-core already calls this at the end of every run.
 3. Drop both `atexit.register(...)` calls and the global `_active_sessions` set.
 
-For Ctrl+C / SIGTERM / OOM and the other paths where `close()` cannot run, accept Fabric's server-side session timeout as the backstop — it bounds the leak without inventing a parallel cleanup mechanism that lives outside dbt's adapter interface.
+For paths where `close()` cannot run, accept Fabric's server-side session timeout as the backstop rather than inventing a parallel cleanup mechanism outside dbt's adapter interface.
 

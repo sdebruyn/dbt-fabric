@@ -43,9 +43,11 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 01 — Six `__exit__` methods return `True`
 - [x] 02 — Hardcoded 2028 token expiry
 - [x] 04 — `_getLivySQL` regex bug
-- [ ] 06 — `atexit` handlers leak Livy sessions
-- [ ] 07 — Dead code from Databricks ancestry
+- [ ] 06 — Livy cleanup bypasses dbt's `close()` lifecycle
+- [ ] 07 — Thrift dead code from dbt-spark ancestry
 - [x] 08 — Proposal: inherit from `dbt-spark`
+- [ ] 09 — `botocore`/`boto3` DEBUG logging at import time
+- [ ] 10 — `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()`
 
 ## Priority guidance
 
@@ -70,7 +72,7 @@ Filing all 27 at once would be noise. Suggested staging:
 These are debatable and may invite long discussion. File only if the second batch is engaged with; otherwise hold them for the toolbox PR's "what we replaced" narrative.
 
 - dbt-fabric: `12`, `17`, `18`, `19`, `20`
-- dbt-fabricspark: `06`, `07`, `08`
+- dbt-fabricspark: `06`, `07`, `08`, `09`, `10`
 
 `dbt-fabricspark/08` (inherit from `dbt-spark`) is the structural one — file it last because it's the meta-fix that the other FabricSpark bugs flow from, and engagement with the individual bugs first gives the proposal a concrete factual basis to argue from.
 
@@ -109,7 +111,9 @@ These are debatable and may invite long discussion. File only if the second batc
 | 02 | Hardcoded 2028 token expiry bypasses refresh logic | high | bug, security |
 | 04 | `_getLivySQL` regex bug: `re.DOTALL` passed as positional `count` | medium | bug |
 | 06 | `atexit` handlers leak Livy sessions on hard kill / OOM | medium | bug |
-| 07 | Dead code from Databricks ancestry (Thrift, AWS logging, dup `_parse_retry_after`) | low | tech-debt |
+| 07 | Thrift dead code from dbt-spark ancestry | low | tech-debt |
+| 09 | `botocore`/`boto3` DEBUG logging at import time | low | tech-debt |
+| 10 | `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()` | low | tech-debt |
 | 08 | Proposal: inherit from `dbt-spark` instead of standalone `SQLAdapter` | high | proposal, architecture |
 
 ## What is deliberately NOT filed as an issue
