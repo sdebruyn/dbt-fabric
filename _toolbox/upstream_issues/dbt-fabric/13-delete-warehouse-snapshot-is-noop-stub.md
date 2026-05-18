@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/high`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Do **not** submit this as a standalone PR. The right move is one combined warehouse-snapshots PR that also addresses #17 (move snapshots off `atexit` onto Jinja macros / `on-run-end`). Fixing only the stub leaves the surrounding lifecycle issues in place; bundling them keeps the diff coherent. Too much scope for now — defer until we are ready to take on the full warehouse-snapshots cleanup.
 
 ## Summary
 

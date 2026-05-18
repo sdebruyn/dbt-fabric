@@ -2,6 +2,7 @@
 
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `enhancement`, `priority/low`
+**Related:** issue #14 (`apply_label`) — the only reason this override exists is to thread `apply_label()` between two statements; centralizing the label via dbt-adapters' `query_header` removes the reason this macro exists.
 
 > [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
@@ -23,9 +24,10 @@ The adapter ships a custom `fabric__snapshot_merge_sql` macro that does an UPDAT
 
 Delete `fabric__snapshot_merge_sql` entirely and let dbt-core's `default__snapshot_merge_sql` (which uses MERGE) handle Fabric. Fabric Warehouse supports `MERGE INTO` with the standard ANSI syntax dbt-core emits.
 
-Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`0857efc1`](https://github.com/sdebruyn/dbt-fabric/commit/0857efc1) (also removed the `apply_label()` helper this macro relied on — see related issue).
+This fix is naturally paired with #14 (centralizing query labels via dbt-adapters' `query_header`). Once labeling happens at the connection-manager layer instead of per-statement Jinja, the only justification for the custom override (interleaving `apply_label()` between UPDATE and INSERT) disappears and the macro can simply be deleted.
+
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`0857efc1`](https://github.com/sdebruyn/dbt-fabric/commit/0857efc1) (combined deletion of `fabric__snapshot_merge_sql` and the `apply_label()` helper it relied on).
 
 ## Notes
 
-- The `apply_label()` helper that the UPDATE+INSERT version calls is itself a debug-log-noise source (separate issue).
-- Most reference adapters (Snowflake, BigQuery, Postgres, Spark) inherit `default__snapshot_merge_sql` for the same reason: it just works.
+- Most reference adapters (Snowflake, BigQuery, Postgres, Spark) inherit `default__snapshot_merge_sql` for the same reason: it just works on engines that support standard `MERGE INTO`.
