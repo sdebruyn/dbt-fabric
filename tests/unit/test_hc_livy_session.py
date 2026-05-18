@@ -372,17 +372,31 @@ class TestClose:
 
 
 class TestPool:
-    @patch("dbt.adapters.fabric.fabric_hc_livy_session.time.sleep")
-    def test_acquire_returns_pooled_session_without_round_trip(
-        self, mock_sleep, session, api_client
-    ):
+    def test_acquire_reuses_verified_pooled_session(self, session, api_client):
         _ready_session(session)
         session.close()
+        api_client.get_hc_session.return_value = {"state": "Idle"}
 
         reused = HighConcurrencyLivySession.acquire(api_client)
 
         assert reused is session
         api_client.acquire_hc_session.assert_not_called()
+        api_client.get_hc_session.assert_called_once_with("hc-1")
+
+    def test_acquire_drops_reaped_pooled_session_and_creates_fresh(self, session, api_client):
+        _ready_session(session)
+        session.close()
+        api_client.get_hc_session.side_effect = [
+            FabricApiError("GET", "url", 404, "Not Found"),
+            {"state": "Idle", "sessionId": "sess-fresh", "replId": "repl-fresh"},
+        ]
+        api_client.acquire_hc_session.return_value = {"id": "hc-fresh"}
+
+        new_session = HighConcurrencyLivySession.acquire(api_client)
+
+        assert new_session is not session
+        assert new_session._state.hc_id == "hc-fresh"
+        api_client.delete_hc_session.assert_called_once_with("hc-1")
 
     @patch("dbt.adapters.fabric.fabric_hc_livy_session.time.sleep")
     def test_acquire_creates_session_when_pool_empty(self, mock_sleep, api_client):
@@ -408,7 +422,9 @@ class TestPool:
         assert session._state.hc_id is None
         assert HighConcurrencyLivySession._pool == {}
 
-    def test_drain_pool_swallows_delete_errors(self, session, api_client):
+    def test_drain_pool_continues_after_delete_failure(self, session, api_client):
+        # _delete() catches its own errors and logs a warning, so drain_pool
+        # is naturally resilient without an explicit suppress in its loop.
         _ready_session(session)
         session.close()
         api_client.delete_hc_session.side_effect = Exception("network error")

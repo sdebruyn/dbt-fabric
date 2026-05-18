@@ -55,6 +55,7 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+          FABRIC_TEST_THREADS: "4"
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
           export FABRIC_TEST_FEDERATED_TOKEN_HEADER="bearer ${ACTIONS_ID_TOKEN_REQUEST_TOKEN}"
@@ -168,6 +169,7 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+          FABRIC_TEST_THREADS: "4"
           PYTEST_FILTER: ${{ steps.filter.outputs.expression }}
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"
@@ -242,6 +244,7 @@ jobs:
           FABRIC_TEST_WORKSPACE_NAME: adapter-ci
           FABRIC_TEST_LAKEHOUSE_NAME: cilh
           FABRIC_TEST_LIVY_SESSION_NAME: ${{ github.run_id }}
+          FABRIC_TEST_THREADS: "4"
           PYTEST_FILTER: ${{ github.event.inputs.pytest_filter }}
         run: |
           export FABRIC_TEST_FEDERATED_TOKEN_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=api://AzureADTokenExchange"

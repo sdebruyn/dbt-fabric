@@ -25,8 +25,6 @@ _TRANSIENT_EXCEPTIONS = (
     json.JSONDecodeError,
 )
 
-_POLL_BACKOFF_SCHEDULE: tuple[float, ...] = (0.5, 1.0, 2.0)
-
 
 def derive_session_tag(workspace_id: str, lakehouse_id: str) -> str:
     """Deterministic session tag from (workspace_id, lakehouse_id).
@@ -60,9 +58,14 @@ class HighConcurrencyLivySession:
     re-acquiring an HC REPL on every dbt invocation (seed/run/test/snapshot).
     ``close()`` returns a healthy session to the pool; dead sessions are
     deleted in Fabric immediately. The pool is drained at interpreter exit.
+
+    The underlying Spark session is managed by Fabric and stays alive for
+    other REPLs and processes — closing or deleting an HC slot here only
+    releases this instance's REPL, not the shared Spark session.
     """
 
     _POLLING_INTERVAL = 3
+    _POLL_BACKOFF_SCHEDULE: tuple[float, ...] = (0.5, 1.0, 2.0)
     _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
     _TERMINAL_STATEMENT_STATES = frozenset({"available", "error", "cancelled", "cancelling"})
 
@@ -82,8 +85,8 @@ class HighConcurrencyLivySession:
         second; short statements complete sub-second. Starting at the floor
         wastes most of that latency on a fixed 3s sleep.
         """
-        if attempt < len(_POLL_BACKOFF_SCHEDULE):
-            return _POLL_BACKOFF_SCHEDULE[attempt]
+        if attempt < len(cls._POLL_BACKOFF_SCHEDULE):
+            return cls._POLL_BACKOFF_SCHEDULE[attempt]
         return cls._POLLING_INTERVAL
 
     def _get_session_tag(self) -> str:
@@ -305,26 +308,46 @@ class HighConcurrencyLivySession:
 
     @classmethod
     def acquire(cls, fabric_api_client: FabricApiClient) -> "HighConcurrencyLivySession":
-        """Get a ready HC session from the pool, or create one if none available.
+        """Get a verified-ready HC session from the pool, or create one fresh.
 
-        Pool key is the session tag (workspace + lakehouse). A pooled session
-        keeps its existing ``hc_id``/``session_id``/``repl_id`` — no Fabric
-        round-trip needed to reuse it. Callers must release it via
-        :meth:`close` when done.
+        Pool key is the session tag (workspace + lakehouse). Each pooled
+        candidate is checked against Fabric before being handed out — Fabric
+        may have reaped an idle session between releases, and a stale
+        ``hc_id`` would surface as a 404 on the next statement and fail the
+        dbt op. Reaped sessions are discarded and the next candidate is
+        tried; the pool empties out to a fresh acquire.
         """
         workspace_id = fabric_api_client.get_workspace_id()
         lakehouse_id = fabric_api_client.get_lakehouse_id()
         tag = derive_session_tag(workspace_id, lakehouse_id)
-        with cls._pool_lock:
-            pool = cls._pool.get(tag)
-            if pool:
-                session = pool.popleft()
-                session._fabric_api_client = fabric_api_client
+        while True:
+            with cls._pool_lock:
+                pool = cls._pool.get(tag)
+                session = pool.popleft() if pool else None
+            if session is None:
+                session = cls(fabric_api_client)
+                session.wait_for_session_ready()
+                return session
+            # Pool key locks workspace + lakehouse, so swapping in the
+            # caller's client is safe — credentials still target the same
+            # Fabric endpoint.
+            session._fabric_api_client = fabric_api_client
+            if session._verify_alive():
                 logger.debug(f"Reusing pooled HC session {session._state.hc_id}")
                 return session
-        session = cls(fabric_api_client)
-        session.wait_for_session_ready()
-        return session
+            session._delete()
+
+    def _verify_alive(self) -> bool:
+        """Return False if Fabric has reaped this HC session or it is not Idle."""
+        if self._state.hc_id is None:
+            return False
+        try:
+            body = self._fabric_api_client.get_hc_session(self._state.hc_id)
+        except FabricApiError as e:
+            if e.status_code == 404:
+                return False
+            raise
+        return body.get("state", "") == "Idle"
 
     def close(self) -> None:
         """Return this session to the pool, or delete it in Fabric if unhealthy.
@@ -362,8 +385,7 @@ class HighConcurrencyLivySession:
             cls._pool.clear()
         for sessions in pooled:
             while sessions:
-                with contextlib.suppress(Exception):
-                    sessions.popleft()._delete()
+                sessions.popleft()._delete()
 
 
 atexit.register(HighConcurrencyLivySession.drain_pool)
