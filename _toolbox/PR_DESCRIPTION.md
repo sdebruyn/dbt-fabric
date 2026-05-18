@@ -98,10 +98,4 @@ This contribution has one [`FabricTokenProvider`](https://dbt-fabric.debruyn.dev
 
 **Test suite built on [`dbt-tests-adapter`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-tests-adapter).** Every dbt-core minor ships new `Base*` test classes that codify what an adapter needs to do to be compatible. Bumping `dbt-tests-adapter` is how this adapter picks up coverage for new dbt-core features automatically. About 430 adapter test classes here plus an extra ~110 community-package tests, all running against real Fabric. PRs run on Python 3.13; the full Python 3.11/3.12/3.13 matrix runs weekly.
 
-**Capability declarations** (`SchemaMetadataByRelations`, `TableLastModifiedMetadata`) let dbt-core pick the optimised code paths on its own. Declaring a new capability when dbt-core adds one is a one-line change.
-
-**Whole classes of silent-failure bugs eliminated by construction.** No module-level mutable state, so race conditions can't happen the way they do in the issues filed upstream. No `atexit` handlers, so cleanup follows dbt's documented connection-manager `close()` path. No exception swallowing, so errors propagate normally.
-
-**Versioning and dependency hygiene.** Tight `dbt-core>=1.9.6,<1.13.0` range with an explicit upper bound. dbt-core upgrades follow a documented checklist in `CONTRIBUTING.md` (inventory new dispatchable macros, new adapter methods, new `Base*` test classes; only tag when the suite passes). Modern build stack (`hatchling` + `uv`) and Python typing (PEP 604 unions, no `typing.Union`/`Optional`).
-
-**No parallel mechanisms.** Every feature in the list above is a macro, a dispatch override, a profile key, a model config, or a capability declaration — nothing built on top of dbt that users have to learn separately.
+**Built using dbt's conventional patterns end-to-end.** Capabilities (`SchemaMetadataByRelations`, `TableLastModifiedMetadata`) so dbt-core picks optimised paths on its own. Dispatch for engine differences and package overrides. Standard profile keys, standard model config, standard hooks. A recurring root cause across the upstream issues filed above is the opposite — features built next to dbt's mechanisms instead of through them — the kind of mismatch you notice when you use dbt daily.
