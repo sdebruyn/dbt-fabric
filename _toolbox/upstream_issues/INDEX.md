@@ -31,11 +31,13 @@ Filing all 27 at once would be noise. Suggested staging:
 - dbt-fabric: `03`, `05`, `06`, `08`, `09`, `11`, `14`, `15`, `16`
 - dbt-fabricspark: `02`, `04`
 
-**File third — design / refactor proposals (9):**
+**File third — design / refactor proposals (10):**
 These are debatable and may invite long discussion. File only if the second batch is engaged with; otherwise hold them for the toolbox PR's "what we replaced" narrative.
 
 - dbt-fabric: `12`, `17`, `18`, `19`, `20`
-- dbt-fabricspark: `05`, `06`, `07`
+- dbt-fabricspark: `05`, `06`, `07`, `08`
+
+`dbt-fabricspark/08` (inherit from `dbt-spark`) is the structural one — file it last because it's the meta-fix that the other FabricSpark bugs flow from, and engagement with the individual bugs first gives the proposal a concrete factual basis to argue from.
 
 ## Full index
 
@@ -75,6 +77,7 @@ These are debatable and may invite long discussion. File only if the second batc
 | 05 | Global mutable state in `singleton_livy` / `concurrent_livy` causes race conditions | high | bug, concurrency |
 | 06 | `atexit` handlers leak Livy sessions on hard kill / OOM | medium | bug |
 | 07 | Dead code from Databricks ancestry (Thrift, AWS logging, dup `_parse_retry_after`) | low | tech-debt |
+| 08 | Proposal: inherit from `dbt-spark` instead of standalone `SQLAdapter` | high | proposal, architecture |
 
 ## What is deliberately NOT filed as an issue
 
@@ -83,7 +86,6 @@ These concerns from `PR_DESCRIPTION.md` are not actionable as upstream bug repor
 - "Narrow CI test coverage" / "no Python matrix" — meta-concern about engineering practice.
 - "PyPI ownership on a personal account" — organizational concern, not a code bug.
 - "AI-assisted code merged without dbt-domain review" — pattern observation; the underlying specific examples (PR #315, v1.9.10 retry, `check_for_nested_cte`) are filed individually above.
-- Architectural critique: "should inherit from `dbt-spark`" — too sweeping for an issue; belongs in the toolbox PR narrative.
 - General doc gaps — too broad; file as specific doc requests only when they map to a discrete page or behavior.
 
 ## Note on filing strategy
