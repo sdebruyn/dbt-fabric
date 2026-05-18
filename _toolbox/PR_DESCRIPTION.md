@@ -12,7 +12,7 @@ I'm bringing it to the toolbox because the toolbox's multi-contributor model —
 
 **One `pip install dbt-fabric` and both Fabric engines work.** No separate `dbt-fabricspark` package to manage, no system ODBC driver to install: the bundled [`mssql-python`](https://github.com/microsoft/mssql-python) driver handles the Data Warehouse side and ships with ODBC Driver 18 + unixODBC inside the wheel. That alone removes the most common installation hurdle on macOS and in containers, where pulling the right ODBC driver is the step new users get stuck on most often.
 
-On top of that, three features the official adapters don't ship:
+On top of that, a long list of features the official adapters don't ship. The headline ones first:
 
 **[Microsoft Purview](https://learn.microsoft.com/en-us/purview/) integration via API.** A `{{ purview_sync() }}` macro that pushes model and column documentation, plus dbt's [`ref()`](https://docs.getdbt.com/reference/dbt-jinja-functions/ref) and [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) lineage, directly into Purview through the REST API. [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs)-aware: models marked `persist_docs: false` are skipped, granular `relation: true, columns: false` only syncs what you asked for. No Purview scan configuration needed on the user side.
 
@@ -20,15 +20,25 @@ On top of that, three features the official adapters don't ship:
 
 **Community packages made compatible with Fabric, and continuously tested to keep them that way.** Nine popular dbt community packages — [dbt-utils](https://github.com/dbt-labs/dbt-utils), [dbt-date](https://github.com/godatadriven/dbt-date), [dbt-codegen](https://github.com/dbt-labs/dbt-codegen), [dbt-expectations](https://github.com/metaplane/dbt-expectations), [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper), [dbt-external-tables](https://github.com/dbt-labs/dbt-external-tables), [dbt-profiler](https://github.com/data-mie/dbt-profiler), [dbt-artifacts](https://github.com/brooklyn-data/dbt_artifacts), and [dbt-project-evaluator](https://github.com/dbt-labs/dbt-project-evaluator) — don't fully work on Fabric out of the box. They ship Postgres- or Snowflake-flavoured macros that fail on Fabric's T-SQL or Spark dialects. This contribution writes the adapter-specific overrides through dbt's [dispatch](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch) system, with per-package compatibility documentation listing which macros work, which don't, and the exact version that was validated. Integration tests then run against each package on real Fabric infrastructure on every PR — that's what keeps the compatibility honest as both Fabric and the packages release new versions. Neither official adapter ships compatibility overrides or tests against any of these packages.
 
-Plus a handful of smaller things the official adapters also don't have:
+And the rest of the list — things the official adapters also don't have, in no particular order:
 
-- [Functions](https://docs.getdbt.com/docs/build/functions) (dbt-core 1.11 scalar functions) on both engines.
-- [Workload identity](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation) (federated OIDC for CI/CD pipelines).
-- 11 authentication methods through standard dbt [profile keys](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml), plus custom [`TokenCredential`](https://learn.microsoft.com/en-us/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python) classes.
-- [Auto host-resolution from the workspace name](https://dbt-fabric.debruyn.dev/configuration/#host) — no hardcoded SQL endpoint per environment.
+- Warehouse snapshots as a callable Jinja macro (`{{ create_or_update_fabric_warehouse_snapshot(...) }}`) usable from [`on-run-start`/`on-run-end`](https://docs.getdbt.com/reference/project-configs/on-run-start-on-run-end), any [`post-hook`](https://docs.getdbt.com/reference/resource-configs/pre-hook-post-hook), or [`dbt run-operation`](https://docs.getdbt.com/reference/commands/run-operation).
+- [`dbt-external-tables`](https://github.com/dbt-labs/dbt-external-tables) compatibility via dispatch, so `OPENROWSET`-backed files are regular [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) references that show up in the lineage graph and work with `dbt run-operation stage_external_sources`.
+- [`cluster_by`](https://docs.getdbt.com/reference/resource-configs/snowflake-configs#using-cluster_by) as a standard model config option, identical to Snowflake and BigQuery.
 - [Manual statistics as model config](https://dbt-fabric.debruyn.dev/statistics/) — declarative, no post-hook tricks.
 - Catalog statistics in [`dbt docs generate`](https://docs.getdbt.com/reference/commands/cmd-docs) output, automatically.
-- [`cluster_by`](https://docs.getdbt.com/reference/resource-configs/snowflake-configs#using-cluster_by) as a standard model config option, identical to Snowflake and BigQuery.
+- [Functions](https://docs.getdbt.com/docs/build/functions) (dbt-core 1.11 scalar functions) on both engines.
+- Materialized lake views on the Lakehouse, with `PARTITIONED BY`, `TBLPROPERTIES`, `CHECK` constraints with `ON MISMATCH`, and `CREATE OR REPLACE` semantics.
+- Cross-workspace 4-part naming on the Lakehouse (`workspace.lakehouse.schema.table`).
+- View materialization on the Lakehouse (not just materialized lake views).
+- [Workload identity](https://learn.microsoft.com/en-us/entra/workload-id/workload-identity-federation) (federated OIDC for CI/CD pipelines).
+- 11 authentication methods through standard dbt [profile keys](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml), plus custom [`TokenCredential`](https://learn.microsoft.com/en-us/python/api/azure-core/azure.core.credentials.tokencredential?view=azure-python) classes.
+- One shared `FabricTokenProvider` covering both adapter types, so the same profile structure works for DW and Lakehouse.
+- [Auto host-resolution from the workspace name](https://dbt-fabric.debruyn.dev/configuration/#host) — no hardcoded SQL endpoint per environment.
+- Auto lakehouse-resolution from a lakehouse name (no GUIDs in profiles).
+- Livy session reuse across runs (warm-session logic that benefits both engines).
+- Distributed-statement-ID propagation into dbt's `AdapterResponse.query_id`, so anyone looking at a Fabric portal query can correlate it back to the dbt model that issued it.
+- A PEP 249–compliant cursor for Spark JSON results, so dbt talks to the Lakehouse exactly like any other database.
 - Transparent limitations documentation, per platform, so customers can decide in advance what will and won't work for their use case.
 
 And — the upstream-equivalent baseline most users will actually feel day-to-day: every PR runs against real Fabric, every release ships after the full integration suite has gone green, and all the bugs documented in the next section are already fixed.
