@@ -28,6 +28,3 @@ This fix is naturally paired with #14 (centralizing query labels via dbt-adapter
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`0857efc1`](https://github.com/sdebruyn/dbt-fabric/commit/0857efc1) (combined deletion of `fabric__snapshot_merge_sql` and the `apply_label()` helper it relied on).
 
-## Notes
-
-- Most reference adapters (Snowflake, BigQuery, Postgres, Spark) inherit `default__snapshot_merge_sql` for the same reason: it just works on engines that support standard `MERGE INTO`.

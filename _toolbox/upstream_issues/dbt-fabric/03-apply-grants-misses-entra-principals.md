@@ -49,7 +49,3 @@ Query `sys.database_principals` joined with `sys.database_permissions`, which co
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`42063121`](https://github.com/sdebruyn/dbt-fabric/commit/42063121).
 
-## Notes
-
-- The `INFORMATION_SCHEMA.TABLE_PRIVILEGES` view is part of the ANSI standard but does not have a defined behavior for Microsoft Entra principals. Fabric returns SQL principals only; this is consistent with SQL Server's interpretation but means the standard view is the wrong primitive for Fabric grant introspection.
-- Behavior is reproducible by granting `SELECT` to an Entra group on a table and watching `dbt run` re-emit the GRANT every cycle.

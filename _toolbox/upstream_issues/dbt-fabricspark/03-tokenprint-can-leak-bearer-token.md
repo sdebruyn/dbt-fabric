@@ -42,7 +42,3 @@ def get_headers(...):
     return headers
 ```
 
-## Notes
-
-- This is the kind of latent risk that security review specifically looks for. Any token-handling code should treat the token as a secret that never appears in logs, even conditionally.
-- If `tokenPrint=True` is currently used by any tooling or test, replace that usage with the fingerprint logging above.

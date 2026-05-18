@@ -41,7 +41,3 @@ A `fabric_purge_unmatched(target, condition)` macro is a clean opt-in extension 
 
 Alternatively: if delete-by-condition is genuinely a common-enough need to belong on the materialization, propose it upstream to dbt-core / dbt-adapters as a portable config that all adapters can implement, rather than shipping it adapter-private.
 
-## Notes
-
-- [The fork](https://github.com/sdebruyn/dbt-fabric) has deliberately avoided adapter-private configs on dbt-core materializations for exactly this reason.
-- This is a design issue, not a bug per se — it ships and works. The cost is silent: it leaks into every user's `dbt_project.yml` and is invisible until someone tries to move the project.

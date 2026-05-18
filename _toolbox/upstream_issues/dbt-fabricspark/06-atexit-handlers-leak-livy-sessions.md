@@ -30,7 +30,3 @@ Use dbt's documented connection-manager `close()` path instead of `atexit`. Sess
 
 If a defense-in-depth cleanup is desired, register a `signal.signal(signal.SIGTERM, ...)` handler that calls `close()` and re-raises, rather than relying on `atexit`. SIGTERM handlers run earlier in the shutdown sequence and are more reliable across container-orchestrator kills.
 
-## Notes
-
-- The same `atexit` anti-pattern is now present in `microsoft/dbt-fabric` for warehouse snapshots (separate issue in that repo).
-- [The fork](https://github.com/sdebruyn/dbt-fabric) eliminated all `atexit` registrations. Sessions are managed through dbt-core's connection lifecycle; stale-session risk is bounded by Fabric's server-side GC and not by client-side cleanup invariants the runtime can violate.

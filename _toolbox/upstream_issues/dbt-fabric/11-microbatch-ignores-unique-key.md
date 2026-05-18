@@ -37,6 +37,3 @@ When `unique_key` is present, dispatch to `get_incremental_merge_sql` so the ope
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`955ab2e3`](https://github.com/sdebruyn/dbt-fabric/commit/955ab2e3).
 
-## Notes
-
-- The same MERGE-when-possible pattern is also worth applying to `fabric__snapshot_merge_sql`, which currently is a custom 2-statement UPDATE+INSERT. See related issue.

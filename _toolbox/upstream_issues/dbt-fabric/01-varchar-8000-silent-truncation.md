@@ -40,7 +40,3 @@ def string_size(self) -> int:
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`9c3ac010`](https://github.com/sdebruyn/dbt-fabric/commit/9c3ac010) ("string→varchar(MAX) sweep across `TYPE_LABELS`, `string_type`, `fabric__snapshot_hash_arguments`, `fabric__hash`").
 
-## Notes
-
-- Fabric Warehouse documentation confirms `varchar(MAX)` is supported.
-- Earlier versions of Fabric DW did cap string columns at `varchar(8000)`, which is presumably where the adapter default originated. Fabric DW now supports `varchar(MAX)`; the adapter default has not been updated to match.

@@ -34,7 +34,3 @@ def delete_warehouse_snapshot(self, snapshot_id):
 
 Implement the actual `DELETE` against the Fabric REST API. This should be addressed together with the broader warehouse-snapshots rework described in issue #17 (moving the snapshot lifecycle off `atexit` and onto Jinja macros / `on-run-end`), since both touch the same surface. Reference implementation in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`412b4732`](https://github.com/sdebruyn/dbt-fabric/commit/412b4732).
 
-## Notes
-
-- This stub method has been shipping in production releases. Anyone using the `warehouse_snapshots` feature for hygiene/cleanup is silently accumulating snapshots they think they have deleted.
-- The other `warehouse_snapshots` methods in the same file (create, get, list) do make real REST calls — the stub appears to be an oversight from a partial implementation.

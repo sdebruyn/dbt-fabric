@@ -48,7 +48,3 @@ def _make_match_kwargs(cls, database, schema, identifier):
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`7b12ec6f`](https://github.com/sdebruyn/dbt-fabric/commit/7b12ec6f).
 
-## Notes
-
-- The dbt-adapters default assumes case-insensitive identifiers (the Snowflake/Postgres default). It is correct for those platforms but unsafe for any platform where the user has any control over collation.
-- The fix is a few lines and has no side effect on case-insensitive deployments — identifiers are returned exactly as passed, and dbt-core has already done the case normalization based on its own `quoting` configuration before calling this method.

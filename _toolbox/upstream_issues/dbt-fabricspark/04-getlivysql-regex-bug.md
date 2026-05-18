@@ -41,7 +41,3 @@ sql = re.sub(pattern, "", sql, flags=re.DOTALL)
 
 Fix both copies ([`singleton_livy.py#L488`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/singleton_livy.py#L488) and [`concurrent_livy.py#L555`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/concurrent_livy.py#L555)). Better: extract a single `_strip_sql_comments(sql)` helper and call it from both files so the bug can't reoccur in only one place.
 
-## Notes
-
-- This is the type of bug a linter (Ruff `RUF*`, Pylint `W0102`-family) or even a careful code review would catch. It is currently invisible to dbt users because the partial comment-stripping still produces SQL Spark can parse — until it doesn't.
-- The duplicated `_getLivySQL` (and the same-pattern duplicated `_parse_retry_after` — see related issue) suggests the codebase would benefit from a small shared utilities module.

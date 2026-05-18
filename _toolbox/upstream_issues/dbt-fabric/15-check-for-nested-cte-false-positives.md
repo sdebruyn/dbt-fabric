@@ -45,6 +45,3 @@ Delete `check_for_nested_cte` and every call to it. Let the unit-test materializ
 
 There is no version of this macro worth keeping. A "smarter" parser still cannot parse SQL in Jinja, would still produce false positives, and would still ship a false security around CTE limits that are the database's responsibility to enforce. The fix is removal, not refinement.
 
-## Notes
-
-- [The fork](https://github.com/sdebruyn/dbt-fabric) ships no equivalent macro. dbt-adapters' default unit-test machinery runs unchanged and the actual Fabric error reaches the user if a query is genuinely unsupported.

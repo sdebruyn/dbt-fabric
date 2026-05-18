@@ -57,7 +57,3 @@ This is the same pattern dbt-postgres, dbt-snowflake, and dbt-spark use. The exi
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`257c8999`](https://github.com/sdebruyn/dbt-fabric/commit/257c8999).
 
-## Notes
-
-- This is one of the most consequential bugs in the adapter because the failure mode is invisible until it has already destroyed data, and because nightly full-refresh runs are common.
-- The same anti-pattern (drop-then-create) is the reason dbt-spark replaced its own version of this code several releases ago.

@@ -47,7 +47,3 @@ pyodbc.pooling = credentials.pooling if credentials.pooling is not None else Tru
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric) (before the `mssql-python` migration): commit [`fe3d3281`](https://github.com/sdebruyn/dbt-fabric/commit/fe3d3281).
 
-## Notes
-
-- The `odbcversion` requirement is documented in the pyodbc source code as part of the `SQLSetEnvAttr` call sequence that ODBC requires before pool registration.
-- This issue exists to document the latent bug and to make the case for prioritising [PR #350](https://github.com/microsoft/dbt-fabric/pull/350) over a pyodbc-only patch. Adding the missing `odbcversion` line as a band-aid keeps users on a driver stack that has other tradeoffs (system ODBC dependency, slower TLS, less Microsoft-native support); landing `mssql-python` eliminates the whole class of problem.

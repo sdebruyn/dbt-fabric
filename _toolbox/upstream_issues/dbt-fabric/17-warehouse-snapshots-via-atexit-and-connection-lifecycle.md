@@ -50,7 +50,3 @@ The macro dispatches to an `@available` adapter method that makes the REST call.
 
 Reference implementation in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`7fccebe7`](https://github.com/sdebruyn/dbt-fabric/commit/7fccebe7) for the initial `create_or_update_fabric_warehouse_snapshot` macro + `@available` adapter method, plus `412b4732` for `delete_warehouse_snapshot`.
 
-## Notes
-
-- `on-run-start` / `on-run-end` are dbt's standard, documented run-orchestration hooks ([docs](https://docs.getdbt.com/reference/project-configs/on-run-start-on-run-end)). Every Snowflake, Postgres, BigQuery, and Spark user already knows them. There is no reason to invent a new lifecycle point when dbt-core already provides exactly this surface.
-- The same rewrite eliminates the module-level globals and `atexit` handlers in one change.

@@ -3,7 +3,7 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `security`, `priority/high`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
 ## Summary
 
@@ -33,7 +33,3 @@ token = AccessToken(token=..., expires_on=1845972874)
 # or use the token endpoint's stated expiry.
 ```
 
-## Notes
-
-- Stubs in production code are a recurring pattern in this codebase (see also: `delete_warehouse_snapshot` is a `return True` stub in the sibling `microsoft/dbt-fabric` repo).
-- A grep for hardcoded Unix timestamps would catch this and similar stubs at PR review time.

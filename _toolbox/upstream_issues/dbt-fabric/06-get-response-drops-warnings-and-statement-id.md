@@ -56,7 +56,3 @@ def get_response(cls, cursor) -> AdapterResponse:
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`8bf38cf2`](https://github.com/sdebruyn/dbt-fabric/commit/8bf38cf2).
 
-## Notes
-
-- Populating `AdapterResponse.query_id` is dbt's documented mechanism for surfacing backend query identifiers — see Snowflake's `query_id` propagation for the established pattern.
-- The "OK" default should remain as a fallback for cursors that legitimately have no messages, but it should not mask cursor output when output is present.

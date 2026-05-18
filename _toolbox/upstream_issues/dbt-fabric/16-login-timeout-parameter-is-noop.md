@@ -31,7 +31,3 @@ Either:
 
 The first option is preferable: the dbt adapter is not the right layer to invent token-acquisition timeouts when Azure SDK callers don't have a documented timeout knob there.
 
-## Notes
-
-- This PR is referenced in the broader pattern observed across recent releases (v1.9.10, v1.10.0) where AI-assisted suggestions land without review by someone with the dbt-domain or Azure SDK expertise to spot that the suggested fix doesn't actually do what the description claims.
-- Filing this as a discrete issue rather than a broader review concern, because the concrete bug (parameter is a no-op) is independently actionable.

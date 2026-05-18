@@ -60,7 +60,3 @@ def parse_retry_after(header_value: str | None) -> float | None:
             return None
 ```
 
-## Notes
-
-- The "dead code from sibling-project ancestry" pattern is documented in the broader PR critique: it is the strongest single tell that PRs land without anyone working out what the existing code is for.
-- Removing the dead boto3 logging config also removes a small attack surface (one fewer module-import-time side effect that an attacker who can substitute a `boto3` package could exploit).

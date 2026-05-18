@@ -40,8 +40,8 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 
 ### dbt-fabricspark
 
-- [ ] 01 — Six `__exit__` methods return `True`
-- [ ] 02 — Hardcoded 2028 token expiry
+- [x] 01 — Six `__exit__` methods return `True`
+- [x] 02 — Hardcoded 2028 token expiry
 - [ ] 03 — `tokenPrint=True` can leak bearer tokens
 - [ ] 04 — `_getLivySQL` regex bug
 - [ ] 05 — Global mutable state in Livy modules

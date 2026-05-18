@@ -36,6 +36,3 @@ def get_pyodbc_attrs_before_credentials(credentials):
 - Cannot use two different credential profiles in a single Python process (e.g. dbt + Purview integration).
 - Token expiry is fixed per process; long-running processes can hold expired tokens that the global never refreshes correctly.
 
-## Notes
-
-- [The fork](https://github.com/sdebruyn/dbt-fabric) now has zero module-level mutable state in the adapter — every cache and every connection lives on a class instance.

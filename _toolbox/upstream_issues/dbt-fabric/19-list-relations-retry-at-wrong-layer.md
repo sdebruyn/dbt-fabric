@@ -44,7 +44,3 @@ The base `SQLConnectionManager.add_query` then automatically retries every query
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`f1c0a512`](https://github.com/sdebruyn/dbt-fabric/commit/f1c0a512) (default `add_query()` retries on `mssql_python.OperationalError`/`InternalError` up to 3 attempts).
 
-## Notes
-
-- The v1.9.10 fix is well-intentioned and addresses a real user report. The concern is the level of abstraction, not the goal.
-- This is one of the recurring patterns observed across recent releases (see also #315): code that *looks* sophisticated but ignores a dbt-native primitive that already does the job.

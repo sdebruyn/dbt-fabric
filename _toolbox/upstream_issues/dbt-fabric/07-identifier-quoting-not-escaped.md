@@ -54,7 +54,3 @@ Apply the same fix to `FabricColumn.quoted`, `FabricRelation.quoted`, and the fi
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`414835b`](https://github.com/sdebruyn/dbt-fabric/commit/414835b).
 
-## Notes
-
-- This is the standard, documented T-SQL identifier-quoting rule. The single-character escape is canonical.
-- No backwards compatibility concern: identifiers with `]` that worked before were silently wrong; identifiers without `]` are unchanged.

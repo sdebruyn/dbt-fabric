@@ -62,7 +62,3 @@ Add `dbt/include/fabric/macros/materializations/hooks.sql` overriding `run_hooks
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`62705a00`](https://github.com/sdebruyn/dbt-fabric/commit/62705a00).
 
-## Notes
-
-- This is one of the most user-visible bugs in the adapter: anyone running a non-trivial dbt project on Fabric DW will hit it.
-- The same fix is needed regardless of whether Fabric eventually supports transactions — `commit;` between non-transactional batches is meaningless and should be omitted.

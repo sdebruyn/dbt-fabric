@@ -46,7 +46,3 @@ class FabricLivySession:
 
 Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): [the fork](https://github.com/sdebruyn/dbt-fabric) rewrote the entire Livy session layer with instance encapsulation throughout. No module-level mutable state remains.
 
-## Notes
-
-- The same anti-pattern is present in `microsoft/dbt-fabric` for the module-level `_TOKEN` global (separate issue in that repo).
-- Module-level mutable state is a known thread-safety risk in any Python codebase that runs under thread pools; dbt is one of the most common consumers of adapter code under threads.
