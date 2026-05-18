@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `design`, `priority/medium`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Do **not** submit this as a standalone PR. Bundle with #13 (`delete_warehouse_snapshot` stub) into one combined warehouse-snapshots cleanup PR. Too much scope for now — defer until we are ready to take on the full warehouse-snapshots rework.
 
 ## Summary
 

@@ -1,4 +1,4 @@
-# `check_for_nested_cte` macro has false positives on `WITH (NOLOCK)`, string literals, and any identifier containing "with"
+# `check_for_nested_cte`: a dbt adapter must never parse user SQL — delete this macro
 
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `priority/medium`
@@ -7,9 +7,9 @@
 
 ## Summary
 
-The `check_for_nested_cte` macro at `dbt/include/fabric/macros/materializations/models/unit_test/unit_test_create_table_as.sql` attempts to detect nested CTEs by lowercasing the user's SQL, replacing newlines with spaces, and counting occurrences of the substring `"with "`. Two or more occurrences → "nested CTE detected". The detector raises a compile error (with contract enforcement) or a warning otherwise.
+A dbt adapter must not parse user SQL. The `check_for_nested_cte` macro at `dbt/include/fabric/macros/materializations/models/unit_test/unit_test_create_table_as.sql` tries anyway: it lowercases the user's SQL, collapses newlines, and counts substring occurrences of `"with "`. Two or more occurrences → "nested CTE detected", which raises a compile error (under `contract`) or surfaces a misleading warning otherwise.
 
-This is a category error: dbt does not parse SQL because dbt cannot reliably parse SQL; the database does. Substring-counting SQL keywords in Jinja produces false positives on any input that legitimately contains the substring `with ` in a non-CTE context.
+SQL is not a regular language. No amount of substring matching, regex tweaking, or heuristic tuning will make a Jinja-level parser correct — the only correct SQL parser is the database. dbt adapters delegate parsing to the engine for exactly this reason; every other reference adapter (Snowflake, BigQuery, Postgres, Spark) takes that as a baseline rule. This macro violates it, and the rest of the issue is the predictable list of false positives that follows.
 
 ## Evidence (HEAD [`0de2190`](https://github.com/microsoft/dbt-fabric/tree/0de2190), v1.10.0)
 
@@ -41,11 +41,10 @@ select col_with_value as something_with_more_data from my_table
 
 ## Suggested fix
 
-Remove the substring-counting check entirely. dbt cannot reliably parse SQL in Jinja; the database is the only correct CTE detector. If a Fabric DW limitation needs surfacing, surface the Fabric error to the user when it occurs, rather than guessing in macro code.
+Delete `check_for_nested_cte` and every call to it. Let the unit-test materialization submit the user's SQL to Fabric and surface whatever error Fabric returns. That is how every reference adapter handles platform-specific SQL limitations, and it is the only approach that is correct in the general case.
 
-If a heuristic must remain for some platform reason, gate it behind a config flag that is off by default, document its false-positive surface, and never raise compile errors based on heuristic matching.
+There is no version of this macro worth keeping. A "smarter" parser still cannot parse SQL in Jinja, would still produce false positives, and would still ship a false security around CTE limits that are the database's responsibility to enforce. The fix is removal, not refinement.
 
 ## Notes
 
-- This macro is a clear example of a category-mistake review would have caught: detecting nested CTEs by lowercasing-and-counting cannot work in the general case, because SQL is not a regular language.
-- [The fork](https://github.com/sdebruyn/dbt-fabric) does not ship a unit-test materialization with this check at all; it lets dbt-adapters' default unit-test machinery run and surfaces actual Fabric errors when they occur.
+- [The fork](https://github.com/sdebruyn/dbt-fabric) ships no equivalent macro. dbt-adapters' default unit-test machinery runs unchanged and the actual Fabric error reaches the user if a query is genuinely unsupported.

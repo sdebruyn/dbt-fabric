@@ -32,8 +32,8 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 13 — `delete_warehouse_snapshot` is a stub
 - [x] 14 — `apply_label` emits `log()` on every call
 - [ ] 15 — `check_for_nested_cte` false positives
-- [ ] 16 — PR #315 `login_timeout` is a no-op
-- [ ] 17 — Warehouse snapshots via `atexit` + connection lifecycle
+- [x] 16 — PR #315 `login_timeout` is a no-op
+- [x] 17 — Warehouse snapshots via `atexit` + connection lifecycle
 - [ ] 18 — Adapter-private `delete_condition` on `incremental`
 - [ ] 19 — `list_relations` retry at wrong layer
 - [ ] 20 — Module-level `_TOKEN` global

@@ -4,7 +4,7 @@
 **Labels (suggested):** `bug`, `priority/low`
 **Refs:** PR [#315](https://github.com/microsoft/dbt-fabric/pull/315)
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
 ## Summary
 
