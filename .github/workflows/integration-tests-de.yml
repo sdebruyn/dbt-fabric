@@ -33,6 +33,7 @@ jobs:
     if: github.event_name == 'schedule'
     runs-on: ubuntu-latest
     environment: azure
+    timeout-minutes: 480
     steps:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
@@ -77,6 +78,7 @@ jobs:
        && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
     runs-on: ubuntu-latest
     environment: azure
+    timeout-minutes: 480
 
     steps:
       - name: Resolve PR metadata
@@ -220,6 +222,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.pr_number == ''
     runs-on: ubuntu-latest
     environment: azure
+    timeout-minutes: 480
     steps:
       - name: Install mssql-python system dependencies
         run: sudo apt-get update && sudo apt-get install -y libltdl7
