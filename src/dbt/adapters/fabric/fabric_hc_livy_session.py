@@ -57,6 +57,7 @@ class HighConcurrencyLivySession:
     """
 
     _POLLING_INTERVAL = 3
+    _POLL_BACKOFF_SCHEDULE: tuple[float, ...] = (0.5, 1.0, 2.0)
     _MAX_CONSECUTIVE_TRANSIENT_ERRORS = 5
     _TERMINAL_STATEMENT_STATES = frozenset({"available", "error", "cancelled", "cancelling"})
 
@@ -64,6 +65,18 @@ class HighConcurrencyLivySession:
         self._fabric_api_client = fabric_api_client
         self._state = HCSessionState()
         self._session_tag: str | None = None
+
+    @classmethod
+    def _poll_interval_for_attempt(cls, attempt: int) -> float:
+        """Exponential backoff for polling: 0.5s, 1s, 2s, then 3s steady-state.
+
+        HC sessions on a warm Spark cluster typically reach Idle within a
+        second; short statements complete sub-second. Starting at the floor
+        wastes most of that latency on a fixed 3s sleep.
+        """
+        if attempt < len(cls._POLL_BACKOFF_SCHEDULE):
+            return cls._POLL_BACKOFF_SCHEDULE[attempt]
+        return cls._POLLING_INTERVAL
 
     def _get_session_tag(self) -> str:
         if self._session_tag is None:
@@ -134,6 +147,7 @@ class HighConcurrencyLivySession:
         start_time = time.time()
         timeout = self._fabric_api_client._credentials.spark_session_timeout
         consecutive_errors = 0
+        attempt = 0
 
         while True:
             if time.time() - start_time >= timeout:
@@ -153,7 +167,8 @@ class HighConcurrencyLivySession:
                     f"Transient error polling HC session {self._state.hc_id} "
                     f"({consecutive_errors}/{self._MAX_CONSECUTIVE_TRANSIENT_ERRORS}): {e}"
                 )
-                time.sleep(self._POLLING_INTERVAL)
+                time.sleep(self._poll_interval_for_attempt(attempt))
+                attempt += 1
                 continue
 
             state = body.get("state", "")
@@ -167,7 +182,8 @@ class HighConcurrencyLivySession:
                 self._state.repl_id = str(body["replId"])
                 return
 
-            time.sleep(self._POLLING_INTERVAL)
+            time.sleep(self._poll_interval_for_attempt(attempt))
+            attempt += 1
 
     def _ensure_repl(self) -> None:
         """Re-acquire this thread's HC session if it was marked dead."""
@@ -226,6 +242,7 @@ class HighConcurrencyLivySession:
         assert self._state.repl_id is not None
 
         start_time = time.time()
+        attempt = 0
         while True:
             response = self._fabric_api_client.get_hc_statement(
                 self._state.session_id, self._state.repl_id, statement_id
@@ -235,7 +252,8 @@ class HighConcurrencyLivySession:
                 return response
             if time.time() - start_time >= self._fabric_api_client._credentials.query_timeout:
                 raise TimeoutError("HC Livy statement did not become available in time.")
-            time.sleep(self._POLLING_INTERVAL)
+            time.sleep(self._poll_interval_for_attempt(attempt))
+            attempt += 1
 
     def wait_and_get_statement_result(self, statement_id: int) -> LivySessionResult:
         """Wait for a statement to complete and return its result."""
