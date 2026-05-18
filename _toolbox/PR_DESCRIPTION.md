@@ -96,14 +96,6 @@ The maintenance cost of a dbt adapter scales with two things: how much you reimp
 
 This contribution has one [`FabricTokenProvider`](https://dbt-fabric.debruyn.dev/authentication/) covering all 11 auth methods for both adapter types. One `FabricApiClient` for workspaces, warehouses, lakehouses, Livy, and snapshots. One Python-model submission path. One profile schema. A bug fix is a one-place change.
 
-```
-BaseFabricCredentials → FabricCredentials (T-SQL) / FabricSparkCredentials (Spark)
-BaseFabricConnectionManager → FabricConnectionManager (mssql-python) / FabricSparkConnectionManager (Livy)
-BaseFabricAdapter → FabricAdapter / FabricSparkAdapter (also extends SparkAdapter from dbt-spark)
-
-Shared: FabricTokenProvider, FabricApiClient, PurviewClient + PurviewSync
-```
-
 **Test suite built on [`dbt-tests-adapter`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-tests-adapter).** Every dbt-core minor ships new `Base*` test classes that codify what an adapter needs to do to be compatible. Bumping `dbt-tests-adapter` is how this adapter picks up coverage for new dbt-core features automatically. About 430 adapter test classes here plus an extra ~110 community-package tests, all running against real Fabric. PRs run on Python 3.13; the full Python 3.11/3.12/3.13 matrix runs weekly.
 
 **Capability declarations** (`SchemaMetadataByRelations`, `TableLastModifiedMetadata`) let dbt-core pick the optimised code paths on its own. Declaring a new capability when dbt-core adds one is a one-line change.
