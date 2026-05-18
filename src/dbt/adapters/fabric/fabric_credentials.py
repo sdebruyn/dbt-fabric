@@ -15,6 +15,7 @@ class FabricCredentials(BaseFabricCredentials):
     trust_cert: bool | None = False
     schema_authorization: str | None = None
     login_timeout: int = 0
+    lock_timeout: int = 30000
     lakehouse: str | None = None
 
     _ALIASES = BaseFabricCredentials._ALIASES | {
@@ -58,6 +59,7 @@ class FabricCredentials(BaseFabricCredentials):
             "trust_cert",
             "schema_authorization",
             "login_timeout",
+            "lock_timeout",
             "lakehouse",
         )
 

@@ -14,8 +14,6 @@ from dbt.tests.adapter.python_model.test_python_model import (
 from dbt.tests.adapter.python_model.test_spark import BasePySparkTests
 from dbt.tests.util import run_dbt
 
-pytestmark = pytest.mark.python_model
-
 input_model_sql = """
 {{ config(materialized='table', event_time='event_time') }}
 select 1 as id, cast('2025-01-01 01:25:00+00:00' as datetime2(6)) as event_time
