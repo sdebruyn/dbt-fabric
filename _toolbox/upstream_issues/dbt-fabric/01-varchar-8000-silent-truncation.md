@@ -44,5 +44,5 @@ Reference fix in the fork: commit `9c3ac010` ("string→varchar(MAX) sweep acros
 
 ## Notes
 
-- Fabric Warehouse documentation confirms `varchar(MAX)` is supported. `?WT.mc_id=MVP_310840` should be appended when linking Microsoft Learn pages.
+- Fabric Warehouse documentation confirms `varchar(MAX)` is supported.
 - The 8000 cap appears to be a leftover from a SQL Server Synapse ancestry where `varchar(MAX)` had restrictions; those restrictions don't apply on Fabric Warehouse.
