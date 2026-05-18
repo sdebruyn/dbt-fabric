@@ -78,7 +78,7 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first; m
 - [#09 — `botocore`/`boto3` DEBUG logging at module import time](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/09-aws-logging-debug-at-import.md)
 - [#10 — `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()`](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/10-parse-retry-after-duplicated.md)
 
-Many of these read as AI-generated PRs landing without dbt-domain review — a missing-review-step problem, not an AI problem. The structural cause is that the adapter is staffed as a sideline of a product role, with PyPI ownership on a personal account rather than a Microsoft organisational identity (compare `azure-core`, `azure-identity`). The fix is shared maintenance under the toolbox with organisational package ownership.
+The structural cause is that the adapter is staffed as a sideline of a product role, with PyPI ownership on a personal account rather than a Microsoft organisational identity (compare `azure-core`, `azure-identity`). The fix is shared maintenance under the toolbox with organisational package ownership.
 
 ---
 
@@ -88,7 +88,7 @@ The maintenance cost of a dbt adapter scales with two things: how much you reimp
 
 **The Lakehouse adapter inherits from [`dbt-spark`](https://github.com/dbt-labs/dbt-adapters/tree/main/dbt-spark).** `dbt-spark` ships the Spark materializations, incremental strategies, Spark-aware column type handling, constraint handling, the Spark Python-model API, and a `SparkAdapter` base class. Spark-based adapters inherit from it and write only the parts specific to their engine — [`dbt-databricks`](https://github.com/databricks/dbt-databricks) does this.
 
-`microsoft/dbt-fabricspark` doesn't. It's a standalone `SQLAdapter`, so every macro, materialization, type rule, incremental strategy, and Python-model path has to be implemented and maintained by hand. Every dbt-spark release silently widens the gap. Python's [multiple inheritance](https://docs.python.org/3/tutorial/classes.html#multiple-inheritance) lets the FabricSpark adapter extend `SparkAdapter` *and* a shared `BaseFabricAdapter` at the same time, getting the dbt-spark machinery and the cross-adapter Fabric code in one class.
+`microsoft/dbt-fabricspark` doesn't. It's a standalone `SQLAdapter`, so every macro, materialization, type rule, incremental strategy, and Python-model path has to be implemented and maintained by hand. Python's [multiple inheritance](https://docs.python.org/3/tutorial/classes.html#multiple-inheritance) lets the FabricSpark adapter extend `SparkAdapter` *and* a shared `BaseFabricAdapter` at the same time, getting the dbt-spark machinery and the cross-adapter Fabric code in one class.
 
 **One auth stack, one Fabric API client, and one Livy session layer across both adapters.** Auth, Fabric REST API access, workspace resolution, profile validation, and Livy session handling are the same problem on both engines — the Lakehouse runs everything through Livy, and the Data Warehouse needs the same Livy machinery for Python models.
 
@@ -112,28 +112,4 @@ Shared: FabricTokenProvider, FabricApiClient, PurviewClient + PurviewSync
 
 **Versioning and dependency hygiene.** Tight `dbt-core>=1.9.6,<1.13.0` range with an explicit upper bound. dbt-core upgrades follow a documented checklist in `CONTRIBUTING.md` (inventory new dispatchable macros, new adapter methods, new `Base*` test classes; only tag when the suite passes). Modern build stack (`hatchling` + `uv`) and Python typing (PEP 604 unions, no `typing.Union`/`Optional`).
 
----
-
-## Everything goes through dbt's existing mechanisms
-
-Every feature uses dbt's existing mechanisms instead of building parallel ones.
-
-**Warehouse snapshots** are a macro `{{ create_or_update_fabric_warehouse_snapshot(name, description) }}`, callable from any Jinja context: [`on-run-start`/`on-run-end`](https://docs.getdbt.com/reference/project-configs/on-run-start-on-run-end), any [`post-hook`](https://docs.getdbt.com/reference/resource-configs/pre-hook-post-hook), or [`dbt run-operation`](https://docs.getdbt.com/reference/commands/run-operation). Dynamic names through Jinja, per-model snapshot timing through `post-hook`, environment-driven names through [`env_var()`](https://docs.getdbt.com/reference/dbt-jinja-functions/env_var).
-
-**External tables** use dbt's [dispatch system](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch) to override the Fabric plugin of the [`dbt-external-tables`](https://github.com/dbt-labs/dbt-external-tables) package. External files become regular [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) references that show up in the lineage graph, work with [source freshness](https://docs.getdbt.com/docs/build/sources#snapshotting-source-data-freshness), and respond to `dbt run-operation stage_external_sources`.
-
-**`cluster_by`** is a standard [model config](https://docs.getdbt.com/reference/model-configs) option (`{{ config(cluster_by=['customer_id', 'order_date']) }}`), identical to Snowflake and BigQuery. Generated DDL is a clean `WITH (CLUSTER BY (...))` clause.
-
-**Manual statistics** through model config (`{{ config(statistics=['col1', 'col2'], statistics_sample_percent=50) }}`), idempotent (`CREATE STATISTICS` first run, `UPDATE STATISTICS` after).
-
-**Catalog statistics** populate [`dbt docs generate`](https://docs.getdbt.com/reference/commands/cmd-docs) output automatically via an override of the catalog query using `OBJECTPROPERTYEX(object_id, 'Cardinality')`.
-
-**Microsoft Purview integration** is the macro `{{ purview_sync() }}`, callable from [`on-run-end`](https://docs.getdbt.com/reference/project-configs/on-run-start-on-run-end) or as a [`dbt run-operation`](https://docs.getdbt.com/reference/commands/run-operation). It respects [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs) (`persist_docs: false` skips the model, `relation: true, columns: false` syncs only what you asked for). Lineage is built from [`ref()`](https://docs.getdbt.com/reference/dbt-jinja-functions/ref) and [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source).
-
-**Authentication** is a single `FabricTokenProvider` across both adapter types, configured through the standard `authentication` [profile](https://docs.getdbt.com/docs/core/connect-data-platform/profiles.yml) key. Workload identity uses the same top-level credential fields as every other method. Custom `TokenCredential` classes plug in via `credential_class` and `credential_kwargs`, the same way [`azure-identity`](https://learn.microsoft.com/en-us/python/api/azure-identity/azure.identity?view=azure-python) users already extend the SDK.
-
-**Python models** use the standard [`model(dbt, spark)`](https://docs.getdbt.com/docs/build/python-models) API: same signature, same `dbt.ref()` / `dbt.source()` semantics, same `dbt.config.get()` pattern.
-
-**PEP 249 cursor** parses Spark JSON results into standard Python types via a [PEP 249](https://peps.python.org/pep-0249/) compatible cursor.
-
-**Community packages.** Adapter-specific override macros via [dispatch](https://docs.getdbt.com/reference/dbt-jinja-functions/dispatch) for every macro that breaks on T-SQL or Spark, with integration tests on every PR: dbt-utils (1.3.3), dbt-date (0.17.2), dbt-codegen (0.14.1), dbt-expectations (0.10.10), dbt-audit-helper (0.13.0), dbt-external-tables (0.11.0), dbt-profiler (1.0.0), dbt-artifacts (2.10.1, Lakehouse only), dbt-project-evaluator (1.2.4, Lakehouse only).
+**No parallel mechanisms.** Every feature in the list above is a macro, a dispatch override, a profile key, a model config, or a capability declaration — nothing built on top of dbt that users have to learn separately.
