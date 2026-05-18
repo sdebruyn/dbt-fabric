@@ -44,7 +44,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 02 — Hardcoded 2028 token expiry
 - [x] 04 — `_getLivySQL` regex bug
 - [ ] 06 — Livy cleanup bypasses dbt's `close()` lifecycle
-- [ ] 07 — Thrift dead code from dbt-spark ancestry
+- [x] 07 — Thrift dead code from dbt-spark ancestry
 - [x] 08 — Proposal: inherit from `dbt-spark`
 - [x] 09 — `botocore`/`boto3` DEBUG logging at import time
 - [x] 10 — `_parse_retry_after` duplicated 4× with deprecated `datetime.utcnow()`

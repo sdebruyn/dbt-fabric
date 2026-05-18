@@ -5,6 +5,8 @@
 
 > [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
+> **Internal note (strip before filing):** Submittable as a PR — delete the 9 lines that configure boto3/botocore loggers. Consider opening with the issue *and* a draft PR linked from it.
+
 ## Summary
 
 [`src/dbt/adapters/fabricspark/connections.py#L42-L50`](https://github.com/microsoft/dbt-fabricspark/blob/d315a56/src/dbt/adapters/fabricspark/connections.py#L42-L50) sets the `botocore` and `boto3` loggers to DEBUG at module import time:

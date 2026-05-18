@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabricspark`
 **Labels (suggested):** `bug`, `tech-debt`, `priority/low`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — deleting the unreachable Thrift handler is a few lines, no callers, no test churn. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 

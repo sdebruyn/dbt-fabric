@@ -5,6 +5,8 @@
 
 > [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
+> **Internal note (strip before filing):** Submittable as a PR — extract to a shared `_http_utils.py`, replace `datetime.utcnow()` with `datetime.now(timezone.utc)`, update the 4 call sites. Consider opening with the issue *and* a draft PR linked from it.
+
 ## Summary
 
 The `_parse_retry_after` helper appears verbatim across four files:
