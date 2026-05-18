@@ -16,6 +16,12 @@ upstream comparison.
   `TEST` / `INFRA` / `DOCS` / `REFACTOR` / `REVERT_OR_MODIFY` and verified
   upstream state with `git show upstream/main:<path>` where applicable.
 
+> **Upstream verification:** every "Bugs still present in upstream" and
+> "Anti-patterns removed" claim below was re-verified against fresh clones of
+> `microsoft/dbt-fabric` (HEAD `0de2190`, v1.10.0) and
+> `microsoft/dbt-fabricspark` (HEAD `d315a56`) on 2026-05-18. File:line
+> references point at upstream HEAD at that time.
+
 ## Category totals
 
 | Category | Count | Notes |
@@ -38,27 +44,27 @@ Each entry: fork commit hash, what was fixed, upstream evidence.
 
 ### Connection / driver layer
 
-- **`bbfe064c`** — `test_schema.py` fixture uses `env_var('DBT_TEST_USER_1')` with no default; without env var, empty string interpolates into GRANT clause and crashes. Upstream still has no default.
-- **`8bf38cf2`** — `FabricConnectionManager.get_response` returned hardcoded `message = "OK"` regardless of cursor messages. Upstream `fabric_connection_manager.py:746-748` still has `message = "OK"` — loses all Fabric-side warnings/notices.
-- **`7b12ec6f`** — `_make_match_kwargs` override needed on `FabricAdapter` so case-sensitive Fabric DWHs work; default `SQLAdapter` impl lowercases identifiers. Upstream has no override → case-sensitive DWHs still broken.
-- **`9c3ac010`** — `varchar(8000)` → `varchar(MAX)` across `FabricColumn.TYPE_LABELS`, `string_type`, `fabric__snapshot_hash_arguments`, `fabric__hash`. Upstream still defaults to `VARCHAR(8000)` → **silent data truncation** for any string > 8000 chars (hashes, surrogate keys, snapshot hash columns).
-- **`fe3d3281`** — Added `pyodbc.odbcversion = "3.8"`. pyodbc's `pooling = True` silently no-ops without this; every connection is freshly created. Upstream sets `pooling` but never `odbcversion` → **pooling is effectively broken in upstream**.
-- **`414835b`** — T-SQL bracket quoting with `]`→`]]` escaping across `FabricAdapter.quote()`, `FabricColumn.quoted`, `FabricRelation.quoted`, 5 macros (`columns.sql`, `alter_relation_add_remove_columns`, `get_use_database_sql`, `create_table_as`, `seeds/helpers.sql`). Upstream `fabric_adapter.py:37` is `"[{}]".format(identifier)` with no escaping → reserved-word columns silently break; identifiers containing `]` would terminate the bracket prematurely (**potential T-SQL injection vector**).
-- **`f1c0a512`** — Default `add_query()` retries on `mssql_python.OperationalError`/`InternalError` up to 3 attempts. Upstream `fabric_connection_manager.py` has `retry_limit: int = 1` with no retryable exceptions → production users still see flaky `sys.tables`/`sys.columns` metadata queries.
-- **`0a018f8`** — Migrated from `pyodbc` to Microsoft's native `mssql-python`. Upstream still uses `pyodbc` + ODBC Driver 18 → requires system-level driver install on every user machine.
+- **`bbfe064c`** — `test_schema.py` fixture uses `env_var('DBT_TEST_USER_1')` with no default; without env var, empty string interpolates into GRANT clause and crashes. Upstream `tests/functional/adapter/dbt_show_test.py` / `test_schema.py` fixtures still have no default.
+- **`8bf38cf2`** — `FabricConnectionManager.get_response` returned hardcoded `message = "OK"` regardless of cursor messages. Upstream `dbt/adapters/fabric/fabric_connection_manager.py:748` still has `message = "OK"` — loses all Fabric-side warnings/notices and the distributed statement ID emitted on `cursor.messages`.
+- **`7b12ec6f`** — `_make_match_kwargs` override needed on `FabricAdapter` so case-sensitive Fabric DWHs work; default `SQLAdapter` impl lowercases identifiers. Upstream `dbt/adapters/fabric/fabric_adapter.py` has no `_make_match_kwargs` override → case-sensitive DWHs still broken.
+- **`9c3ac010`** — `varchar(8000)` → `varchar(MAX)` across `FabricColumn.TYPE_LABELS`, `string_type`, `fabric__snapshot_hash_arguments`, `fabric__hash`. Upstream `dbt/adapters/fabric/fabric_column.py` `TYPE_LABELS` still maps `STRING → VARCHAR(8000)` → **silent data truncation** for any string > 8000 chars (hashes, surrogate keys, snapshot hash columns).
+- **`fe3d3281`** — Added `pyodbc.odbcversion = "3.8"`. pyodbc's `pooling = True` silently no-ops without this; every connection is freshly created. Upstream `dbt/adapters/fabric/fabric_connection_manager.py:571` sets `pyodbc.pooling = credentials.pooling if credentials.pooling is not None else True` but `odbcversion` is never set anywhere in the package → **pooling is effectively broken in upstream**.
+- **`414835b`** — T-SQL bracket quoting with `]`→`]]` escaping across `FabricAdapter.quote()`, `FabricColumn.quoted`, `FabricRelation.quoted`, 5 macros (`columns.sql`, `alter_relation_add_remove_columns`, `get_use_database_sql`, `create_table_as`, `seeds/helpers.sql`). Upstream `dbt/adapters/fabric/fabric_adapter.py:37-38` is `def quote(cls, identifier): return "[{}]".format(identifier)` with no escaping → reserved-word columns silently break; identifiers containing `]` would terminate the bracket prematurely (**potential T-SQL injection vector**).
+- **`f1c0a512`** — Default `add_query()` retries on `mssql_python.OperationalError`/`InternalError` up to 3 attempts. Upstream `dbt/adapters/fabric/fabric_connection_manager.py` has `retry_limit: int = 1` on `FabricConnectionManager` and no `retryable_exceptions` list → production users still see flaky `sys.tables`/`sys.columns` metadata queries (the original symptom that motivated upstream's parallel `list_relations_without_caching` retry in v1.9.10).
+- **`0a018f8`** — Migrated from `pyodbc` to Microsoft's native `mssql-python`. Upstream `pyproject.toml` still lists `pyodbc` and the connection manager still imports it → requires system-level ODBC Driver 18 install on every user machine.
 
 ### SQL / macro layer
 
-- **`42063121`** — Rewrote `fabric__get_show_grant_sql` from `INFORMATION_SCHEMA.TABLE_PRIVILEGES` to `sys.database_principals` + `sys.database_permissions`. Upstream `apply_grants.sql` still uses the broken `INFORMATION_SCHEMA.TABLE_PRIVILEGES` query → misses Entra-principal grants → `apply_grants` re-issues the same GRANT on every run.
-- **`dea31d36`** — `fabric__get_use_database_sql` wrapped in None-guard. Upstream `metadata.sql` macro has no None-guard → emits invalid `USE [None];` when called without database.
-- **`9c9e8000`** — Removed `EXEC('CREATE TABLE ... AS ...')` wrapper in `fabric__create_table_as`. Upstream still wraps every CTAS in EXEC with manual single-quote escaping → silently breaks models with embedded apostrophes.
-- **`62705a00`** — Added `materializations/hooks.sql` overriding `run_hooks` to drop the `commit;` Fabric DW can't execute. Upstream has no such override → **pre/post hooks fail at every run boundary** on upstream.
-- **`f9f91e3f`** — Added `fabric__bool_or`. Upstream has no `bool_or.sql` → `dbt.bool_or` (used by dbt-utils) fails on upstream.
-- **`aec6f06e`** — Deleted the duplicated `materialization clone, adapter='fabric'` from `clone.sql`. Upstream still has the full duplicate including the `TODO: support actual dispatch` comment.
-- **`6cd55d6a`** — Removed dead `elif relation.type == 'table'` branch and `raise_not_implemented` else-branch in `fabric__get_drop_sql`. Upstream still has both → the else-branch prevents dropping function relations.
+- **`42063121`** — Rewrote `fabric__get_show_grant_sql` from `INFORMATION_SCHEMA.TABLE_PRIVILEGES` to `sys.database_principals` + `sys.database_permissions`. Upstream `dbt/include/fabric/macros/adapters/apply_grants.sql:5` still uses `INFORMATION_SCHEMA.TABLE_PRIVILEGES` → misses Entra-principal grants → `apply_grants` re-issues the same GRANT on every run.
+- **`dea31d36`** — `fabric__get_use_database_sql` wrapped in None-guard. Upstream `dbt/include/fabric/macros/adapters/metadata.sql` `fabric__get_use_database_sql` has no None-guard → emits invalid `USE [None];` when called without database.
+- **`9c9e8000`** — Removed `EXEC('CREATE TABLE ... AS ...')` wrapper in `fabric__create_table_as`. Upstream `dbt/include/fabric/macros/materializations/models/table/create_table_as.sql:31,33` still wraps every CTAS in `EXEC('CREATE TABLE ... AS ...')` with manual single-quote escaping → silently breaks models with embedded apostrophes.
+- **`62705a00`** — Added `materializations/hooks.sql` overriding `run_hooks` to drop the `commit;` Fabric DW can't execute. Upstream has no `dbt/include/fabric/macros/materializations/hooks.sql` → dbt-adapters' default `run_hooks` runs unchanged and emits `commit;` → **pre/post hooks fail at every run boundary** on upstream.
+- **`f9f91e3f`** — Added `fabric__bool_or`. Upstream has no `dbt/include/fabric/macros/utils/bool_or.sql` → `dbt.bool_or` (used by dbt-utils) fails on upstream.
+- **`aec6f06e`** — Deleted the duplicated `materialization clone, adapter='fabric'` from `clone.sql`. Upstream `dbt/include/fabric/macros/materializations/models/table/clone.sql:11` still has a second `materialization clone, adapter='fabric'` block including the `TODO: support actual dispatch` comment.
+- **`6cd55d6a`** — Removed dead `elif relation.type == 'table'` branch and `raise_not_implemented` else-branch in `fabric__get_drop_sql`. Upstream `dbt/include/fabric/macros/adapters/relation.sql` `fabric__get_drop_sql` still has both → the else-branch prevents dropping function relations.
 - **`4ab425e7`** — `fabric__create_or_replace_clone` now drops pre-existing clone. Upstream's macro doesn't drop, so calling it directly (as `BaseClonePossible` does) fails.
-- **`257c8999`** — Replaced incremental drop-and-recreate with intermediate/backup swap. Upstream `incremental.sql` still drops the target before re-creating → **data loss if creation fails**.
-- **`955ab2e3`** — `fabric__get_incremental_microbatch_sql` upserts via `get_incremental_merge_sql` when `unique_key` is set. Upstream still always does delete+insert.
+- **`257c8999`** — Replaced incremental drop-and-recreate with intermediate/backup swap. Upstream `dbt/include/fabric/macros/materializations/models/incremental/incremental.sql:30-34` still calls `adapter.drop_relation(target_relation)` before re-creating → **data loss if creation fails**.
+- **`955ab2e3`** — `fabric__get_incremental_microbatch_sql` upserts via `get_incremental_merge_sql` when `unique_key` is set. Upstream `fabric__get_incremental_microbatch_sql` still always does delete+insert regardless of `unique_key`.
 
 ### Community package layer
 
@@ -72,8 +78,8 @@ These bugs only exist in the fork because the underlying feature (FabricApiClien
 Livy, Python models) doesn't exist upstream — but they're notable as evidence that
 the fork's tests are catching real bugs the upstream pattern wouldn't surface.
 
-- **`76c4a4f8`** — Added 429 rate-limit handling via `_api_request` helper. Upstream's `warehouse_snapshots.py` only does `raise_for_status()` → throttling vulnerability for snapshot ops.
-- **`412b4732`** — Implemented real `delete_warehouse_snapshot`. **Upstream's `delete_warehouse_snapshot(snapshot_id)` is `return True` as a stub** — pretends to delete, does nothing.
+- **`76c4a4f8`** — Added 429 rate-limit handling via `_api_request` helper. Upstream `dbt/adapters/fabric/warehouse_snapshots.py` only does `raise_for_status()` → throttling vulnerability for snapshot ops.
+- **`412b4732`** — Implemented real `delete_warehouse_snapshot`. **Upstream `dbt/adapters/fabric/warehouse_snapshots.py:307-309` `delete_warehouse_snapshot(snapshot_id)` is `return True` as a stub** — pretends to delete, does nothing.
 - **`8060d37f`** — Fixed 4 URL paths from `warehousesnapshots` (lowercase) → `warehouseSnapshots` (camelCase). Caught by writing unit tests for `FabricApiClient` (TEST commit exposed real BUG in same PR).
 - **`e317baa1`** — Three Livy session bugs: (1) lookup read wrong JSON key (`"value"` vs `"items"`) → session reuse never worked; (2) missing thread lock → N concurrent threads created N sessions; (3) too-short polling timeouts.
 - **`47b4510f`** — Multi-scope token cache (`dict` by scope vs single global). Earlier single-cache served the wrong token to the wrong consumer.
@@ -91,27 +97,27 @@ the fork's tests are catching real bugs the upstream pattern wouldn't surface.
 
 ### Module-level mutable token global
 - **`c8be16a1`** — ANTI_PATTERN_REMOVED — extracted module-level `_TOKEN: Optional[AccessToken] = None` global into `FabricTokenProvider` class with per-credential instance caching.
-- **Upstream evidence:** `upstream/main:dbt/adapters/fabric/fabric_connection_manager.py` still has `_TOKEN: Optional[AccessToken] = None` at module scope, `AZURE_AUTH_FUNCTIONS` mapping at module scope, and `global _TOKEN` inside `get_pyodbc_attrs_before_credentials`.
+- **Upstream evidence:** `upstream/main:dbt/adapters/fabric/fabric_connection_manager.py:57` still has `_TOKEN: Optional[AccessToken] = None` at module scope, plus `AZURE_AUTH_FUNCTIONS` mapping at module scope and `global _TOKEN` inside `get_pyodbc_attrs_before_credentials`.
 
 ### Custom `add_query` reimplementation
 - **`2211d4e1`** — DBT_NATIVE_REWRITE — deleted the custom `add_query` (manually firing `ConnectionUsed`/`SQLQuery`/`SQLQueryStatus` events, re-implementing the cursor binding loop) and replaced with thin override delegating to `SQLConnectionManager.add_query`.
-- **Upstream evidence:** Upstream still has the entire custom `add_query` (~line 630+).
+- **Upstream evidence:** Upstream `dbt/adapters/fabric/fabric_connection_manager.py:630` still defines the full custom `def add_query(self, sql, auto_begin=True, bindings=None, abridge_sql_log=False, retryable_exceptions=tuple(), retry_limit=1)` and manually re-fires the events instead of dispatching to the base implementation.
 
 ### Spurious `log()` call on every macro invocation
 - **`5226156539`** — ANTI_PATTERN_REMOVED — removed `{{ log(config.get('query_tag','dbt-fabric')) }}` debug leftover that fired on every SQL statement.
-- **Upstream evidence:** Upstream `fabric__apply_label` still has the log call → spams dbt logs on every macro invocation.
+- **Upstream evidence:** Upstream `apply_label` macro in `dbt/include/fabric/macros/adapters/metadata.sql` still has the log call → spams dbt logs on every macro invocation.
 
 ### `apply_label()` helper and 2-statement snapshot merge
 - **`0857efc1`** — ANTI_PATTERN_REMOVED — removed `apply_label()` helper and all callers across 7 files; deleted custom `fabric__snapshot_merge_sql` (30-line UPDATE+INSERT) so dbt falls through to native MERGE.
-- **Upstream evidence:** Upstream still has `apply_label()` across `catalog.sql`, `columns.sql`, `metadata.sql`, `relation.sql`, `merge.sql`; still has UPDATE+INSERT snapshot merge.
+- **Upstream evidence:** Upstream `dbt/include/fabric/macros/adapters/metadata.sql` still defines `apply_label`; it's still called from `catalog.sql`, `columns.sql`, `metadata.sql`, `relation.sql`, `merge.sql`, `create_table_as.sql`, and `seeds/helpers.sql`. Upstream `dbt/include/fabric/macros/materializations/snapshots/snapshot_merge.sql` still defines the custom 2-statement `fabric__snapshot_merge_sql` (UPDATE then INSERT).
 
 ### Dead code from sibling-project ancestry
 - **Thrift exception handling** in upstream `microsoft/dbt-fabricspark/connections.py:102-114` references `thrift_resp.status.errorMessage` — Apache Thrift pattern from dbt-spark; the FabricSpark adapter talks Livy over HTTP, the path is dead.
 - **AWS logging config** in upstream `connections.py:42-50` sets `botocore`/`boto3` to DEBUG at import time — leftover from a Spark/Databricks ancestor.
 - **Hardcoded 2028 timestamp** at upstream `livysession.py:184` — `expires_on = 1845972874` for the `int_tests` auth path bypasses all token-refresh logic.
-- **`_parse_retry_after`** duplicated verbatim between upstream `livysession.py:370` and `mlv_api.py:141`, both using deprecated `datetime.utcnow()`. The `_getLivySQL` regex-bug helper is duplicated the same way between `singleton_livy.py:488` and `concurrent_livy.py:555`.
+- **`_parse_retry_after`** duplicated verbatim across four upstream files: `livysession.py:370`, `mlv_api.py:141`, `concurrent_livy.py:60`, and `singleton_livy.py:34` — all using deprecated `datetime.utcnow()`. The `_getLivySQL` regex-bug helper is duplicated the same way between `singleton_livy.py:488` and `concurrent_livy.py:555`.
 - **`get_headers(... tokenPrint=False)`** at upstream `livysession.py:328` logs the full bearer token when `True`.
-- **Six `__exit__` methods return `True`** across upstream `singleton_livy.py:55`, `concurrent_livy.py:125/347/634`, etc. — silent exception swallowing.
+- **Six `__exit__` methods return `True`** across upstream `singleton_livy.py:49/378/706` and `concurrent_livy.py:119/340/627` — silent exception swallowing.
 - **Regex bug** in upstream `_getLivySQL` passes `re.DOTALL` (integer 16) as positional `count` arg → comment-stripping silently capped to 16 replacements per file.
 
 ---
@@ -144,21 +150,15 @@ the fork's tests are catching real bugs the upstream pattern wouldn't surface.
 - **Microsoft Purview integration** — `c181357d`. `PurviewClient` + `PurviewSync` + `purview_types.py`, `purview_sync()` macro for both Fabric DW and FabricSpark, custom Purview type definitions, `persist_docs` integration, lineage graph, stale-lineage cleanup. Plus `0eea9621` extending to Lakehouse. ~4400 LOC subsystem.
 - **Python models on Fabric DW** — scaffolded `3eec89f3`, completed `830ae67e`. End-to-end Livy + synapsesql connector. Upstream has zero Python-model support in the `fabric` adapter.
 - **Statistics config** — `a9246e99`. `statistics` + `statistics_sample_percent` model configs across table/incremental/snapshot.
-- **CLUSTER BY model config** — `b24bdb3`. Standard model config like Snowflake/BigQuery, with bracket-quoting + `]→]]` escaping.
 - **Catalog row-count statistics** — `a3f0dc7`. `objectpropertyex(tv.object_id, 'Cardinality')` populates `stats:row_count:*` columns in `dbt docs generate` output.
-- **dbt-external-tables OPENROWSET support** — `6434e2d8`. 187-line macro file + 229-line docs + integration tests.
+- **dbt-external-tables compatibility via dispatch** — `6434e2d8`. Override macros so the `dbt-external-tables` package works on Fabric DW with `source()` references and `dbt run-operation stage_external_sources`. Upstream ships a standalone `openrowset_source()` macro instead, which doesn't integrate with the package.
 - **Scalar functions (dbt 1.11 UDFs)** — `9a136583`, default args `2c96f574`. `function` relation type + four macros.
-- **Auto host-resolution from workspace name** — `a1f32a80`. Workspace name → REST → SQL endpoint without portal lookup.
-- **High-concurrency Livy session reuse** — `e25ee599`. HC API so each dbt thread gets its own REPL slot in a shared Spark session.
-- **Cross-workspace 4-part naming (FabricSpark)** — `6106cf0a`. `workspace_name` model config → `workspace.lakehouse.schema.table`.
-- **Spark SQL view support (FabricSpark)** — `53ee818c`. First-class view materialization, enables dbt-native default.
-- **Configurable Fabric API base URLs** (`fabric_base_api_uri`/`powerbi_base_api_uri`) — `6a18ea77` + `e7f23bb9`. Non-prod tenant support (MSIT).
+- **Auto host-resolution from `workspace_name`** — `a1f32a80`. The fork resolves the SQL endpoint from a human-readable workspace name; upstream only accepts `workspace_id` (the GUID).
 
 ### Authentication
 
-- **`workload_identity` auth** — `c29e9b56`. Federated OIDC via `ClientAssertionCredential`; supports HTTP URL token source or file path.
-- **`token_credential` auth** — `ee83a005`. User-supplied `azure.core.credentials.TokenCredential` by dotted import path with kwargs.
-- **`FabricTokenProvider`** class — `c8be16a1`, API/SQL split `0e779bdc`, workspace_name support `1d276c76`, SP-for-API support `69231eb0`. 10 auth methods across one provider.
+- **`workload_identity` auth** — `c29e9b56`. Federated OIDC via `ClientAssertionCredential`; supports HTTP URL token source or file path. Not in either upstream adapter.
+- **`FabricTokenProvider`** class — `c8be16a1`, API/SQL split `0e779bdc`, workspace_name support `1d276c76`, SP-for-API support `69231eb0`. One provider covering all auth methods, shared across both adapter types; upstream `microsoft/dbt-fabric` still has module-level `_TOKEN` global + `AZURE_AUTH_FUNCTIONS` dict.
 
 ### Architecture
 
