@@ -4,7 +4,7 @@
 **Labels (suggested):** `enhancement`, `priority/low`
 **Related:** issue #14 (`apply_label`) — the only reason this override exists is to thread `apply_label()` between two statements; centralizing the label via dbt-adapters' `query_header` removes the reason this macro exists.
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
 ## Summary
 

@@ -28,7 +28,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 09 — `USE [None];` emitted when `database=None`
 - [x] 10 — Incremental `--full-refresh` data-loss risk
 - [x] 11 — `microbatch` ignores `unique_key`
-- [ ] 12 — `snapshot_merge_sql` UPDATE+INSERT instead of MERGE
+- [x] 12 — `snapshot_merge_sql` UPDATE+INSERT instead of MERGE
 - [x] 13 — `delete_warehouse_snapshot` is a stub
 - [x] 14 — `apply_label` emits `log()` on every call
 - [ ] 15 — `check_for_nested_cte` false positives
