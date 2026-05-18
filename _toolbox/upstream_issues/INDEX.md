@@ -37,6 +37,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 18 — Adapter-private `delete_condition` on `incremental`
 - [x] 19 — `list_relations` retry at wrong layer
 - [x] 20 — Module-level `_TOKEN` global
+- [ ] 21 — Modernise build and tooling stack (PEP 621, `uv`, `ruff`)
 
 ### dbt-fabricspark
 
@@ -71,7 +72,7 @@ Filing all 27 at once would be noise. Suggested staging:
 **File third — design / refactor proposals (10):**
 These are debatable and may invite long discussion. File only if the second batch is engaged with; otherwise hold them for the toolbox PR's "what we replaced" narrative.
 
-- dbt-fabric: `12`, `17`, `18`, `19`, `20`
+- dbt-fabric: `12`, `17`, `18`, `19`, `20`, `21`
 - dbt-fabricspark: `06`, `07`, `08`, `09`, `10`
 
 `dbt-fabricspark/08` (inherit from `dbt-spark`) is the structural one — file it last because it's the meta-fix that the other FabricSpark bugs flow from, and engagement with the individual bugs first gives the proposal a concrete factual basis to argue from.
@@ -102,6 +103,7 @@ These are debatable and may invite long discussion. File only if the second batc
 | 18 | `delete_condition` / `delete_not_matched_by_source`: adapter-private knobs on `incremental` | medium | design |
 | 19 | v1.9.10 `list_relations` retry at wrong layer (use `add_query`'s `retryable_exceptions`) | medium | enhancement |
 | 20 | Module-level `_TOKEN` global — thread-safety and scope issues | medium | bug, concurrency |
+| 21 | Modernise build and tooling stack (PEP 621 `pyproject.toml`, `uv`, `ruff`, drop EOL Python) | medium | proposal, tooling |
 
 ### microsoft/dbt-fabricspark
 

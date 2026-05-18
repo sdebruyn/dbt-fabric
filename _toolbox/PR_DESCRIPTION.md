@@ -66,6 +66,7 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, b
 - [#18 — Adapter-private `delete_condition` / `delete_not_matched_by_source` on `incremental`](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/18-incremental-private-config-keys.md)
 - [#19 — v1.9.10 retry wrapper at wrong layer (use `add_query`'s `retryable_exceptions`)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/19-list-relations-retry-at-wrong-layer.md)
 - [#20 — Module-level `_TOKEN` global — thread-safety and lifecycle issues](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/20-module-level-token-global.md)
+- [#21 — Proposal: modernise build and tooling stack (PEP 621, `uv`, `ruff`, drop EOL Python)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/21-modernise-build-and-tooling-stack.md)
 
 ### `microsoft/dbt-fabricspark`
 
