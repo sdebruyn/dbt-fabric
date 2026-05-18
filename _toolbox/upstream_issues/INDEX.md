@@ -37,7 +37,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 18 — Adapter-private `delete_condition` on `incremental`
 - [x] 19 — `list_relations` retry at wrong layer
 - [x] 20 — Module-level `_TOKEN` global
-- [ ] 21 — Modernise build and tooling stack (PEP 621, `uv`, `ruff`)
+- [x] 21 — Modernise build and tooling stack (PEP 621, `uv`, `ruff`)
 
 ### dbt-fabricspark
 
