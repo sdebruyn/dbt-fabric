@@ -412,27 +412,6 @@ class TestPool:
         assert new_session._state.hc_id == "hc-fresh"
         api_client.acquire_hc_session.assert_called_once()
 
-    def test_drain_pool_deletes_each_pooled_session(self, session, api_client):
-        _ready_session(session)
-        session.close()
-
-        HighConcurrencyLivySession.drain_pool()
-
-        api_client.delete_hc_session.assert_called_once_with("hc-1")
-        assert session._state.hc_id is None
-        assert HighConcurrencyLivySession._pool == {}
-
-    def test_drain_pool_continues_after_delete_failure(self, session, api_client):
-        # _delete() catches its own errors and logs a warning, so drain_pool
-        # is naturally resilient without an explicit suppress in its loop.
-        _ready_session(session)
-        session.close()
-        api_client.delete_hc_session.side_effect = Exception("network error")
-
-        HighConcurrencyLivySession.drain_pool()
-
-        assert HighConcurrencyLivySession._pool == {}
-
 
 class TestPollIntervalForAttempt:
     def test_ramps_up_then_floors_at_polling_interval(self):

@@ -1,4 +1,3 @@
-import atexit
 import contextlib
 import hashlib
 import json
@@ -57,7 +56,14 @@ class HighConcurrencyLivySession:
     Sessions are pooled at the process level (keyed by session tag) to avoid
     re-acquiring an HC REPL on every dbt invocation (seed/run/test/snapshot).
     ``close()`` returns a healthy session to the pool; dead sessions are
-    deleted in Fabric immediately. The pool is drained at interpreter exit.
+    deleted in Fabric immediately.
+
+    The pool lives for the lifetime of the process — no ``atexit`` handler,
+    no out-of-band cleanup. Sessions still in the pool at interpreter exit
+    are reaped server-side by Fabric on the standard HC REPL idle timeout.
+    This keeps the implementation aligned with dbt's open/close lifecycle
+    and avoids the fragility of ``atexit`` handlers that the upstream
+    adapter relies on (see ``docs/comparison-dbt-fabricspark.md``).
 
     The underlying Spark session is managed by Fabric and stays alive for
     other REPLs and processes — closing or deleting an HC slot here only
@@ -376,16 +382,3 @@ class HighConcurrencyLivySession:
             logger.warning(f"Failed to delete HC session {self._state.hc_id}: {ex}")
         finally:
             self._state = HCSessionState()
-
-    @classmethod
-    def drain_pool(cls) -> None:
-        """Delete all pooled HC sessions. Registered at module import via atexit."""
-        with cls._pool_lock:
-            pooled = list(cls._pool.values())
-            cls._pool.clear()
-        for sessions in pooled:
-            while sessions:
-                sessions.popleft()._delete()
-
-
-atexit.register(HighConcurrencyLivySession.drain_pool)

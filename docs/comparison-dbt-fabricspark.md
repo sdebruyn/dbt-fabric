@@ -72,8 +72,8 @@ Notable differences:
 |---|---|---|
 | **[High-concurrency Livy](lakehouse.md#high-concurrency-livy)** | :white_check_mark: | :white_check_mark: |
 | **Session reuse** | Deterministic session tag (HC) | Via `session_id_file` + `reuse_session` flag (singleton) / deterministic session tag (HC) |
-| **HC session cleanup** | Connection manager `close()` path | `atexit` handler (fragile — see [Code quality](#code-quality)) |
-| **Polling interval** | Fixed 3 seconds | Adaptive (configurable) |
+| **HC session cleanup** | Connection manager `close()` path; pooled within process and reaped server-side by Fabric on idle timeout | `atexit` handler (fragile — see [Code quality](#code-quality)) |
+| **Polling interval** | Adaptive: 0.5s → 1s → 2s → 3s | Adaptive (configurable) |
 | **Session idle timeout** | 15 min default | 30 min default, configurable |
 | **Local Livy mode** | :x: | :white_check_mark: (`livy_mode: local`) |
 | **Statement timeout** | 24 hours | 12 hours (configurable) |
