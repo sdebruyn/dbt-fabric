@@ -116,7 +116,6 @@ def pytest_addoption(parser):
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "grants: mark test containing GRANT statements")
-    config.addinivalue_line("markers", "python_model: mark test exercising a Python model")
     config.addinivalue_line(
         "markers", "requires_purview: skip unless FABRIC_TEST_PURVIEW_ENDPOINT is set"
     )
