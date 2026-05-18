@@ -13,16 +13,12 @@
 
 - [`dbt/adapters/fabric/fabric_column.py`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/adapters/fabric/fabric_column.py) — `TYPE_LABELS` maps `STRING → VARCHAR(8000)`; `string_type(size)` / `string_size()` fall back to `8000` when `size` is `None`.
 
-These defaults flow into:
-- `fabric__snapshot_hash_arguments` in [`dbt/include/fabric/macros/materializations/snapshots/`](https://github.com/microsoft/dbt-fabric/tree/0de2190/dbt/include/fabric/macros/materializations/snapshots) — snapshot `dbt_scd_id` hash inputs.
-- `fabric__hash` in [`dbt/include/fabric/macros/utils/hash.sql`](https://github.com/microsoft/dbt-fabric/blob/0de2190/dbt/include/fabric/macros/utils/hash.sql) — surrogate-key materializations (dbt-utils `generate_surrogate_key`, etc.).
-- Any model where a string column type is inferred (no explicit size).
+These defaults flow into any code path that asks the adapter what type a string column should be without specifying a width — most commonly, models that copy long-text source columns (JSON payloads, free-text descriptions, serialized blobs) where the column type is inferred rather than declared in a contract.
 
 ## User impact
 
-- Surrogate keys and snapshot hash columns silently truncate at 8000 characters → collisions in `dbt_scd_id`, missed updates in snapshots, broken joins on hashed keys.
-- Any inferred-width string column is hard-capped at 8000 chars regardless of source data width.
-- The truncation is silent: no warning, no error, just lost data.
+- Any inferred-width string column is hard-capped at 8000 characters regardless of source data width. Long-text columns from a source — JSON payloads, free-text fields, serialized blobs — silently lose the tail beyond byte 8000 when materialized into a Fabric table.
+- The truncation is silent: no warning, no error, just lost data. Users typically only notice when a downstream query returns visibly cut-off text.
 
 ## Suggested fix
 
