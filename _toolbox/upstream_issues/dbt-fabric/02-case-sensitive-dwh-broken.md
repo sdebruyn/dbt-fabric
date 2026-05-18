@@ -46,7 +46,7 @@ def _make_match_kwargs(cls, database, schema, identifier):
     })
 ```
 
-Reference fix in the fork: commit `7b12ec6f`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`7b12ec6f`](https://github.com/sdebruyn/dbt-fabric/commit/7b12ec6f).
 
 ## Notes
 

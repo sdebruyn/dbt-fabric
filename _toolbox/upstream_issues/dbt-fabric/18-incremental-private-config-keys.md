@@ -43,5 +43,5 @@ Alternatively: if delete-by-condition is genuinely a common-enough need to belon
 
 ## Notes
 
-- The fork has deliberately avoided adapter-private configs on dbt-core materializations for exactly this reason.
+- [The fork](https://github.com/sdebruyn/dbt-fabric) has deliberately avoided adapter-private configs on dbt-core materializations for exactly this reason.
 - This is a design issue, not a bug per se — it ships and works. The cost is silent: it leaks into every user's `dbt_project.yml` and is invisible until someone tries to move the project.

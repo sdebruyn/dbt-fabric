@@ -41,5 +41,5 @@ def __exit__(self, exc_type, exc_val, exc_tb):
 
 ## Notes
 
-- This is the same anti-pattern the upstream `microsoft/dbt-fabric` code base also has in `FabricSparkCursor.__exit__` (caught and fixed in the fork via PEP 249 compliance tests — see fork commit `25faac00`).
+- This is the same anti-pattern the upstream `microsoft/dbt-fabric` code base also has in `FabricSparkCursor.__exit__` (caught and fixed in [the fork](https://github.com/sdebruyn/dbt-fabric) via PEP 249 compliance tests — see fork commit [`25faac00`](https://github.com/sdebruyn/dbt-fabric/commit/25faac00)).
 - A PEP 249 compliance test suite for cursor context-manager behavior is a small investment that catches this class of bug at change time.

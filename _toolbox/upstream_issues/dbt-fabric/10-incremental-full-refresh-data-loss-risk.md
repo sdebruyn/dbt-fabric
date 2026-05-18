@@ -53,7 +53,7 @@ Use the standard dbt-native intermediate + backup + rename swap pattern that eve
 
 This is the same pattern dbt-postgres, dbt-snowflake, and dbt-spark use. The existing target keeps its data if creation fails.
 
-Reference fix in the fork: commit `257c8999`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`257c8999`](https://github.com/sdebruyn/dbt-fabric/commit/257c8999).
 
 ## Notes
 

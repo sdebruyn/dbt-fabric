@@ -47,9 +47,9 @@ CREATE TABLE {{ relation }} AS
     {{ sql }}
 ```
 
-Reference fix in the fork: commit `9c9e8000`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`9c9e8000`](https://github.com/sdebruyn/dbt-fabric/commit/9c9e8000).
 
 ## Notes
 
 - The `EXEC()` wrapper is a leftover from a SQL Server / Synapse ancestor where CTAS was not a first-class statement and required dynamic SQL. Fabric Warehouse supports CTAS natively; the wrapper is dead infrastructure.
-- The fork's removal of the wrapper has been running in production across multiple organizations without issue.
+- [The fork](https://github.com/sdebruyn/dbt-fabric)'s removal of the wrapper has been running in production across multiple organizations without issue.

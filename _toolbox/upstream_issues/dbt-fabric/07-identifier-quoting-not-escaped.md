@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `security`, `priority/high`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — escape `]` as `]]` in `quote()`, `FabricColumn.quoted`, `FabricRelation.quoted`, and the 5 affected macros. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 
@@ -50,7 +52,7 @@ def quote(cls, identifier):
 
 Apply the same fix to `FabricColumn.quoted`, `FabricRelation.quoted`, and the five macros listed above.
 
-Reference fix in the fork: commit `414835b`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`414835b`](https://github.com/sdebruyn/dbt-fabric/commit/414835b).
 
 ## Notes
 

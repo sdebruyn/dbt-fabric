@@ -42,7 +42,7 @@ def delete_warehouse_snapshot(self, snapshot_id: str) -> bool:
 
 (With 429 / rate-limit handling, the same way the other API methods on this client are written.)
 
-Reference fix in the fork: commit `412b4732`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`412b4732`](https://github.com/sdebruyn/dbt-fabric/commit/412b4732).
 
 ## Notes
 

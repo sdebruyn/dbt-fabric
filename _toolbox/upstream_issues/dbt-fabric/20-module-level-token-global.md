@@ -56,9 +56,9 @@ class FabricTokenProvider:
 
 One instance per adapter (or per credentials hash), held on the adapter object. No module-level globals.
 
-Reference fix in the fork: commit `c8be16a1` (extracted `_TOKEN` global into `FabricTokenProvider` class), plus follow-ups for multi-scope (`47b4510f`) and explicit `get_api_token` / `get_sql_token` split (`0e779bdc`).
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`c8be16a1`](https://github.com/sdebruyn/dbt-fabric/commit/c8be16a1) (extracted `_TOKEN` global into `FabricTokenProvider` class), plus follow-ups for multi-scope ([`47b4510f`](https://github.com/sdebruyn/dbt-fabric/commit/47b4510f)) and explicit `get_api_token` / `get_sql_token` split ([`0e779bdc`](https://github.com/sdebruyn/dbt-fabric/commit/0e779bdc)).
 
 ## Notes
 
 - This is the same general anti-pattern as the `atexit` warehouse-snapshot issue: module-level state with implicit lifecycle that becomes hard to reason about and impossible to test in isolation.
-- The fork now has zero module-level mutable state in the adapter — every cache and every connection lives on a class instance.
+- [The fork](https://github.com/sdebruyn/dbt-fabric) now has zero module-level mutable state in the adapter — every cache and every connection lives on a class instance.

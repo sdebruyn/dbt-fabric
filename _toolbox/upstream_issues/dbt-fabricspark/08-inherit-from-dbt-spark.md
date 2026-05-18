@@ -77,7 +77,7 @@ That gives you the dbt-spark machinery and the cross-adapter Fabric code (auth, 
 4. Run `dbt-tests-adapter` against the inherited adapter to surface the behavioral differences and triage them one by one.
 5. For each difference: either accept the inherited behaviour, or add a `fabricspark__*` override with an inline comment stating what differs from the upstream Spark macro and why (a Fabric Lakehouse engine quirk, a Lakehouse-specific Delta limitation, etc.).
 
-The fork has done this work. The references in `microsoft/dbt-fabricspark` for what to keep vs. what to inherit are visible at `https://github.com/sdebruyn/dbt-fabric/tree/main/src/dbt/include/fabricspark/macros` — most of the file count is gone, and what remains is annotated with what it overrides and why.
+[The fork](https://github.com/sdebruyn/dbt-fabric) has done this work. The references in `microsoft/dbt-fabricspark` for what to keep vs. what to inherit are visible at `https://github.com/sdebruyn/dbt-fabric/tree/main/src/dbt/include/fabricspark/macros` — most of the file count is gone, and what remains is annotated with what it overrides and why.
 
 ## Notes
 

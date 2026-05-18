@@ -47,7 +47,7 @@ Query `sys.database_principals` joined with `sys.database_permissions`, which co
 {% endmacro %}
 ```
 
-Reference fix in the fork: commit `42063121`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`42063121`](https://github.com/sdebruyn/dbt-fabric/commit/42063121).
 
 ## Notes
 

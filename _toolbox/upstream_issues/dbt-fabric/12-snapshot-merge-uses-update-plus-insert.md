@@ -23,7 +23,7 @@ The adapter ships a custom `fabric__snapshot_merge_sql` macro that does an UPDAT
 
 Delete `fabric__snapshot_merge_sql` entirely and let dbt-core's `default__snapshot_merge_sql` (which uses MERGE) handle Fabric. Fabric Warehouse supports `MERGE INTO` with the standard ANSI syntax dbt-core emits.
 
-Reference fix in the fork: commit `0857efc1` (also removed the `apply_label()` helper this macro relied on — see related issue).
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`0857efc1`](https://github.com/sdebruyn/dbt-fabric/commit/0857efc1) (also removed the `apply_label()` helper this macro relied on — see related issue).
 
 ## Notes
 

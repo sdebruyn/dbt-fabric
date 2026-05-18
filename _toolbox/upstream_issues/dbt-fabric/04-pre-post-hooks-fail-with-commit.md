@@ -60,7 +60,7 @@ Add `dbt/include/fabric/macros/materializations/hooks.sql` overriding `run_hooks
 {% endmacro %}
 ```
 
-Reference fix in the fork: commit `62705a00`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`62705a00`](https://github.com/sdebruyn/dbt-fabric/commit/62705a00).
 
 ## Notes
 

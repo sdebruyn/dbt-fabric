@@ -33,7 +33,7 @@ When `unique_key` is present, dispatch to `get_incremental_merge_sql` so the ope
 {% endmacro %}
 ```
 
-Reference fix in the fork: commit `955ab2e3`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`955ab2e3`](https://github.com/sdebruyn/dbt-fabric/commit/955ab2e3).
 
 ## Notes
 

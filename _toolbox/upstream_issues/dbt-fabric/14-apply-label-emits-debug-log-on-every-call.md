@@ -36,7 +36,7 @@ Remove the `log()` call:
 {% endmacro %}
 ```
 
-Reference fix in the fork: commit `5226156539`. The fork later removed the entire `apply_label()` helper (commit `0857efc1`) in the broader cleanup that also removed the custom `fabric__snapshot_merge_sql`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`5226156539`](https://github.com/sdebruyn/dbt-fabric/commit/5226156539). [The fork](https://github.com/sdebruyn/dbt-fabric) later removed the entire `apply_label()` helper (commit [`0857efc1`](https://github.com/sdebruyn/dbt-fabric/commit/0857efc1)) in the broader cleanup that also removed the custom `fabric__snapshot_merge_sql`.
 
 ## Notes
 

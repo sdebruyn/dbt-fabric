@@ -38,7 +38,7 @@ def string_size(self) -> int:
     return int(self.char_size)
 ```
 
-Reference fix in the fork: commit `9c3ac010` ("string→varchar(MAX) sweep across `TYPE_LABELS`, `string_type`, `fabric__snapshot_hash_arguments`, `fabric__hash`").
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`9c3ac010`](https://github.com/sdebruyn/dbt-fabric/commit/9c3ac010) ("string→varchar(MAX) sweep across `TYPE_LABELS`, `string_type`, `fabric__snapshot_hash_arguments`, `fabric__hash`").
 
 ## Notes
 

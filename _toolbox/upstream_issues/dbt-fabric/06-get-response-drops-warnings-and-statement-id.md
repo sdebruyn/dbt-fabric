@@ -3,7 +3,9 @@
 **Repo:** `microsoft/dbt-fabric`
 **Labels (suggested):** `bug`, `observability`, `priority/medium`
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+
+> **Internal note (strip before filing):** Submittable as a PR — replace the hardcoded `"OK"` with cursor-message parsing in `fabric_connection_manager.py`. Consider opening with the issue *and* a draft PR linked from it.
 
 ## Summary
 
@@ -52,7 +54,7 @@ def get_response(cls, cursor) -> AdapterResponse:
     )
 ```
 
-Reference fix in the fork: commit `8bf38cf2`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`8bf38cf2`](https://github.com/sdebruyn/dbt-fabric/commit/8bf38cf2).
 
 ## Notes
 

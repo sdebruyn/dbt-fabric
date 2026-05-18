@@ -33,4 +33,4 @@ If a defense-in-depth cleanup is desired, register a `signal.signal(signal.SIGTE
 ## Notes
 
 - The same `atexit` anti-pattern is now present in `microsoft/dbt-fabric` for warehouse snapshots (separate issue in that repo).
-- The fork eliminated all `atexit` registrations. Sessions are managed through dbt-core's connection lifecycle; stale-session risk is bounded by Fabric's server-side GC and not by client-side cleanup invariants the runtime can violate.
+- [The fork](https://github.com/sdebruyn/dbt-fabric) eliminated all `atexit` registrations. Sessions are managed through dbt-core's connection lifecycle; stale-session risk is bounded by Fabric's server-side GC and not by client-side cleanup invariants the runtime can violate.

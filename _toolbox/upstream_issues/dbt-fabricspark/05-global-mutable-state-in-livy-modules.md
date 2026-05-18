@@ -44,7 +44,7 @@ class FabricLivySession:
             return self._session_id
 ```
 
-Reference fix in the fork: the fork rewrote the entire Livy session layer with instance encapsulation throughout. No module-level mutable state remains.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): [the fork](https://github.com/sdebruyn/dbt-fabric) rewrote the entire Livy session layer with instance encapsulation throughout. No module-level mutable state remains.
 
 ## Notes
 

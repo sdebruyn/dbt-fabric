@@ -48,4 +48,4 @@ If a heuristic must remain for some platform reason, gate it behind a config fla
 ## Notes
 
 - This macro is a clear example of a category-mistake review would have caught: detecting nested CTEs by lowercasing-and-counting cannot work in the general case, because SQL is not a regular language.
-- The fork does not ship a unit-test materialization with this check at all; it lets dbt-adapters' default unit-test machinery run and surfaces actual Fabric errors when they occur.
+- [The fork](https://github.com/sdebruyn/dbt-fabric) does not ship a unit-test materialization with this check at all; it lets dbt-adapters' default unit-test machinery run and surfaces actual Fabric errors when they occur.

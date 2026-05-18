@@ -42,7 +42,7 @@ class FabricConnectionManager(SQLConnectionManager):
 
 The base `SQLConnectionManager.add_query` then automatically retries every query — metadata and model — using the same back-off semantics, with no per-method wrapper.
 
-Reference fix in the fork: commit `f1c0a512` (default `add_query()` retries on `mssql_python.OperationalError`/`InternalError` up to 3 attempts).
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`f1c0a512`](https://github.com/sdebruyn/dbt-fabric/commit/f1c0a512) (default `add_query()` retries on `mssql_python.OperationalError`/`InternalError` up to 3 attempts).
 
 ## Notes
 

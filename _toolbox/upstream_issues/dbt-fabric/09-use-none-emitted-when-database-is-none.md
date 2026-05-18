@@ -37,8 +37,8 @@ Wrap the body in a None-guard:
 {%- endmacro -%}
 ```
 
-Reference fix in the fork: commit `dea31d36`.
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`dea31d36`](https://github.com/sdebruyn/dbt-fabric/commit/dea31d36).
 
 ## Notes
 
-- The fork additionally escapes `]` as `]]` in this macro (see related issue on identifier quoting). Both fixes belong together.
+- [The fork](https://github.com/sdebruyn/dbt-fabric) additionally escapes `]` as `]]` in this macro (see related issue on identifier quoting). Both fixes belong together.

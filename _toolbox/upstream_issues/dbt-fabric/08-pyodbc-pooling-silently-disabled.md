@@ -39,9 +39,9 @@ pyodbc.odbcversion = "3.8"
 pyodbc.pooling = credentials.pooling if credentials.pooling is not None else True
 ```
 
-Reference fix in the fork: commit `fe3d3281` (before the fork migrated entirely from pyodbc to `mssql-python`, which doesn't have this issue).
+Reference fix in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`fe3d3281`](https://github.com/sdebruyn/dbt-fabric/commit/fe3d3281) (before [the fork](https://github.com/sdebruyn/dbt-fabric) migrated entirely from pyodbc to `mssql-python`, which doesn't have this issue).
 
 ## Notes
 
 - The `odbcversion` requirement is documented in the pyodbc source code as part of the `SQLSetEnvAttr` call sequence that ODBC requires before pool registration.
-- An alternative path is to migrate from pyodbc + ODBC Driver 18 to Microsoft's native `mssql-python` driver (which the fork has done). That eliminates the pooling configuration question entirely and removes the system-level ODBC dependency.
+- An alternative path is to migrate from pyodbc + ODBC Driver 18 to Microsoft's native `mssql-python` driver (which [the fork](https://github.com/sdebruyn/dbt-fabric) has done). That eliminates the pooling configuration question entirely and removes the system-level ODBC dependency.

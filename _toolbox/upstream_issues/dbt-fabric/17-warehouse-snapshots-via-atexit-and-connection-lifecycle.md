@@ -46,7 +46,7 @@ on-run-end:
 
 The macro dispatches to an `@available` adapter method that makes the REST call. No `atexit`, no global state, no `sys.argv` check. Snapshots compose naturally with `target`, `env_var()`, conditionals, `post-hook`, `dbt run-operation`, and other Jinja primitives.
 
-Reference implementation in the fork: commit `7fccebe7` for the initial `create_or_update_fabric_warehouse_snapshot` macro + `@available` adapter method, plus `412b4732` for `delete_warehouse_snapshot`.
+Reference implementation in [the fork](https://github.com/sdebruyn/dbt-fabric): commit [`7fccebe7`](https://github.com/sdebruyn/dbt-fabric/commit/7fccebe7) for the initial `create_or_update_fabric_warehouse_snapshot` macro + `@available` adapter method, plus `412b4732` for `delete_warehouse_snapshot`.
 
 ## Notes
 
