@@ -12,18 +12,7 @@ I'm not happy with the state of either Microsoft adapter today. I'm writing this
 
 `microsoft/dbt-fabric` (Data Warehouse adapter) is on v1.10.0, released 18 May 2026 alongside v1.9.10 the same day. The PyPI classifier list says Python 3.8–3.12, with 3.13 still missing even though it's been GA for over a year. The dependency is `dbt-core>=1.10.0` with no upper bound. Integration tests now do run on PRs (good). The Python test matrix is narrow (integration on 3.11, unit on 3.10 and 3.11) and could be broadened, though that's a minor point — Python version regressions in a dbt adapter are rare.
 
-`microsoft/dbt-fabricspark` (Lakehouse adapter) shipped six releases in eight days (10–17 May 2026):
-
-| Version | Release date |
-|---|---|
-| v1.10.0 | 10 May 2026 |
-| v1.10.1 | 11 May 2026 |
-| v1.11.0 | 15 May 2026 |
-| v1.12.0 | 17 May 2026 |
-| v1.12.1 | 17 May 2026 |
-| v1.12.2 | 17 May 2026 |
-
-The version numbers suggest dbt-core 1.10, 1.11, and 1.12 are all supported, but the PyPI manifest of v1.12.2 still says `dbt-core>=1.8.0` with no upper bound. The floor sits two minors behind the adapter version, and any future dbt-core release will be considered compatible by pip. This contribution pins to `dbt-core>=1.9.6,<1.13.0` — the floor is close to the supported range and there's an explicit upper bound.
+`microsoft/dbt-fabricspark` (Lakehouse adapter) shipped six releases in eight days (10–17 May 2026), the latest being v1.12.2. The version numbers suggest dbt-core 1.10, 1.11, and 1.12 are all supported, but the PyPI manifest of v1.12.2 still says `dbt-core>=1.8.0` with no upper bound. The floor sits two minors behind the adapter version, and any future dbt-core release will be considered compatible by pip. This contribution pins to `dbt-core>=1.9.6,<1.13.0` — the floor is close to the supported range and there's an explicit upper bound.
 
 Functions (the dbt-core 1.11 scalar-function feature) are also not supported in either official adapter, even though 1.11 has been out for about six months. If you use SQL UDFs in dbt on Snowflake or BigQuery and you want to do the same on Fabric, you can't.
 
