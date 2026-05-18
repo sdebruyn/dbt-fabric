@@ -4,7 +4,7 @@ This PR adds `tools/dbt-fabric/`: one dbt adapter for both Microsoft Fabric comp
 
 I wrote most of the code that's now in [`microsoft/dbt-fabric`](https://github.com/microsoft/dbt-fabric). When Microsoft adopted the repository I kept maintaining a fork because customers were asking for things the official repo wasn't shipping. That fork ([`dbt-fabric-samdebruyn`](https://pypi.org/project/dbt-fabric-samdebruyn/) on PyPI) is what multiple organizations are running in production today.
 
-I'm not happy with the state of either Microsoft adapter today. I'm writing this as an invitation, not as an attack. Both repos need a serious reset, and the only way I see to do that is to bring the community back into the maintenance loop: Fabric product team, CAT team, and the people who've kept the fork alive. Three things have to come out of it: a release cadence that actually follows dbt-core, a maintenance model with explicit roles, and a place that the customers who already migrated can stay on.
+I'm not happy with the state of either Microsoft adapter today. I'm writing this as an invitation, not as an attack. Both repos need a serious reset, and the only way I see to do that is to bring the community back into the maintenance loop: Fabric product team, CAT team, and the people who've kept the fork alive.
 
 ---
 
