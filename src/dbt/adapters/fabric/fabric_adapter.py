@@ -1,5 +1,3 @@
-import time
-
 import agate
 import dbt_common.exceptions
 from dbt_common.contracts.constraints import (
@@ -17,7 +15,6 @@ from dbt.adapters.base.impl import ConstraintSupport
 from dbt.adapters.base.meta import available
 from dbt.adapters.base.relation import BaseRelation
 from dbt.adapters.capability import Capability, CapabilityDict, CapabilitySupport, Support
-from dbt.adapters.events.logging import AdapterLogger
 from dbt.adapters.events.types import SchemaCreation
 from dbt.adapters.fabric.base_fabric_adapter import BaseFabricAdapter
 from dbt.adapters.fabric.fabric_column import FabricColumn
@@ -26,8 +23,6 @@ from dbt.adapters.fabric.fabric_connection_manager import FabricConnectionManage
 from dbt.adapters.fabric.fabric_relation import FabricRelation
 from dbt.adapters.reference_keys import _make_ref_key_dict
 from dbt.adapters.sql.impl import CREATE_SCHEMA_MACRO_NAME, SQLAdapter
-
-logger = AdapterLogger("fabric")
 
 
 class FabricAdapter(BaseFabricAdapter, SQLAdapter):
@@ -54,31 +49,6 @@ class FabricAdapter(BaseFabricAdapter, SQLAdapter):
         ConstraintType.primary_key: ConstraintSupport.ENFORCED,
         ConstraintType.foreign_key: ConstraintSupport.ENFORCED,
     }
-
-    def list_relations_without_caching(self, schema_relation: BaseRelation) -> list[BaseRelation]:
-        """Retry the parent catalog read on transient Fabric metadata failures.
-
-        Concurrent DDL from parallel test classes (and real-world parallel runs)
-        can cause snapshot-isolation errors on sys.tables / sys.views reads.
-        Retry up to `retries` times with exponential back-off capped at 30s.
-        See microsoft/dbt-fabric#362.
-        """
-        retries = self.config.credentials.retries
-        last_exc: Exception
-        for attempt in range(1, retries + 2):
-            try:
-                return super().list_relations_without_caching(schema_relation)
-            except Exception as exc:
-                last_exc = exc
-                if attempt <= retries:
-                    wait = min(2 ** (attempt - 1), 30)
-                    logger.debug(
-                        f"list_relations_without_caching attempt {attempt} failed "
-                        f"({type(exc).__name__}: {exc}). "
-                        f"Retrying in {wait}s ({retries - attempt + 1} retries left)."
-                    )
-                    time.sleep(wait)
-        raise last_exc
 
     @available.parse(lambda *a, **k: [])
     def get_column_schema_from_query(self, sql: str) -> list[BaseColumn]:
