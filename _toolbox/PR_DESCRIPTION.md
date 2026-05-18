@@ -34,7 +34,7 @@ And the rest:
 - [Auto host-resolution from the workspace name](https://dbt-fabric.debruyn.dev/configuration/#host) — no hardcoded SQL endpoint per environment.
 - A PEP 249–compliant cursor for Spark JSON results, so dbt talks to the Lakehouse exactly like any other database.
 
-Every PR runs against real Fabric, every release ships after the full integration suite has gone green, and all the bugs documented in the next section are already fixed.
+Every PR runs against real Fabric, and every release ships after the full integration suite has gone green.
 
 ---
 
