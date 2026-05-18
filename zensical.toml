@@ -43,6 +43,7 @@ nav = [
   ] },
   { "Package support" = [
     { "Overview" = "packages/index.md" },
+    { "dbt_artifacts" = "packages/dbt-artifacts.md" },
     { "dbt-audit-helper" = "packages/dbt-audit-helper.md" },
     { "dbt-codegen" = "packages/dbt-codegen.md" },
     { "dbt-date" = "packages/dbt-date.md" },
