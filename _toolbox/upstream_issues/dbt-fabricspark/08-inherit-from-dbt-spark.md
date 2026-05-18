@@ -79,7 +79,3 @@ That gives you the dbt-spark machinery and the cross-adapter Fabric code (auth, 
 
 [The fork](https://github.com/sdebruyn/dbt-fabric) has done this work. The references in `microsoft/dbt-fabricspark` for what to keep vs. what to inherit are visible at `https://github.com/sdebruyn/dbt-fabric/tree/main/src/dbt/include/fabricspark/macros` — most of the file count is gone, and what remains is annotated with what it overrides and why.
 
-## Notes
-
-- This proposal is filed as a design discussion rather than a bug. It's the single biggest structural decision in the codebase and the one with the largest compounding effect on maintenance burden.
-- The other issues filed against this repo (silent exception swallowing, hardcoded token expiry, global mutable state, dead Databricks-ancestry code, etc.) are individual bugs. This one is the meta-fix that eliminates the *category* — most of those bugs exist because the code paths that contain them would not exist at all under the inherited model.
