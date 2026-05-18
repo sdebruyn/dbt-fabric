@@ -4,7 +4,7 @@
 **Labels (suggested):** `bug`, `refactor`, `observability`, `priority/low`
 **Related:** issue #12 (`snapshot_merge_sql` UPDATE+INSERT) — the custom snapshot merge exists almost entirely to thread `apply_label()` between two statements; centralizing the label removes the reason that override exists.
 
-> [ ] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
+> [x] **Validated by maintainer** — code refs, line numbers, and claims confirmed against upstream HEAD
 
 ## Summary
 

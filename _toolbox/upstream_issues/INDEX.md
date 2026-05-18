@@ -30,7 +30,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 - [x] 11 — `microbatch` ignores `unique_key`
 - [ ] 12 — `snapshot_merge_sql` UPDATE+INSERT instead of MERGE
 - [x] 13 — `delete_warehouse_snapshot` is a stub
-- [ ] 14 — `apply_label` emits `log()` on every call
+- [x] 14 — `apply_label` emits `log()` on every call
 - [ ] 15 — `check_for_nested_cte` false positives
 - [ ] 16 — PR #315 `login_timeout` is a no-op
 - [ ] 17 — Warehouse snapshots via `atexit` + connection lifecycle
