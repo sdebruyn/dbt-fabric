@@ -10,7 +10,7 @@ I'm not happy with the state of either Microsoft adapter today. I'm writing this
 
 ## Headline features the official adapters don't ship
 
-Two big ones that aren't on `microsoft/dbt-fabric` or `microsoft/dbt-fabricspark` today at all:
+Three big ones that aren't on `microsoft/dbt-fabric` or `microsoft/dbt-fabricspark` today at all:
 
 **[Microsoft Purview](https://learn.microsoft.com/en-us/purview/?WT.mc_id=MVP_310840) integration via API.** A `{{ purview_sync() }}` macro that pushes model and column documentation, plus dbt's [`ref()`](https://docs.getdbt.com/reference/dbt-jinja-functions/ref) and [`source()`](https://docs.getdbt.com/reference/dbt-jinja-functions/source) lineage, directly into Purview through the REST API. [`persist_docs`](https://docs.getdbt.com/reference/resource-configs/persist_docs)-aware: models marked `persist_docs: false` are skipped, granular `relation: true, columns: false` only syncs what you asked for. No Purview scan configuration needed on the user side.
 
