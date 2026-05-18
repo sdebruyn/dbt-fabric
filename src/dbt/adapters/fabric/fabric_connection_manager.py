@@ -236,6 +236,16 @@ class FabricConnectionManager(BaseFabricConnectionManager):
             retryable_exceptions=retryable_exceptions,
         )
 
+    @classmethod
+    def close(cls, connection: Connection) -> Connection:
+        # mssql-python connections run with autocommit=True (see open() above),
+        # so there is never a real transaction to roll back. The parent close()
+        # would otherwise issue a ROLLBACK that can block for minutes on Fabric
+        # Warehouse when concurrent DDL sessions hold catalog locks.
+        # See microsoft/dbt-fabric#362.
+        connection.transaction_open = False
+        return super().close(connection)
+
     def cancel(self, connection: Connection):
         logger.debug("Cancel not supported for Fabric adapter.")
 
