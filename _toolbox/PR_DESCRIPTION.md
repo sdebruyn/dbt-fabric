@@ -44,7 +44,7 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, b
 
 > **Note (will be replaced on filing):** the links currently point at issue drafts on the `to-toolbox` branch of [the fork](https://github.com/sdebruyn/dbt-fabric). They will be re-pointed at the actual upstream tickets once filed.
 
-### `microsoft/dbt-fabric` — 20 issues
+### `microsoft/dbt-fabric`
 
 - [#01 — `varchar(8000)` silently truncates long-text string columns](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/01-varchar-8000-silent-truncation.md)
 - [#02 — Case-sensitive Fabric Warehouses broken (missing `_make_match_kwargs` override)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/02-case-sensitive-dwh-broken.md)
@@ -67,7 +67,7 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, b
 - [#19 — v1.9.10 retry wrapper at wrong layer (use `add_query`'s `retryable_exceptions`)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/19-list-relations-retry-at-wrong-layer.md)
 - [#20 — Module-level `_TOKEN` global — thread-safety and lifecycle issues](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabric/20-module-level-token-global.md)
 
-### `microsoft/dbt-fabricspark` — 8 issues
+### `microsoft/dbt-fabricspark`
 
 - [#01 — Six `__exit__` methods return `True` (silent exception swallowing)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/01-exit-methods-return-true-swallow-exceptions.md)
 - [#02 — Hardcoded `expires_on = 1845972874` (year 2028) bypasses token refresh](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/02-hardcoded-2028-token-expiry.md)
