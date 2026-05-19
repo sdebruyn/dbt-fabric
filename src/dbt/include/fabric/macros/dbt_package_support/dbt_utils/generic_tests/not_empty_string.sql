@@ -24,7 +24,7 @@
     errors as (
 
         select * from all_values
-        {#- Upstream uses length() = 0. T-SQL LEN() ignores trailing spaces; datalength() is reliable. #}
+        {#- Override: upstream uses `where col = ''`. T-SQL/varchar uses SQL-92 trailing-whitespace-insensitive equality, so `'   ' = ''` is true; that would flag whitespace-only rows even when `trim_whitespace=false`. Using `datalength()` measures real byte length and preserves the `trim_whitespace=false` semantics. -#}
         where datalength({{ column_name }}) = 0
 
     )
