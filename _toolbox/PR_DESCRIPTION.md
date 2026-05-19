@@ -71,7 +71,7 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, b
 ### `microsoft/dbt-fabricspark`
 
 - [#01 — Six `__exit__` methods return `True` (silent exception swallowing)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/01-exit-methods-return-true-swallow-exceptions.md)
-- [#02 — Hardcoded `expires_on = 1845972874` (year 2028) bypasses token refresh](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/02-hardcoded-2028-token-expiry.md)
+- [microsoft/dbt-fabricspark#192 — Hardcoded `expires_on = 1845972874` (year 2028) in `int_tests` auth path bypasses all token refresh](https://github.com/microsoft/dbt-fabricspark/issues/192)
 - [#04 — `_getLivySQL`: `re.DOTALL` passed as positional `count` caps comment-stripping at 16](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/04-getlivysql-regex-bug.md)
 - [#06 — Livy session cleanup bypasses dbt's `close()` lifecycle and uses `atexit`](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/06-atexit-handlers-leak-livy-sessions.md)
 - [#07 — Dead Thrift exception handler from dbt-spark ancestry](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/07-thrift-dead-code.md)

@@ -42,7 +42,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 ### dbt-fabricspark
 
 - [x] 01 — Six `__exit__` methods return `True`
-- [x] 02 — Hardcoded 2028 token expiry
+- [x] 02 — Hardcoded 2028 token expiry → filed as [microsoft/dbt-fabricspark#192](https://github.com/microsoft/dbt-fabricspark/issues/192)
 - [x] 04 — `_getLivySQL` regex bug
 - [x] 06 — Livy cleanup bypasses dbt's `close()` lifecycle
 - [x] 07 — Thrift dead code from dbt-spark ancestry
@@ -110,7 +110,7 @@ These are debatable and may invite long discussion. File only if the second batc
 | # | Title | Severity | Type |
 |---|---|---|---|
 | 01 | Six `__exit__` methods return `True` — silent exception swallowing | high | bug |
-| 02 | Hardcoded 2028 token expiry bypasses refresh logic | high | bug, security |
+| 02 | [Hardcoded 2028 token expiry bypasses refresh logic](https://github.com/microsoft/dbt-fabricspark/issues/192) | high | bug, security |
 | 04 | `_getLivySQL` regex bug: `re.DOTALL` passed as positional `count` | medium | bug |
 | 06 | `atexit` handlers leak Livy sessions on hard kill / OOM | medium | bug |
 | 07 | Thrift dead code from dbt-spark ancestry | low | tech-debt |
