@@ -35,7 +35,7 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | `not_empty_string` | :white_check_mark: **(override)** | T-SQL string function syntax |
 | `not_null_proportion` | :white_check_mark: | |
 | `recency` | :white_check_mark: | |
-| `relationships_where` | :white_check_mark: **(override)** | T-SQL subquery syntax |
+| `relationships_where` | :white_check_mark: | Upstream defaults `from_condition`/`to_condition` to `1=1`, which is T-SQL-safe; no override needed |
 | `sequential_values` | :white_check_mark: **(override)** | T-SQL requires table alias; uses `PARTITION BY` syntax |
 | `unique_combination_of_columns` | :white_check_mark: | |
 
