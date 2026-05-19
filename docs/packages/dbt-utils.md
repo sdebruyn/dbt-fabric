@@ -34,12 +34,10 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | `not_constant` | :white_check_mark: | |
 | `not_empty_string` | :white_check_mark: **(override)** | T-SQL string function syntax |
 | `not_null_proportion` | :white_check_mark: | |
-| `not_null_where` | :white_check_mark: **(override)** | T-SQL `WHERE` clause handling |
 | `recency` | :white_check_mark: | |
 | `relationships_where` | :white_check_mark: **(override)** | T-SQL subquery syntax |
 | `sequential_values` | :white_check_mark: **(override)** | T-SQL requires table alias; uses `PARTITION BY` syntax |
 | `unique_combination_of_columns` | :white_check_mark: | |
-| `unique_where` | :white_check_mark: **(override)** | T-SQL `WHERE` clause handling |
 
 ### SQL helpers
 
