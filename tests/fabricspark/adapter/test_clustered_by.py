@@ -86,16 +86,23 @@ class TestNoClusteredBy:
 
 
 class TestClusteredByWithBuckets:
-    """`clustered_by` + `buckets` falls back to Hive bucketing (unchanged dbt-spark)."""
+    """`clustered_by` + `buckets` falls back to Hive bucketing (unchanged dbt-spark).
+
+    Fabric Lakehouse is Delta-only and Delta rejects Hive bucketing at runtime
+    (`DELTA_OPERATION_NOT_ALLOWED_DETAIL: Bucketing is not supported for Delta tables`).
+    `target/run/` is written before execution, so the run fails but the compiled
+    DDL is still on disk and proves the macro emitted Hive bucketing. The error
+    message itself is a second proof point.
+    """
 
     @pytest.fixture(scope="class")
     def models(self):
         return {"model_hive.sql": model_hive_bucketing}
 
     def test_hive_bucketing(self, project):
-        results = run_dbt(["run"])
-        assert len(results) == 1
-        assert results[0].status == "success"
+        _, log_output = run_dbt_and_capture(["run"], expect_pass=False)
+        lowered_log = log_output.lower()
+        assert "bucketing" in lowered_log and "not supported for delta" in lowered_log
 
         compiled_sql = _read_compiled_sql(project, "model_hive")
         lowered = compiled_sql.lower()
