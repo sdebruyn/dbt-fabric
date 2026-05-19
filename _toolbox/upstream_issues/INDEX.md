@@ -41,7 +41,7 @@ Each issue body carries a `> [ ] Validated by maintainer` checkbox at the top. S
 
 ### dbt-fabricspark
 
-- [x] 01 — Six `__exit__` methods return `True`
+- [x] 01 — Six `__exit__` methods return `True` → filed as [microsoft/dbt-fabricspark#191](https://github.com/microsoft/dbt-fabricspark/issues/191), draft PR [microsoft/dbt-fabricspark#193](https://github.com/microsoft/dbt-fabricspark/pull/193)
 - [x] 02 — Hardcoded 2028 token expiry → filed as [microsoft/dbt-fabricspark#192](https://github.com/microsoft/dbt-fabricspark/issues/192)
 - [x] 04 — `_getLivySQL` regex bug → filed as [microsoft/dbt-fabricspark#194](https://github.com/microsoft/dbt-fabricspark/issues/194), draft PR [microsoft/dbt-fabricspark#195](https://github.com/microsoft/dbt-fabricspark/pull/195)
 - [x] 06 — Livy cleanup bypasses dbt's `close()` lifecycle
@@ -63,7 +63,7 @@ Filing all 27 at once would be noise. Suggested staging:
   - `10-incremental-full-refresh-data-loss-risk.md` — production data loss on transient failure
   - `13-delete-warehouse-snapshot-is-noop-stub.md` — silent failure
 - dbt-fabricspark:
-  - `01-exit-methods-return-true-swallow-exceptions.md` — silent failure throughout
+  - ~~`01-exit-methods-return-true-swallow-exceptions.md`~~ — filed: [microsoft/dbt-fabricspark#191](https://github.com/microsoft/dbt-fabricspark/issues/191), draft PR [#193](https://github.com/microsoft/dbt-fabricspark/pull/193)
 
 **File second — concrete bugs (10):**
 - dbt-fabric: `03`, `05`, `06`, `08`, `09`, `11`, `14`, `15`, `16`
@@ -109,7 +109,7 @@ These are debatable and may invite long discussion. File only if the second batc
 
 | # | Title | Severity | Type |
 |---|---|---|---|
-| 01 | Six `__exit__` methods return `True` — silent exception swallowing | high | bug |
+| 01 | [Six `__exit__` methods return `True` — silent exception swallowing](https://github.com/microsoft/dbt-fabricspark/issues/191) | high | bug |
 | 02 | [Hardcoded 2028 token expiry bypasses refresh logic](https://github.com/microsoft/dbt-fabricspark/issues/192) | high | bug, security |
 | 04 | [`_getLivySQL` regex bug: `re.DOTALL` passed as positional `count`](https://github.com/microsoft/dbt-fabricspark/issues/194) | medium | bug |
 | 06 | `atexit` handlers leak Livy sessions on hard kill / OOM | medium | bug |

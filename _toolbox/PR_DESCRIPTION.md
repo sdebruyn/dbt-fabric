@@ -70,7 +70,7 @@ I tried contributing some of these fixes back to `microsoft/dbt-fabric` first, b
 
 ### `microsoft/dbt-fabricspark`
 
-- [#01 — Six `__exit__` methods return `True` (silent exception swallowing)](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/01-exit-methods-return-true-swallow-exceptions.md)
+- [microsoft/dbt-fabricspark#191 — Six `__exit__` methods return `True` (silent exception swallowing)](https://github.com/microsoft/dbt-fabricspark/issues/191) (draft fix: [microsoft/dbt-fabricspark#193](https://github.com/microsoft/dbt-fabricspark/pull/193))
 - [microsoft/dbt-fabricspark#192 — Hardcoded `expires_on = 1845972874` (year 2028) in `int_tests` auth path bypasses all token refresh](https://github.com/microsoft/dbt-fabricspark/issues/192)
 - [microsoft/dbt-fabricspark#194 — `_getLivySQL`: `re.DOTALL` passed as positional `count` caps comment-stripping at 16](https://github.com/microsoft/dbt-fabricspark/issues/194) (draft fix: [microsoft/dbt-fabricspark#195](https://github.com/microsoft/dbt-fabricspark/pull/195))
 - [#06 — Livy session cleanup bypasses dbt's `close()` lifecycle and uses `atexit`](https://github.com/sdebruyn/dbt-fabric/blob/to-toolbox/_toolbox/upstream_issues/dbt-fabricspark/06-atexit-handlers-leak-livy-sessions.md)
