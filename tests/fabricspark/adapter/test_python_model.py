@@ -1,4 +1,3 @@
-
 from dbt.tests.adapter.python_model.test_python_model import (
     BasePythonEmptyTests,
     BasePythonIncrementalTests,
