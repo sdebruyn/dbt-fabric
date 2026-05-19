@@ -1,6 +1,6 @@
 # dbt-audit-helper
 
-**Tested version:** 0.13.0 | **Integration tested:** Yes
+**Tested version:** 0.14.0 | **Integration tested:** Yes
 
 [dbt-audit-helper](https://github.com/dbt-labs/dbt-audit-helper) provides macros for comparing relations and queries during data model refactoring.
 
@@ -33,13 +33,8 @@ Macros marked with **(override)** have a T-SQL-compatible override in this adapt
 | `compare_which_relation_columns_differ` | :white_check_mark: | Delegates to `compare_which_query_columns_differ` |
 | `quick_are_queries_identical` | :white_check_mark: | |
 | `quick_are_relations_identical` | :white_check_mark: | |
-
-### Not supported
-
-| Macro | Status | Notes |
-|---|---|---|
-| `compare_and_classify_query_results` | :x: | Not dispatched; uses `true`/`false` literals (no boolean type in T-SQL) |
-| `compare_and_classify_relation_rows` | :x: | Delegates to `compare_and_classify_query_results` |
+| `compare_and_classify_query_results` | :white_check_mark: **(override)** | 1/0 integers instead of `true`/`false`; companion overrides on `_classify_audit_row_status` (explicit `= 1` comparisons) and `_count_num_rows_in_status` (dense_rank trick — `COUNT(DISTINCT ...) OVER ()` is not supported in T-SQL) |
+| `compare_and_classify_relation_rows` | :white_check_mark: | Delegates to `compare_and_classify_query_results` |
 
 ## Implementation notes
 

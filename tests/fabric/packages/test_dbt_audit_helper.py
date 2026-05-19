@@ -14,7 +14,7 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
 
     @pytest.fixture(scope="class")
     def package_revision(self) -> str:
-        return "0.13.0"
+        return "0.14.0"
 
     @pytest.fixture(scope="class")
     def models_config(self):
@@ -26,7 +26,6 @@ class TestDbtAuditHelper(BaseDbtPackageTests):
                 },
                 "unit_test_wrappers": {"+enabled": False},
                 "data_tests": {
-                    "compare_and_classify_query_results": {"+enabled": False},
                     "compare_all_columns_where_clause": {"+enabled": False},
                     # Macro works (run_query fetches metadata separately, view
                     # builds with correct VALUES), but the equality test fails:
