@@ -398,7 +398,7 @@ requires-dist = [
     { name = "dbt-common", specifier = ">=1.37.3,<2.0" },
     { name = "dbt-spark", marker = "extra == 'spark'", specifier = ">=1.10.1" },
     { name = "mssql-python", specifier = ">=1.4.0" },
-    { name = "requests", specifier = ">=2.33.0" },
+    { name = "requests", specifier = ">=2.32.5" },
 ]
 provides-extras = ["spark"]
 
