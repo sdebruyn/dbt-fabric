@@ -83,16 +83,25 @@ class FabricApiClient:
             raise FabricApiError(method, url, response.status_code, response.text)
         return response
 
-    def _api_get(self, url: str) -> requests.Response:
+    @property
+    def base_url(self) -> str:
+        """The Fabric REST API base URL from credentials."""
+        return self._credentials.fabric_base_api_uri
+
+    def api_get(self, url: str) -> requests.Response:
+        """Send an authenticated GET request with 429 retry."""
         return self._api_request(url, method="get")
 
-    def _api_post(self, url: str, body: dict) -> requests.Response:
+    def api_post(self, url: str, body: dict) -> requests.Response:
+        """Send an authenticated POST request with 429 retry."""
         return self._api_request(url, method="post", body=body)
 
-    def _api_patch(self, url: str, body: dict) -> requests.Response:
+    def api_patch(self, url: str, body: dict) -> requests.Response:
+        """Send an authenticated PATCH request with 429 retry."""
         return self._api_request(url, method="patch", body=body)
 
-    def _api_delete(self, url: str) -> requests.Response:
+    def api_delete(self, url: str) -> requests.Response:
+        """Send an authenticated DELETE request with 429 retry."""
         return self._api_request(url, method="delete")
 
     def get_workspace_id(self) -> str:
@@ -116,7 +125,7 @@ class FabricApiClient:
 
         query_param = f"name eq '{self._credentials.workspace_name}'"
         query_param_encoded = urllib.parse.quote_plus(query_param)
-        response = self._api_get(
+        response = self.api_get(
             f"{self._credentials.powerbi_base_api_uri}/myorg/groups?$filter={query_param_encoded}"
         )
         workspaces = response.json().get("value", [])
@@ -146,7 +155,7 @@ class FabricApiClient:
         warehouses = []
 
         while url is not None:
-            response = self._api_get(url)
+            response = self.api_get(url)
             warehouses = warehouses + response.json().get("value", [])
             url = response.json().get("continuationUri", None) if fetch_all else None
 
@@ -170,7 +179,7 @@ class FabricApiClient:
         lakehouses = []
 
         while url is not None:
-            response = self._api_get(url)
+            response = self.api_get(url)
             lakehouses = lakehouses + response.json().get("value", [])
             url = response.json().get("continuationUri", None) if fetch_all else None
 
@@ -262,7 +271,7 @@ class FabricApiClient:
         snapshots = []
 
         while url is not None:
-            response = self._api_get(url)
+            response = self.api_get(url)
             for snapshot in response.json().get("value", []):
                 parent_warehouse_id = snapshot.get("properties", {}).get("parentWarehouseId")
                 if parent_warehouse_id == warehouse_id:
@@ -293,7 +302,7 @@ class FabricApiClient:
         if description is not None:
             body["description"] = description
 
-        response = self._api_post(
+        response = self.api_post(
             url,
             body,
         )
@@ -321,7 +330,7 @@ class FabricApiClient:
         body: dict[str, Any] = {"properties": {}}
         if description is not None:
             body["description"] = description
-        response = self._api_patch(url, body)
+        response = self.api_patch(url, body)
 
         # Spec documents 200, but in practice updates sometimes return 202 (LRO)
         location_uri = response.headers.get("Location")
@@ -346,13 +355,13 @@ class FabricApiClient:
                     f"to complete after {timeout} seconds."
                 )
 
-            response = self._api_get(operation_uri)
+            response = self.api_get(operation_uri)
             operation_status = response.json().get("status", "Unknown")
             retry_sleep = int(response.headers.get("Retry-After", 5))
 
             if operation_status == "Succeeded":
                 result_location = response.headers["Location"]
-                result_response = self._api_get(result_location)
+                result_response = self.api_get(result_location)
                 return result_response.json()["id"]
 
             if operation_status not in ("NotStarted", "Running"):
@@ -401,7 +410,7 @@ class FabricApiClient:
         """
         for snapshot in self.get_warehouse_snapshots():
             if snapshot["displayName"] == snapshot_name:
-                self._api_delete(
+                self.api_delete(
                     f"{self._credentials.fabric_base_api_uri}/workspaces/{self.get_workspace_id()}/warehouseSnapshots/{snapshot['id']}"
                 )
 
@@ -429,7 +438,7 @@ class FabricApiClient:
             "sessionTag": session_tag,
             "name": self._credentials.livy_session_name,
         }
-        response = self._api_post(url, body)
+        response = self.api_post(url, body)
         return response.json()
 
     def get_hc_session(self, hc_id: str) -> dict[str, Any]:
@@ -439,7 +448,7 @@ class FabricApiClient:
             JSON with ``state``, and when idle also ``sessionId`` and ``replId``.
         """
         url = self.get_livy_base_api_uri() + f"/highConcurrencySessions/{hc_id}"
-        response = self._api_get(url)
+        response = self.api_get(url)
         return response.json()
 
     def submit_hc_sql_statement(self, livy_session_id: str, repl_id: str, code: str) -> int:
@@ -449,7 +458,7 @@ class FabricApiClient:
             + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements"
         )
-        response = self._api_post(url, {"code": code, "kind": "sql"})
+        response = self.api_post(url, {"code": code, "kind": "sql"})
         return response.json()["id"]
 
     def submit_hc_python_statement(self, livy_session_id: str, repl_id: str, code: str) -> int:
@@ -459,7 +468,7 @@ class FabricApiClient:
             + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements"
         )
-        response = self._api_post(url, {"code": code, "kind": "pyspark"})
+        response = self.api_post(url, {"code": code, "kind": "pyspark"})
         return response.json()["id"]
 
     def get_hc_statement(
@@ -471,7 +480,7 @@ class FabricApiClient:
             + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements/{statement_id}"
         )
-        response = self._api_get(url)
+        response = self.api_get(url)
         return response.json()
 
     def cancel_hc_statement(self, livy_session_id: str, repl_id: str, statement_id: int) -> str:
@@ -481,14 +490,14 @@ class FabricApiClient:
             + f"/highConcurrencySessions/{livy_session_id}"
             + f"/repls/{repl_id}/statements/{statement_id}/cancel"
         )
-        response = self._api_post(url, {})
+        response = self.api_post(url, {})
         return response.json()["msg"]
 
     def delete_hc_session(self, hc_id: str) -> None:
         """Release an HC session (REPL slot). Best-effort; ignores 404."""
         url = self.get_livy_base_api_uri() + f"/highConcurrencySessions/{hc_id}"
         try:
-            self._api_delete(url)
+            self.api_delete(url)
         except FabricApiError as e:
             if e.status_code != 404:
                 raise
