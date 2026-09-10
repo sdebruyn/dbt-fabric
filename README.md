@@ -9,12 +9,17 @@
   <img alt="Fabric logo" src="https://raw.githubusercontent.com/sdebruyn/dbt-fabric/main/assets/fabric.png">
 </picture>
 
-A maintained and extended fork of the [dbt-fabric](https://github.com/microsoft/dbt-fabric) adapter, supporting **both** Microsoft Fabric compute engines:
+> [!IMPORTANT]
+> **This fork will stop receiving updates in the near future.** Development focus is shifting to contributing useful changes directly to the official upstream adapters: [microsoft/dbt-fabric](https://github.com/microsoft/dbt-fabric) for the Data Warehouse (T-SQL) and [microsoft/dbt-fabricspark](https://github.com/microsoft/dbt-fabricspark) for the Lakehouse (Spark SQL).
+>
+> See [issue #315](https://github.com/sdebruyn/dbt-fabric/issues/315) for the full reasoning and current status.
+
+An extended fork of the [dbt-fabric](https://github.com/microsoft/dbt-fabric) adapter, supporting **both** Microsoft Fabric compute engines:
 
 - **Fabric Data Warehouse** — T-SQL, uses the mssql-python driver (`type: fabric`)
 - **Fabric Lakehouse** — Spark SQL via Livy sessions (`type: fabricspark`)
 
-The dbt-fabric adapter was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft. [Sam Debruyn](https://debruyn.dev), one of the original authors and core contributors, continues development and maintenance through this fork. It has [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) compared to Microsoft's version, which has seen limited investment since adoption.
+The dbt-fabric adapter was [originally developed by the community](https://github.com/microsoft/dbt-fabric/graphs/contributors) and later adopted by Microsoft. [Sam Debruyn](https://debruyn.dev), one of the original authors and core contributors, built this fork to add [additional features and bugfixes](https://dbt-fabric.debruyn.dev/feature-comparison/) on top of Microsoft's version.
 
 [![PyPI - Version](https://img.shields.io/pypi/v/dbt-fabric-samdebruyn)](https://pypi.org/project/dbt-fabric-samdebruyn/)
 
