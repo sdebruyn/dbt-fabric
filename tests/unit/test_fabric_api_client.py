@@ -113,7 +113,7 @@ class TestApiRequest:
     def test_post_sends_json_body(self, mock_request, client):
         mock_request.return_value = _make_response(200)
 
-        client._api_post("https://example.com/api", {"key": "value"})
+        client.api_post("https://example.com/api", {"key": "value"})
 
         call_kwargs = mock_request.call_args[1]
         assert call_kwargs["json"] == {"key": "value"}

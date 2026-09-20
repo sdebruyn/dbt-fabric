@@ -268,6 +268,10 @@ $RECYCLE.BIN/
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,macos,linux,visualstudiocode,python
 test.env
+test.env.remote
+requirements-remote.txt
+dbt-test-artifacts/
+remote-test-results/
 docs_build/site
 .claude/*
 !.claude/skills/
